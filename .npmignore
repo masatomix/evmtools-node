@@ -1,0 +1,14 @@
+.github/
+attic/
+config/
+coverage/
+logs/
+node_modules/
+src/
+tsconfig.json
+tslint.json
+__tests__
+dist/samples/
+output
+.DS_Store
+*.tgz

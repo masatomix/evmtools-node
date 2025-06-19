@@ -1,0 +1,62 @@
+@startuml
+
+class Main
+
+package domain{
+
+    class TaskRow{
+        ...TaskRowDto
+        calculatePV(baseDate: Date): number
+        calculatePVs(baseDate: Date): number
+    }
+    class TaskNode{
+        ...taskRow
+        children: TaskNode[]
+    }
+
+    interface TaskRowCreator{
+        createRowData():TaskRow
+    }
+
+    class TaskService{
+        buildTaskTree(TaskRow[]): TaskNode[]
+    }
+
+    TaskRowCreator .> TaskRow :<<create>>
+    TaskNode <. TaskService :<<create>>
+    TaskService .> TaskRow :<<use>>
+}
+
+package infra{
+    class TaskRowDto{
+        sharp
+        id
+        name
+        parentId
+        isLeaf
+        plotMap
+    }
+    class TaskNodeDto{
+        ...taskRowDto
+        children: TaskNodeDto[]
+    }
+
+    class ExcelTaskRowCreator{
+
+    }
+
+    class TaskRowFactory{
+        fromDto(dto[]): TaskRow[]
+        toDto(entity[]): TaskRowDto[]
+    }
+
+    TaskRowCreator<|.. ExcelTaskRowCreator
+    TaskRow<.. ExcelTaskRowCreator: <<create>>
+    ExcelTaskRowCreator .> TaskRowDto: <<use>>
+    TaskRowFactory <..ExcelTaskRowCreator
+}
+
+TaskRowCreator <-- Main
+TaskService <-- Main
+
+@enduml

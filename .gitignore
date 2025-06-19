@@ -1,0 +1,10 @@
+node_modules/
+
+~$*.xlsx
+pnpm-lock.yaml
+
+dist/
+
+
+*.tgz
+output
