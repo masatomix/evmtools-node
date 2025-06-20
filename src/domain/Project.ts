@@ -29,7 +29,7 @@ export class Project {
         return this._name
     }
 
-    printAndGetData = () => {
+    printAndGetData = (printRowNum?: number) => {
         console.log(`基準日: ${dateStr(this._baseDate)}`)
         console.log(`開始日: ${dateStr(this._startDate)}`)
         console.log(`終了日: ${dateStr(this._endDate)}`)
@@ -39,7 +39,7 @@ export class Project {
         const taskRows = new TaskService().convertToTaskRows(this._taskNodes)
         const rows = taskRows.map((taskRow) => {
             const {
-                calculatePV, 
+                calculatePV,
                 calculatePVs,
                 plotMap,
                 checkStartEndDateAndPlotMap,
@@ -59,7 +59,8 @@ export class Project {
                 進捗応当日: dateStr(expectedProgressDate),
             }
         })
-        console.table(rows)
+
+        console.table(rows.slice(0, printRowNum ?? rows.length))
         return rows
     }
 }

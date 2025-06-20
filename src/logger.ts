@@ -31,8 +31,8 @@ const defaultLoggerOptions: LoggerConfig = {
 }
 
 // 利用者の設定
-const userLoggerConfig: LoggerConfig | object = config.has('copy-utils-generator-logger')
-    ? config.get('copy-utils-generator-logger')
+const userLoggerConfig: LoggerConfig | object = config.has('evmtools-node-logger')
+    ? config.get('evmtools-node-logger')
     : {}
 const loggerConfig = { ...defaultLoggerOptions, ...userLoggerConfig }
 
