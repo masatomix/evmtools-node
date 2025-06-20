@@ -2,7 +2,7 @@ import { createWorkbook, json2workbook, toFileAsync } from 'excel-csv-read-write
 import { ProjectCreator } from '../domain/ProjectCreator'
 import { getLogger } from '../logger'
 import { createStyles } from '../common/styles'
-import { dateStr, generateBaseDates, round } from '../common'
+import { dateStr, generateBaseDates, sum } from '../common'
 import { TaskService } from '../domain/TaskService'
 import { tidy, filter, groupBy, summarize } from '@tidyjs/tidy'
 import { TaskRow } from '../domain'
@@ -14,10 +14,12 @@ export class ShowProjectUsecase {
 
     async execute() {
         const project = await this._creator.createProject()
-        const dispData = project.print()
+        const projectData = project.printAndGetData()
 
+        const baseDate = project.baseDate
         const from = project.startDate
         const to = project.endDate
+        const projectName = project.name
 
         if (!(from && to)) {
             throw new Error('fromかtoが取得できませんでした')
@@ -26,12 +28,13 @@ export class ShowProjectUsecase {
         const baseDates = generateBaseDates(from, to)
 
         const rows = new TaskService().convertToTaskRows(project.taskNodes)
-        const results = summaryPvByName(rows, baseDates)
-        // console.table(results)
-        // await writeData(results)
+        const summary = summaryPvByName(rows, baseDates)
+        const path = `${projectName}-summary.xlsx`
 
-        await writeData(results, 'project-summary.xlsx')
-        await writeData(dispData, 'project.xlsx')
+        await writeProjectInfo({ baseDate, path, projectData, summary })
+
+        // writeError エラー情報
+        // writeStatistics EVM指標
     }
 }
 
@@ -49,22 +52,27 @@ const summaryPvByName = (rows: TaskRow[], baseDates: Date[]) => {
 
         const result = tidy(
             rows,
-            filter((row: TaskRow) => row.isLeaf!),
-            filter((row: TaskRow) => row.assignee !== undefined),
+            filter((row: TaskRow) => row.isLeaf!), //フォルダの情報は不要
+            // filter((row: TaskRow) => row.assignee !== undefined),
             groupBy('assignee', [
                 summarize({
-                    [`pv_${label}`]: (group: TaskRow[]) =>
-                        group.reduce((sum, d) => sum + (d.calculatePV(baseDate) ?? 0), 0),
+                    [`${label}`]: (group) =>
+                        sum(
+                            group.map((d) => d.calculatePV(baseDate) ?? 0),
+                            3
+                        ), // 基準日ごとに、担当者でグルーピングされたPVデータを足している
                 }),
             ])
         )
+        // console.table(result)
 
+        // nameごとに、baseDate(label)プロパティを追加していく(pvデータを横並びにしたい)
         for (const row of result) {
-            const name = row.assignee as string
+            const name = (row.assignee ?? '(未割当)') as string
             if (!wideMap.has(name)) {
                 wideMap.set(name, { assignee: name })
             }
-            wideMap.get(name)![`pv_${label}`] = round(row[`pv_${label}`])
+            wideMap.get(name)![`${label}`] = row[`${label}`]
         }
     }
 
@@ -72,15 +80,31 @@ const summaryPvByName = (rows: TaskRow[], baseDates: Date[]) => {
     return wideResult
 }
 
-async function writeData(rows: Record<string, any>[], path: string) {
+const writeProjectInfo: (data: {
+    baseDate: Date
+    projectData?: Record<string, any>[]
+    summary?: Record<string, any>[]
+    path: string
+}) => Promise<void> = async ({ baseDate, projectData, summary, path }) => {
     const workbook = await createWorkbook()
 
-    json2workbook({
-        instances: rows,
-        workbook,
-        sheetName: 'rows',
-        applyStyles: createStyles(),
-    })
+    const dateStrHyphen = dateStr(baseDate).replace(/\//g, '-')
+    if (projectData) {
+        json2workbook({
+            instances: projectData,
+            workbook,
+            sheetName: `素データ_${dateStrHyphen}`,
+            applyStyles: createStyles(),
+        })
+    }
+    if (summary) {
+        json2workbook({
+            instances: summary,
+            workbook,
+            sheetName: '要員ごと',
+            applyStyles: createStyles(),
+        })
+    }
     workbook.deleteSheet('Sheet1')
     await toFileAsync(workbook, path)
 }

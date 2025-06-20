@@ -121,8 +121,8 @@ export class TaskRow {
 
     /**
      * 基準日(その日のみの)のPVを計算する。
-     * 基本、稼働予定の日数 / 予定工数
-     * その日に タスクがなければ0.
+     * 基本、稼働予定の日数 / 予定工数 の値。
+     * その日に タスクがなければ0。
      * なんらかの理由で、稼働予定日数がNaN/undefined/ゼロの場合、undefinedを返す。
      * なんらかの理由で、予定工数がNaN/undefinedの場合、undefinedを返す。
      *
@@ -141,6 +141,7 @@ export class TaskRow {
             endDate,
             plotMap,
             id,
+            name,
         } = this
 
         // number かつNaNじゃないかをチェックする関数
@@ -153,7 +154,7 @@ export class TaskRow {
 
         if (!isValidInput) {
             logger.warn(
-                `タスクID:${id} 日数エラー(0/空)。稼動予定日数:[${scheduledWorkDays}],予定工数:[${workload}]`
+                `タスクID:${id} 日数エラー(0/空)。稼動予定日数:[${scheduledWorkDays}],予定工数:[${workload}]. タスク名: ${name}`
             )
             return undefined
         }
@@ -200,10 +201,10 @@ export class TaskRow {
     }
 
     checkStartEndDateAndPlotMap = (): this is NonNullDateAndPlotMap => {
-        const { startDate, endDate, plotMap, id } = this
+        const { startDate, endDate, plotMap, id, name } = this
         if (!startDate || !endDate) {
             logger.warn(
-                `タスクID:${id} 日付エラー。開始日:[${dateStr(startDate)}],終了日:[${dateStr(endDate)}]が取得できず`
+                `タスクID:${id} 日付エラー。開始日:[${dateStr(startDate)}],終了日:[${dateStr(endDate)}]が取得できず.タスク名: ${name}`
             )
             return false
         }
@@ -240,7 +241,7 @@ type NonNullDateAndPlotMap = {
     startDate: Date
     endDate: Date
     plotMap: Map<number, boolean>
-    id: number
+    // id: number
 }
 
 // const baseDates = [

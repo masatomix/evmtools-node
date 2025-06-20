@@ -3,11 +3,13 @@ import { TaskNode } from './TaskNode'
 import { TaskService } from './TaskService'
 
 export class Project {
+    // PV/EV/SPIとか出してあげたい(baseDateの)
     constructor(
         private _taskNodes: TaskNode[],
         private _baseDate: Date,
         private _startDate?: Date,
-        private _endDate?: Date
+        private _endDate?: Date,
+        private _name?: string
     ) {}
 
     get baseDate() {
@@ -23,38 +25,42 @@ export class Project {
     get endDate() {
         return this._endDate
     }
+    get name() {
+        return this._name
+    }
 
-    print = () => {
+    printAndGetData = () => {
         console.log(`基準日: ${dateStr(this._baseDate)}`)
         console.log(`開始日: ${dateStr(this._startDate)}`)
         console.log(`終了日: ${dateStr(this._endDate)}`)
+        console.log(`プロジェクト名: ${this._name}`)
         console.table(this._taskNodes)
 
         const taskRows = new TaskService().convertToTaskRows(this._taskNodes)
         const rows = taskRows.map((taskRow) => {
             const {
-                calculatePV,
+                calculatePV, 
                 calculatePVs,
                 plotMap,
+                checkStartEndDateAndPlotMap,
                 startDate,
                 endDate,
                 actualStartDate,
                 actualEndDate,
                 expectedProgressDate,
-                ...rest
+                ...rest // ココのデータだけが出力される
             } = taskRow
             return {
                 ...rest,
-                startDate: dateStr(startDate),
-                endDate: dateStr(endDate),
-                actualStartDate: dateStr(actualStartDate),
-                actualEndDate: dateStr(actualEndDate),
-                expectedProgressDate: dateStr(expectedProgressDate),
+                予定開始日: dateStr(startDate),
+                予定終了日: dateStr(endDate),
+                実績開始日: dateStr(actualStartDate),
+                実績終了日: dateStr(actualEndDate),
+                進捗応当日: dateStr(expectedProgressDate),
             }
         })
         console.table(rows)
         return rows
-
     }
 }
 

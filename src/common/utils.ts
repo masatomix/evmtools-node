@@ -85,7 +85,8 @@ const sumFunc = (prev: number, current: number): number => (current ? prev + cur
 
 export const sum = (numbers?: number[], scale?: number): number | undefined => {
     if (numbers) {
-        const nonNullDatas = numbers.filter((number) => !!number) // undefinedを除去
+        // const nonNullDatas = numbers.filter((number) => !!number) // undefinedを除去
+        const nonNullDatas = numbers.filter((number) => number != null) // null または undefined を除去
         if (nonNullDatas.length > 0) {
             const result = nonNullDatas.reduce(sumFunc, 0)
 
@@ -110,7 +111,8 @@ export const round = (num: number, scale = 10): number =>
  */
 export const average = (numbers?: number[], scale = 3): number | undefined => {
     if (numbers) {
-        const nonNullDatas = numbers.filter((data) => !!data) // undefinedを除去
+        // const nonNullDatas = numbers.filter((data) => !!data) // undefinedを除去
+        const nonNullDatas = numbers.filter((data) => data != null) // null または undefined を除去
         // console.log(nonNullDatas)
         if (nonNullDatas.length > 0) {
             const result = (sum(nonNullDatas) as number) / nonNullDatas.length

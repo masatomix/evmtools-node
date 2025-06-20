@@ -2,7 +2,7 @@ import { getLogger } from '../logger'
 import { tidy, groupBy, summarize } from '@tidyjs/tidy'
 import { TaskRow } from '../domain'
 import { TaskRowCreator } from '../domain/TaskRowCreator'
-import { dateStr, round } from '../common'
+import { average, dateStr, sum } from '../common'
 
 export class ShowSummaryUsecase {
     private logger = getLogger('ShowSummaryUsecase')
@@ -24,7 +24,6 @@ export class ShowSummaryUsecase {
             }
         })
 
-        // console.table(dispRows.filter((row) => row.assignee === '〇〇'))
         console.table(dispRows)
 
         // aggregate の練習
@@ -34,23 +33,18 @@ export class ShowSummaryUsecase {
                 groupBy('assignee', [
                     summarize({
                         担当のタスク数: (group) => group.length,
-                        担当の工数の和: (group) =>
-                            round(group.reduce((sum, d) => sum + (d.workload ?? 0), 0)),
-                        担当の工数の平均: (group) =>
-                            round(
-                                group.reduce((sum, d) => sum + (d.workload ?? 0), 0) / group.length,
-                                3
-                            ),
+                        担当の工数の和: (group) => sum(group.map((d) => d.workload ?? 0)),
+                        担当の工数の平均: (group) => average(group.map((d) => d.workload ?? 0)),
                         // pv: (group) => group.map((d) => d.pv),
                         // calcPv_baseDate_の列: (group) => group.map((d) => d.calculatePV(baseDate)),
-                        指定日までのpv累積: (group) =>
-                            round(
-                                group.reduce((sum, d) => sum + (d.calculatePVs(baseDate) ?? 0), 0),
+                        [`${dateStr(baseDate)}までのPV累積`]: (group) =>
+                            sum(
+                                group.map((d) => d.calculatePVs(baseDate)),
                                 3
                             ),
                         [`${dateStr(baseDate)}のPV`]: (group) =>
-                            round(
-                                group.reduce((sum, d) => sum + (d.calculatePV(baseDate) ?? 0), 0),
+                            sum(
+                                group.map((d) => d.calculatePV(baseDate) ?? 0),
                                 3
                             ),
                     }),
@@ -61,16 +55,3 @@ export class ShowSummaryUsecase {
         showAggregate()
     }
 }
-
-// async function printData(rows: Record<string, any>[]) {
-//     const workbook = await createWorkbook()
-
-//     json2workbook({
-//         instances: rows,
-//         workbook,
-//         sheetName: 'rows',
-//         applyStyles: createStyles(),
-//     })
-//     workbook.deleteSheet('Sheet1')
-//     await toFileAsync(workbook, 'result111.xlsx')
-// }

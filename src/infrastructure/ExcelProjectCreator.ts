@@ -38,8 +38,15 @@ export class ExcelProjectCreator implements ProjectCreator {
         const taskService = new TaskService()
         const taskNodes = taskService.buildTaskTree(taskRows)
 
+        // プロジェクト名
+        const projectName = getFilenameWithoutExtension(this._excelPath)
         // 基準日をセット
-        const project = new Project(taskNodes, dateFromSn(baseDate), from, to)
+        const project = new Project(taskNodes, dateFromSn(baseDate), from, to, projectName)
         return project
     }
+}
+
+const getFilenameWithoutExtension = (fullPath: string): string => {
+    const filename = fullPath.split(/[/\\]/).pop() ?? ''
+    return filename.replace(/\.[^/.]+$/, '') // 最後の .xxx を除去
 }
