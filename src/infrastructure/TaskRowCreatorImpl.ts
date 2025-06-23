@@ -94,7 +94,6 @@ function getTaskName(data: any): TaskName {
     }
 }
 
-
 function toNumber(data: Record<string, any>, index: number): number | undefined {
     const result =
         typeof data[index.toString()] === 'number' ? round(data[index.toString()]) : undefined
