@@ -12,16 +12,7 @@ export class TaskService {
         const roots: TaskNode[] = []
 
         for (const row of rows) {
-            const node: TaskNode = {
-                ...row,
-                children: [],
-                *[Symbol.iterator](): IterableIterator<TaskNode> {
-                    yield this
-                    for (const child of this.children) {
-                        yield* child
-                    }
-                }, //new しない場合は定義を書いてあげないとダメみたいだ
-            }
+            const node = TaskNode.fromRow(row)
             nodeMap.set(row.id, node)
 
             if (row.parentId !== undefined) {
@@ -57,14 +48,7 @@ export class TaskService {
         const result: TaskRow[] = []
 
         const dfs = (node: TaskNode, parentId?: number, level: number = 1) => {
-            const { children, ...rest } = node
-
-            result.push({
-                ...rest,
-                level,
-                parentId,
-            })
-
+            result.push(TaskRow.fromNode(node, level, parentId))
             node.children.forEach((child) => dfs(child, node.id, level + 1))
         }
 
