@@ -1,6 +1,7 @@
 import { date2Sn, dateFromSn } from 'excel-csv-read-write'
 import { getLogger } from '../logger'
 import { dateStr } from '../common'
+import { TaskNode } from './TaskNode'
 
 const logger = getLogger('domain/TaskRow')
 /**
@@ -120,6 +121,30 @@ export class TaskRow {
     ) {}
 
     /**
+     * 予定工数 / 稼働予定日数 による一日あたりの工数（任意）
+     * 計算不能な場合は undefined
+     */
+    get workloadPerDay(): number | undefined {
+        const { workload, scheduledWorkDays } = this
+        const { id, name } = this
+        const isValidNumber = (value: unknown): value is number =>
+            typeof value === 'number' && !Number.isNaN(value)
+
+        if (
+            isValidNumber(workload) &&
+            isValidNumber(scheduledWorkDays) &&
+            scheduledWorkDays !== 0
+        ) {
+            return workload / scheduledWorkDays
+        }
+        logger.warn(
+            `タスクID:${id} 日数エラー(0/空)。稼動予定日数:[${scheduledWorkDays}],予定工数:[${workload}]. タスク名: ${name}`
+        )
+
+        return undefined
+    }
+
+    /**
      * 基準日(その日のみの)のPVを計算する。
      * 基本、稼働予定の日数 / 予定工数 の値。
      * その日に タスクがなければ0。
@@ -135,27 +160,15 @@ export class TaskRow {
         }
 
         const {
-            scheduledWorkDays, // 稼働予定の日数を取得 N (calculatePVsにあわせるなら、ココホントはplotMapの数にすべきか)
-            workload, // 予定工数を取得 M
+            // scheduledWorkDays, // 稼働予定の日数を取得 N (calculatePVsにあわせるなら、ココホントはplotMapの数にすべきか)
+            // workload, // 予定工数を取得 M
             startDate,
             endDate,
             plotMap,
-            id,
-            name,
         } = this
 
-        // number かつNaNじゃないかをチェックする関数
-        const isValidNumber = (value: unknown): value is number =>
-            typeof value === 'number' && !Number.isNaN(value)
-
-        // scheduledWorkDays, workload が空とかだとundefinedを返す
-        const isValidInput =
-            isValidNumber(scheduledWorkDays) && scheduledWorkDays !== 0 && isValidNumber(workload)
-
-        if (!isValidInput) {
-            logger.warn(
-                `タスクID:${id} 日数エラー(0/空)。稼動予定日数:[${scheduledWorkDays}],予定工数:[${workload}]. タスク名: ${name}`
-            )
+        const workloadPerDay = this.workloadPerDay
+        if (workloadPerDay === undefined) {
             return undefined
         }
 
@@ -164,9 +177,7 @@ export class TaskRow {
             return 0.0
         }
 
-        const manDaysPerDay = workload / scheduledWorkDays
-        // console.log(manDaysPerDay)
-        return manDaysPerDay
+        return workloadPerDay
     }
 
     /**
@@ -214,6 +225,39 @@ export class TaskRow {
             return false
         }
         return true
+    }
+
+    /**
+     * TaskNode から、TaskRowを作る
+     * @param node 
+     * @param level 
+     * @param parentId 
+     * @returns 
+     */
+    static fromNode(node: TaskNode, level: number, parentId?: number): TaskRow {
+        return new TaskRow(
+            node.sharp,
+            node.id,
+            level,
+            node.name,
+            node.assignee,
+            node.workload,
+            node.startDate,
+            node.endDate,
+            node.actualStartDate,
+            node.actualEndDate,
+            node.progressRate,
+            node.scheduledWorkDays,
+            node.pv,
+            node.ev,
+            node.spi,
+            node.expectedProgressDate,
+            node.delayDays,
+            node.remarks,
+            parentId,
+            node.isLeaf,
+            node.plotMap
+        )
     }
 }
 

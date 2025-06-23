@@ -23,6 +23,7 @@ export class TaskNode extends TaskRow implements Iterable<TaskNode> {
         public remarks?: string,
         public parentId?: number,
         public isLeaf?: boolean,
+        public plotMap?: Map<number, boolean>,
         public children: TaskNode[] = []
     ) {
         super(
@@ -46,7 +47,8 @@ export class TaskNode extends TaskRow implements Iterable<TaskNode> {
             delayDays,
             remarks,
             parentId,
-            isLeaf
+            isLeaf,
+            plotMap
         )
     }
 
@@ -58,6 +60,38 @@ export class TaskNode extends TaskRow implements Iterable<TaskNode> {
         for (const child of this.children) {
             yield* child
         }
+    }
+
+    /**
+     * TaskRowからTaskNodeへ変換する静的ファクトリメソッド
+     * @param row 元のTaskRow
+     * @param children 子ノードの配列（省略時は空配列）
+     */
+    static fromRow(row: TaskRow, children: TaskNode[] = []): TaskNode {
+        return new TaskNode(
+            row.sharp,
+            row.id,
+            row.level,
+            row.name,
+            row.assignee,
+            row.workload,
+            row.startDate,
+            row.endDate,
+            row.actualStartDate,
+            row.actualEndDate,
+            row.progressRate,
+            row.scheduledWorkDays,
+            row.pv,
+            row.ev,
+            row.spi,
+            row.expectedProgressDate,
+            row.delayDays,
+            row.remarks,
+            row.parentId,
+            row.isLeaf,
+            row.plotMap,
+            children
+        )
     }
 
     // addChild(child: TaskNode) {
