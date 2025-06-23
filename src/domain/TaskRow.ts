@@ -202,7 +202,7 @@ export class TaskRow {
         // 指定した基準日「まで(含む)」のpv値は足す。
         // ホントは土日を除去しないと、親タスクの計算はバグってしまう
         // (土日もプロットされているため。かつ、稼働予定日数も間違っている)
-        for (const [serial, value] of this.plotMap.entries()) {
+        for (const [serial /*value*/] of this.plotMap.entries()) {
             if (serial <= baseSerial) {
                 const pv = this.calculatePV(dateFromSn(serial))
                 pvs += pv ?? 0.0
@@ -229,10 +229,10 @@ export class TaskRow {
 
     /**
      * TaskNode から、TaskRowを作る
-     * @param node 
-     * @param level 
-     * @param parentId 
-     * @returns 
+     * @param node
+     * @param level
+     * @param parentId
+     * @returns
      */
     static fromNode(node: TaskNode, level: number, parentId?: number): TaskRow {
         return new TaskRow(

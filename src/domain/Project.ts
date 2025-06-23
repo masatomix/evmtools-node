@@ -41,9 +41,13 @@ export class Project {
         const taskRows = new TaskService().convertToTaskRows(this._taskNodes)
         const rows = taskRows.map((taskRow) => {
             const {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 calculatePV,
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 calculatePVs,
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 plotMap,
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 checkStartEndDateAndPlotMap,
                 startDate,
                 endDate,
@@ -139,7 +143,7 @@ export class Project {
         const baseDates = generateBaseDates(from, to)
         const rows = new TaskService().convertToTaskRows(this._taskNodes)
 
-        const wideMap = new Map<string, Record<string, any>>()
+        const wideMap = new Map<string, Record<string, unknown>>()
         for (const baseDate of baseDates) {
             const label = dateStr(baseDate)
 
@@ -181,7 +185,7 @@ export class Project {
         const baseDates = generateBaseDates(from, to)
         const rows = new TaskService().convertToTaskRows(this._taskNodes)
 
-        const wideMap = new Map<string, Record<string, any>>()
+        const wideMap = new Map<string, Record<string, unknown>>()
 
         for (const baseDate of baseDates) {
             const label = dateStr(baseDate)
@@ -230,7 +234,7 @@ export class Project {
         const baseDates = generateBaseDates(from, to)
         const rows = new TaskService().convertToTaskRows(this._taskNodes)
 
-        const wideMap = new Map<string, Record<string, any>>()
+        const wideMap = new Map<string, Record<string, unknown>>()
 
         for (const baseDate of baseDates) {
             const label = dateStr(baseDate)
@@ -280,7 +284,7 @@ export class Project {
         const baseDates = generateBaseDates(from, to)
         const rows = new TaskService().convertToTaskRows(this._taskNodes)
 
-        const wideMap = new Map<string, Record<string, any>>()
+        const wideMap = new Map<string, Record<string, unknown>>()
 
         for (const baseDate of baseDates) {
             const label = dateStr(baseDate)

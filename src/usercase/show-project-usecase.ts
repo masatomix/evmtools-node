@@ -2,11 +2,8 @@ import { createWorkbook, json2workbook, toFileAsync } from 'excel-csv-read-write
 import { ProjectCreator } from '../domain/ProjectCreator'
 import { getLogger } from '../logger'
 import { createStyles } from '../common/styles'
-import { average, dateStr, generateBaseDates, sum } from '../common'
-import { TaskService } from '../domain/TaskService'
-import { tidy, filter, groupBy, summarize } from '@tidyjs/tidy'
-import { TaskRow } from '../domain'
-import { AssigneeStatistics, Project, ProjectStatistics } from '../domain/Project'
+import { dateStr } from '../common'
+import { AssigneeStatistics, ProjectStatistics } from '../domain/Project'
 
 export class ShowProjectUsecase {
     private logger = getLogger('ShowProjectUsecase')
@@ -55,11 +52,11 @@ export class ShowProjectUsecase {
 const writeProjectInfo: (data: {
     statisticsByProject?: ProjectStatistics[]
     statisticsByName?: AssigneeStatistics[]
-    pvByProject?: Record<string, any>[]
-    pvsByProject?: Record<string, any>[]
-    pvByName?: Record<string, any>[]
-    pvsByName?: Record<string, any>[]
-    projectData?: Record<string, any>[]
+    pvByProject?: Record<string, unknown>[]
+    pvsByProject?: Record<string, unknown>[]
+    pvByName?: Record<string, unknown>[]
+    pvsByName?: Record<string, unknown>[]
+    projectData?: Record<string, unknown>[]
     baseDate: Date
     path: string
 }) => Promise<void> = async ({

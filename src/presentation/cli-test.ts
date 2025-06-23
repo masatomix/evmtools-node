@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import { getLogger } from '../logger'
+// import { getLogger } from '../logger'
 import { createWorkbook, json2workbook, toFileAsync } from 'excel-csv-read-write'
 import { TaskService } from '../domain/TaskService'
 import { TaskRowCreator } from '../domain/TaskRowCreator'
@@ -10,10 +10,10 @@ import { generateBaseDates, printTaskNodes, style5 } from '../common'
 import { TaskNode, TaskRow } from '../domain'
 import { createStyles } from '../common/styles'
 
-const logger = getLogger('main')
+// const logger = getLogger('main')
 
 const main = async () => {
-    const { excelPath, output } = createArgs()
+    const { excelPath } = createArgs()
 
     const reader: TaskRowCreator = new ExcelTaskRowCreator(excelPath)
     const rows: TaskRow[] = await reader.createRowData()
@@ -124,6 +124,7 @@ const createArgs = () => {
     return argv
 }
 
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
 main()
 
 function printTaskNodes1(taskNodes: TaskNode[]) {
