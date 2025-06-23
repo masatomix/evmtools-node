@@ -3,6 +3,7 @@ import { hideBin } from 'yargs/helpers'
 // import { getLogger } from '../logger'
 import { ExcelProjectCreator } from '../infrastructure/ExcelProjectCreator'
 import { ShowProjectUsecase } from '../usercase/show-project-usecase'
+import { ProjectRepositoryImpl } from '../infrastructure/ProjectRepositoryImpl'
 
 // const logger = getLogger('main')
 
@@ -10,7 +11,8 @@ const main = () => {
     const { excelPath } = createArgs()
 
     const creator = new ExcelProjectCreator(excelPath)
-    new ShowProjectUsecase(creator).execute().catch((error) => console.error(error))
+    const repository = new ProjectRepositoryImpl()
+    new ShowProjectUsecase(creator, repository).execute().catch((error) => console.error(error))
 }
 
 const createArgs = () => {

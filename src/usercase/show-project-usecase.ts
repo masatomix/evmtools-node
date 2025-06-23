@@ -1,14 +1,14 @@
-import { createWorkbook, json2workbook, toFileAsync } from 'excel-csv-read-write'
 import { ProjectCreator } from '../domain/ProjectCreator'
 import { getLogger } from '../logger'
-import { createStyles } from '../common/styles'
-import { dateStr } from '../common'
-import { AssigneeStatistics, ProjectStatistics } from '../domain/Project'
+import { ProjectRepository } from '../domain/ProjectRepository'
 
 export class ShowProjectUsecase {
     private logger = getLogger('ShowProjectUsecase')
 
-    constructor(private _creator: ProjectCreator) {}
+    constructor(
+        private _creator: ProjectCreator,
+        private _repository: ProjectRepository
+    ) {}
 
     async execute() {
         const project = await this._creator.createProject()
@@ -32,7 +32,8 @@ export class ShowProjectUsecase {
         const pvsByName = project.pvsByName
         const path = `${projectName}-summary.xlsx`
 
-        await writeProjectInfo({
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        this._repository.writeProjectInfo({
             statisticsByProject,
             statisticsByName,
             pvByProject,
@@ -40,103 +41,8 @@ export class ShowProjectUsecase {
             pvByName,
             pvsByName,
             projectData,
-            path,
             baseDate,
-        })
-
-        // writeError エラー情報
-        // writeStatistics EVM指標
-    }
-}
-
-const writeProjectInfo: (data: {
-    statisticsByProject?: ProjectStatistics[]
-    statisticsByName?: AssigneeStatistics[]
-    pvByProject?: Record<string, unknown>[]
-    pvsByProject?: Record<string, unknown>[]
-    pvByName?: Record<string, unknown>[]
-    pvsByName?: Record<string, unknown>[]
-    projectData?: Record<string, unknown>[]
-    baseDate: Date
-    path: string
-}) => Promise<void> = async ({
-    statisticsByProject,
-    statisticsByName,
-    pvByProject,
-    pvsByProject,
-    pvByName,
-    pvsByName,
-    projectData,
-    baseDate,
-    path,
-}) => {
-    const workbook = await createWorkbook()
-
-    const dateStrHyphen = dateStr(baseDate).replace(/\//g, '-')
-
-    if (statisticsByProject) {
-        console.log('プロジェクト情報')
-        console.table(statisticsByProject)
-        json2workbook({
-            instances: statisticsByProject,
-            workbook,
-            sheetName: `プロジェクト情報`,
-            applyStyles: createStyles(),
+            path,
         })
     }
-    if (statisticsByName) {
-        console.log('要員ごと統計')
-        console.table(statisticsByName)
-        json2workbook({
-            instances: statisticsByName,
-            workbook,
-            sheetName: '要員ごと統計',
-            applyStyles: createStyles(),
-        })
-    }
-
-    if (pvByProject) {
-        json2workbook({
-            instances: pvByProject,
-            workbook,
-            sheetName: `プロジェクト日ごとPV`,
-            applyStyles: createStyles(),
-        })
-    }
-    if (pvsByProject) {
-        json2workbook({
-            instances: pvsByProject,
-            workbook,
-            sheetName: `プロジェクト日ごと累積PV`,
-            applyStyles: createStyles(),
-        })
-    }
-
-    if (pvByName) {
-        json2workbook({
-            instances: pvByName,
-            workbook,
-            sheetName: `要員ごと・日ごとPV`,
-            applyStyles: createStyles(),
-        })
-    }
-    if (pvsByName) {
-        json2workbook({
-            instances: pvsByName,
-            workbook,
-            sheetName: `要員ごと・日ごと累積PV`,
-            applyStyles: createStyles(),
-        })
-    }
-
-    if (projectData) {
-        json2workbook({
-            instances: projectData,
-            workbook,
-            sheetName: `素データ_${dateStrHyphen}`,
-            applyStyles: createStyles(),
-        })
-    }
-    workbook.deleteSheet('Sheet1')
-    await toFileAsync(workbook, path)
 }

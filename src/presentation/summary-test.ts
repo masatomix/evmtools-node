@@ -6,7 +6,6 @@ import { TaskRowCreator } from '../domain/TaskRowCreator'
 import { ExcelTaskRowCreator } from '../infrastructure/ExcelTaskRowCreator'
 
 import { ShowSummaryUsecase } from '../usercase/show-summary-usecase'
-
 // const logger = getLogger('main')
 
 const main = () => {
