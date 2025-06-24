@@ -1,7 +1,7 @@
 import { Project } from './Project'
 
 export interface ProjectRepository {
-    save(project: Project): void
+    save(project: Project): Promise<void>
 
     // writeProjectInfo: (data: {
     //     statisticsByProject?: ProjectStatistics[]

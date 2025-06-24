@@ -5,64 +5,28 @@ import { ProjectStatistics, AssigneeStatistics, Project } from '../domain'
 import { ProjectRepository } from '../domain/ProjectRepository'
 
 export class ProjectRepositoryImpl implements ProjectRepository {
-    save(project: Project): void {
+    async save(project: Project): Promise<void> {
         const projectData = project.printAndGetRawData(20)
 
         const baseDate = project.baseDate
         const projectName = project.name
-
-        // const from = project.startDate
-        // const to = project.endDate
-        // if (!(from && to)) {
-        //     throw new Error('fromかtoが取得できませんでした')
-        // }
 
         const statisticsByProject = project.statisticsByProject
         const statisticsByName = project.statisticsByName
 
         const pvByProject = project.pvByProject
         const pvsByProject = project.pvsByProject
+        const pvByProjectLong = project.pvByProjectLong
+        const pvsByProjectLong = project.pvsByProjectLong
+
         const pvByName = project.pvByName
         const pvsByName = project.pvsByName
+        const pvByNameLong = project.pvByNameLong
+        const pvsByNameLong = project.pvsByNameLong
+
         const path = `${projectName}-summary.xlsx`
 
-        // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        this.writeProjectInfo({
-            statisticsByProject,
-            statisticsByName,
-            pvByProject,
-            pvsByProject,
-            pvByName,
-            pvsByName,
-            projectData,
-            baseDate,
-            path,
-        })
-    }
-
-    writeProjectInfo: (data: {
-        statisticsByProject?: ProjectStatistics[]
-        statisticsByName?: AssigneeStatistics[]
-        pvByProject?: Record<string, unknown>[]
-        pvsByProject?: Record<string, unknown>[]
-        pvByName?: Record<string, unknown>[]
-        pvsByName?: Record<string, unknown>[]
-        projectData?: Record<string, unknown>[]
-        baseDate: Date
-        path: string
-    }) => Promise<void> = async ({
-        statisticsByProject,
-        statisticsByName,
-        pvByProject,
-        pvsByProject,
-        pvByName,
-        pvsByName,
-        projectData,
-        baseDate,
-        path,
-    }) => {
         const workbook = await createWorkbook()
-
         const dateStrHyphen = dateStr(baseDate).replace(/\//g, '-')
 
         if (statisticsByProject) {
@@ -86,11 +50,28 @@ export class ProjectRepositoryImpl implements ProjectRepository {
             })
         }
 
+        if (pvByProjectLong) {
+            json2workbook({
+                instances: pvByProjectLong,
+                workbook,
+                sheetName: `プロジェクト日ごとPVLong`,
+                applyStyles: createStyles(),
+            })
+        }
         if (pvByProject) {
             json2workbook({
                 instances: pvByProject,
                 workbook,
                 sheetName: `プロジェクト日ごとPV`,
+                applyStyles: createStyles(),
+            })
+        }
+
+        if (pvsByProjectLong) {
+            json2workbook({
+                instances: pvsByProjectLong,
+                workbook,
+                sheetName: `プロジェクト日ごと累積PVLong`,
                 applyStyles: createStyles(),
             })
         }
@@ -102,7 +83,15 @@ export class ProjectRepositoryImpl implements ProjectRepository {
                 applyStyles: createStyles(),
             })
         }
-
+        // 要員でごちゃ混ぜなので、これでいいか要検討。
+        if (pvByNameLong) {
+            json2workbook({
+                instances: pvByNameLong,
+                workbook,
+                sheetName: `要員ごと・日ごとPVLong`,
+                applyStyles: createStyles(),
+            })
+        }
         if (pvByName) {
             json2workbook({
                 instances: pvByName,
@@ -111,6 +100,17 @@ export class ProjectRepositoryImpl implements ProjectRepository {
                 applyStyles: createStyles(),
             })
         }
+
+        // 要員でごちゃ混ぜなので、これでいいか要検討。
+        if (pvsByNameLong) {
+            json2workbook({
+                instances: pvsByNameLong,
+                workbook,
+                sheetName: `要員ごと・日ごと累積PVLong`,
+                applyStyles: createStyles(),
+            })
+        }
+
         if (pvsByName) {
             json2workbook({
                 instances: pvsByName,
@@ -131,4 +131,26 @@ export class ProjectRepositoryImpl implements ProjectRepository {
         workbook.deleteSheet('Sheet1')
         await toFileAsync(workbook, path)
     }
+
+    writeProjectInfo: (data: {
+        statisticsByProject?: ProjectStatistics[]
+        statisticsByName?: AssigneeStatistics[]
+        pvByProject?: Record<string, unknown>[]
+        pvsByProject?: Record<string, unknown>[]
+        pvByName?: Record<string, unknown>[]
+        pvsByName?: Record<string, unknown>[]
+        projectData?: Record<string, unknown>[]
+        baseDate: Date
+        path: string
+    }) => Promise<void> = async ({
+        statisticsByProject,
+        statisticsByName,
+        pvByProject,
+        pvsByProject,
+        pvByName,
+        pvsByName,
+        projectData,
+        baseDate,
+        path,
+    }) => {}
 }

@@ -156,7 +156,6 @@ export class Project {
 
         const longFormat: LongData[] = []
 
-        // const wideMap = new Map<string, Record<string, unknown>>()
         for (const baseDate of baseDates) {
             const label = dateStr(baseDate)
 
@@ -174,7 +173,6 @@ export class Project {
             )
             // console.table(result)
 
-            // nameごとに、baseDate(label)プロパティを追加していく(pvデータを横並びにしたい)
             for (const row of result) {
                 const name = (row.assignee ?? '(未割当)') as string
                 longFormat.push({
@@ -182,57 +180,54 @@ export class Project {
                     baseDate: label,
                     pv: row[label],
                 })
-                // if (!wideMap.has(name)) {
-                //     wideMap.set(name, { プロジェクト名: projectName })
-                // }
-                // wideMap.get(name)![`${label}`] = row[`${label}`]
             }
         }
         return longFormat
+    }
 
-        // const wideResult = Array.from(wideMap.values())
-        // return wideResult
+    /**
+     * Projectごともしくはヒトごとのデータについて、ひと単位の横並びデータに並び替える
+     * Excelに表示するなどはこちらが良い
+     * @param longDatas 
+     * @returns 
+     */
+    private _toWideFormat(longDatas: LongData[]): Record<string, unknown>[] {
+        const wideMap = new Map<string, Record<string, unknown>>()
+        for (const { assignee, baseDate, pv } of longDatas) {
+            // const mapKey = `${assignee}::${fromClass}->${toClass}`
+            // assigneeごとに、baseDateプロパティを追加していく(pvデータを横並びにしたい)
+            const mapKey = assignee
+            if (!wideMap.has(mapKey)) {
+                wideMap.set(mapKey, { assignee })
+            }
+            wideMap.get(mapKey)![baseDate] = pv
+        }
+        return Array.from(wideMap.values())
+    }
+
+    private _internalPvByProject(calcPVS: boolean = false) {
+        const longDatas = this._internalPvByProjectLong(calcPVS)
+        return this._toWideFormat(longDatas)
     }
 
     get pvByProjectLong() {
         return this._internalPvByProjectLong()
     }
+    get pvsByProjectLong() {
+        return this._internalPvByProjectLong(true)
+    }
 
     get pvByProject() {
-        const longDatas = this._internalPvByProjectLong()
-        const wideMap = new Map<string, Record<string, unknown>>()
-        for (const row of longDatas) {
-            const { assignee, baseDate, pv } = row
-            if (!wideMap.has(assignee)) {
-                wideMap.set(assignee, {})
-            }
-            wideMap.get(assignee)![baseDate] = pv
-        }
-
-        const wideResult = Array.from(wideMap.values())
-        return wideResult
+        return this._internalPvByProject()
     }
 
     get pvsByProject() {
-        const longDatas = this._internalPvByProjectLong(true)
-        const wideMap = new Map<string, Record<string, unknown>>()
-        for (const row of longDatas) {
-            const { assignee, baseDate, pv } = row
-            if (!wideMap.has(assignee)) {
-                wideMap.set(assignee, {})
-            }
-            wideMap.get(assignee)![baseDate] = pv
-        }
-
-        const wideResult = Array.from(wideMap.values())
-        return wideResult
+        return this._internalPvByProject(true)
     }
 
     private _internalPvByNameLong(calcPVS: boolean = false) {
-        // const baseDate = project.baseDate
         const from = this._startDate
         const to = this._endDate
-        // const projectName = project.name
 
         if (!(from && to)) {
             throw new Error('fromかtoが取得できませんでした')
@@ -242,8 +237,6 @@ export class Project {
         const rows = this.toTaskRows()
 
         const longFormat: LongData[] = []
-
-        // const wideMap = new Map<string, Record<string, unknown>>()
         for (const baseDate of baseDates) {
             const label = dateStr(baseDate)
 
@@ -262,7 +255,6 @@ export class Project {
             )
             // console.table(result)
 
-            // nameごとに、baseDate(label)プロパティを追加していく(pvデータを横並びにしたい)
             for (const row of result) {
                 const name = (row.assignee ?? '(未割当)') as string
                 longFormat.push({
@@ -270,66 +262,34 @@ export class Project {
                     baseDate: label,
                     pv: row[label],
                 })
-                // if (!wideMap.has(name)) {
-                //     wideMap.set(name, { assignee: name })
-                // }
-                // wideMap.get(name)![`${label}`] = row[`${label}`]
             }
         }
         return longFormat
+    }
 
-        // const wideResult = Array.from(wideMap.values())
-        // return wideResult
+    private _internalPvByName(calcPVS: boolean = false) {
+        const longDatas = this._internalPvByNameLong(calcPVS)
+        return this._toWideFormat(longDatas)
     }
 
     get pvByNameLong() {
         return this._internalPvByNameLong()
     }
-    /**
-     *
-     * @param rows ヒトで集計サンプル。
-     * @param baseDates
-     * @returns
-     */
-    get pvByName() {
-        const longDatas = this._internalPvByNameLong()
-        const wideMap = new Map<string, Record<string, unknown>>()
-        for (const row of longDatas) {
-            const { assignee, baseDate, pv } = row
-            if (!wideMap.has(assignee)) {
-                wideMap.set(assignee, { assignee })
-            }
-            wideMap.get(assignee)![baseDate] = pv
-        }
 
-        const wideResult = Array.from(wideMap.values())
-        return wideResult
+    get pvsByNameLong() {
+        return this._internalPvByNameLong(true)
     }
 
-    /**
-     *
-     * @param rows ヒトで集計サンプル。
-     * @param baseDates
-     * @returns
-     */
-    get pvsByName() {
-        const longDatas = this._internalPvByNameLong(true)
-        const wideMap = new Map<string, Record<string, unknown>>()
-        for (const row of longDatas) {
-            const { assignee, baseDate, pv } = row
-            if (!wideMap.has(assignee)) {
-                wideMap.set(assignee, { assignee })
-            }
-            wideMap.get(assignee)![baseDate] = pv
-        }
+    get pvByName() {
+        return this._internalPvByName()
+    }
 
-        const wideResult = Array.from(wideMap.values())
-        return wideResult
+    get pvsByName() {
+        return this._internalPvByName(true)
     }
 }
 
 type LongData = {
-    // プロジェクト名: string
     assignee: string
     baseDate: string
     pv: unknown
