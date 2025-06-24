@@ -5,6 +5,8 @@ import { TaskService } from './TaskService'
 import { TaskRow } from './TaskRow'
 
 export class Project {
+    private _taskService = new TaskService()
+
     // PV/EV/SPIとか出してあげたい(baseDateの)
     constructor(
         private _taskNodes: TaskNode[],
@@ -31,6 +33,14 @@ export class Project {
         return this._name
     }
 
+    get length() {
+        return this.toTaskRows().length
+    }
+
+    toTaskRows(): TaskRow[] {
+        return this._taskService.convertToTaskRows(this._taskNodes)
+    }
+
     printAndGetRawData = (printRowNum?: number) => {
         console.log(`プロジェクト名: ${this._name}`)
         console.log(`開始日: ${dateStr(this._startDate)}`)
@@ -38,7 +48,7 @@ export class Project {
         console.log(`基準日: ${dateStr(this._baseDate)}`)
         // console.table(this._taskNodes)
 
-        const taskRows = new TaskService().convertToTaskRows(this._taskNodes)
+        const taskRows = this.toTaskRows()
         const rows = taskRows.map((taskRow) => {
             const {
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -68,7 +78,9 @@ export class Project {
 
         // ユーザ入力値か、未指定なら全部。入力値が大きいときも全部
         // const num = printRowNum && printRowNum <= rows.length ? printRowNum : rows.length
-        const numToShow = Math.min(printRowNum ?? rows.length, rows.length)
+        const taskCount = rows.length
+        console.log(`タスク数:${taskCount}件`)
+        const numToShow = Math.min(printRowNum ?? taskCount, taskCount)
         console.log(`先頭${numToShow}行データ:`)
         console.table(rows.slice(0, numToShow))
         return rows
@@ -84,8 +96,7 @@ export class Project {
         const baseDate = this._baseDate
         const startDate = this._startDate
         const endDate = this._endDate
-        const rows = new TaskService().convertToTaskRows(this._taskNodes)
-
+        const rows = this.toTaskRows()
         const result = tidy(
             rows,
             filter((row) => row.isLeaf!), //フォルダの情報は不要
@@ -109,7 +120,7 @@ export class Project {
     get statisticsByName(): AssigneeStatistics[] {
         const baseDate = this._baseDate
         const endDate = this._endDate
-        const rows = new TaskService().convertToTaskRows(this._taskNodes)
+        const rows = this.toTaskRows()
 
         const result = tidy(
             rows,
@@ -141,7 +152,7 @@ export class Project {
         }
 
         const baseDates = generateBaseDates(from, to)
-        const rows = new TaskService().convertToTaskRows(this._taskNodes)
+        const rows = this.toTaskRows()
 
         const wideMap = new Map<string, Record<string, unknown>>()
         for (const baseDate of baseDates) {
@@ -183,7 +194,7 @@ export class Project {
         }
 
         const baseDates = generateBaseDates(from, to)
-        const rows = new TaskService().convertToTaskRows(this._taskNodes)
+        const rows = this.toTaskRows()
 
         const wideMap = new Map<string, Record<string, unknown>>()
 
@@ -232,7 +243,7 @@ export class Project {
         }
 
         const baseDates = generateBaseDates(from, to)
-        const rows = new TaskService().convertToTaskRows(this._taskNodes)
+        const rows = this.toTaskRows()
 
         const wideMap = new Map<string, Record<string, unknown>>()
 
@@ -282,7 +293,7 @@ export class Project {
         }
 
         const baseDates = generateBaseDates(from, to)
-        const rows = new TaskService().convertToTaskRows(this._taskNodes)
+        const rows = this.toTaskRows()
 
         const wideMap = new Map<string, Record<string, unknown>>()
 
