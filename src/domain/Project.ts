@@ -141,6 +141,11 @@ export class Project {
         return result
     }
 
+    /**
+     * LongData形式のPV情報を返す
+     * @param calcPVS 累積が欲しいときはtrue、デフォルトはfalse
+     * @returns  LongData[]
+     */
     private _internalPvByProjectLong(calcPVS: boolean = false) {
         // const baseDate = project.baseDate
         const from = this._startDate
@@ -178,7 +183,7 @@ export class Project {
                 longFormat.push({
                     assignee: name,
                     baseDate: label,
-                    pv: row[label],
+                    value: row[label],
                 })
             }
         }
@@ -188,19 +193,19 @@ export class Project {
     /**
      * Projectごともしくはヒトごとのデータについて、ひと単位の横並びデータに並び替える
      * Excelに表示するなどはこちらが良い
-     * @param longDatas 
-     * @returns 
+     * @param longDatas
+     * @returns
      */
     private _toWideFormat(longDatas: LongData[]): Record<string, unknown>[] {
         const wideMap = new Map<string, Record<string, unknown>>()
-        for (const { assignee, baseDate, pv } of longDatas) {
+        for (const { assignee, baseDate, value } of longDatas) {
             // const mapKey = `${assignee}::${fromClass}->${toClass}`
             // assigneeごとに、baseDateプロパティを追加していく(pvデータを横並びにしたい)
             const mapKey = assignee
             if (!wideMap.has(mapKey)) {
                 wideMap.set(mapKey, { assignee })
             }
-            wideMap.get(mapKey)![baseDate] = pv
+            wideMap.get(mapKey)![baseDate] = value
         }
         return Array.from(wideMap.values())
     }
@@ -248,8 +253,8 @@ export class Project {
                     summarize({
                         [`${label}`]: (group) =>
                             calcPVS
-                                ? sumCalculatePV(group, baseDate)
-                                : sumCalculatePVs(group, baseDate), // 基準日ごとに、担当者でグルーピングされたPVデータを足している
+                                ? sumCalculatePVs(group, baseDate)
+                                : sumCalculatePV(group, baseDate), // 基準日ごとに、担当者でグルーピングされたPVデータを足している
                     }),
                 ])
             )
@@ -260,7 +265,7 @@ export class Project {
                 longFormat.push({
                     assignee: name,
                     baseDate: label,
-                    pv: row[label],
+                    value: row[label],
                 })
             }
         }
@@ -287,12 +292,6 @@ export class Project {
     get pvsByName() {
         return this._internalPvByName(true)
     }
-}
-
-type LongData = {
-    assignee: string
-    baseDate: string
-    pv: unknown
 }
 
 const sumWorkload = (group: TaskRow[]) => sum(group.map((d) => d.workload ?? 0))
@@ -332,6 +331,12 @@ export type ProjectStatistics = {
 export type AssigneeStatistics = {
     assignee?: string
 } & Statistics
+
+export type LongData = {
+    assignee: string
+    baseDate: string
+    value?: number
+}
 
 // /**
 //  * タスク情報
