@@ -141,11 +141,11 @@ export class Project {
         return result
     }
 
-    get pvByProject() {
+    private _internalPvByProjectLong(calcPVS: boolean = false) {
         // const baseDate = project.baseDate
         const from = this._startDate
         const to = this._endDate
-        const projectName = this._name
+        // const projectName = this._name
 
         if (!(from && to)) {
             throw new Error('fromかtoが取得できませんでした')
@@ -154,7 +154,9 @@ export class Project {
         const baseDates = generateBaseDates(from, to)
         const rows = this.toTaskRows()
 
-        const wideMap = new Map<string, Record<string, unknown>>()
+        const longFormat: LongData[] = []
+
+        // const wideMap = new Map<string, Record<string, unknown>>()
         for (const baseDate of baseDates) {
             const label = dateStr(baseDate)
 
@@ -163,7 +165,10 @@ export class Project {
                 filter((row: TaskRow) => row.isLeaf!), //フォルダの情報は不要
                 // filter((row: TaskRow) => row.assignee !== undefined),
                 summarize({
-                    [`${label}`]: (group) => sumCalculatePV(group, baseDate),
+                    [`${label}`]: (group) =>
+                        calcPVS
+                            ? sumCalculatePVs(group, baseDate)
+                            : sumCalculatePV(group, baseDate),
                     // 基準日ごとに、担当者でグルーピングされたPVデータを足している
                 })
             )
@@ -172,11 +177,36 @@ export class Project {
             // nameごとに、baseDate(label)プロパティを追加していく(pvデータを横並びにしたい)
             for (const row of result) {
                 const name = (row.assignee ?? '(未割当)') as string
-                if (!wideMap.has(name)) {
-                    wideMap.set(name, { プロジェクト名: projectName })
-                }
-                wideMap.get(name)![`${label}`] = row[`${label}`]
+                longFormat.push({
+                    assignee: name,
+                    baseDate: label,
+                    pv: row[label],
+                })
+                // if (!wideMap.has(name)) {
+                //     wideMap.set(name, { プロジェクト名: projectName })
+                // }
+                // wideMap.get(name)![`${label}`] = row[`${label}`]
             }
+        }
+        return longFormat
+
+        // const wideResult = Array.from(wideMap.values())
+        // return wideResult
+    }
+
+    get pvByProjectLong() {
+        return this._internalPvByProjectLong()
+    }
+
+    get pvByProject() {
+        const longDatas = this._internalPvByProjectLong()
+        const wideMap = new Map<string, Record<string, unknown>>()
+        for (const row of longDatas) {
+            const { assignee, baseDate, pv } = row
+            if (!wideMap.has(assignee)) {
+                wideMap.set(assignee, {})
+            }
+            wideMap.get(assignee)![baseDate] = pv
         }
 
         const wideResult = Array.from(wideMap.values())
@@ -184,10 +214,25 @@ export class Project {
     }
 
     get pvsByProject() {
+        const longDatas = this._internalPvByProjectLong(true)
+        const wideMap = new Map<string, Record<string, unknown>>()
+        for (const row of longDatas) {
+            const { assignee, baseDate, pv } = row
+            if (!wideMap.has(assignee)) {
+                wideMap.set(assignee, {})
+            }
+            wideMap.get(assignee)![baseDate] = pv
+        }
+
+        const wideResult = Array.from(wideMap.values())
+        return wideResult
+    }
+
+    private _internalPvByNameLong(calcPVS: boolean = false) {
         // const baseDate = project.baseDate
         const from = this._startDate
         const to = this._endDate
-        const projectName = this._name
+        // const projectName = project.name
 
         if (!(from && to)) {
             throw new Error('fromかtoが取得できませんでした')
@@ -196,8 +241,9 @@ export class Project {
         const baseDates = generateBaseDates(from, to)
         const rows = this.toTaskRows()
 
-        const wideMap = new Map<string, Record<string, unknown>>()
+        const longFormat: LongData[] = []
 
+        // const wideMap = new Map<string, Record<string, unknown>>()
         for (const baseDate of baseDates) {
             const label = dateStr(baseDate)
 
@@ -205,71 +251,55 @@ export class Project {
                 rows,
                 filter((row: TaskRow) => row.isLeaf!), //フォルダの情報は不要
                 // filter((row: TaskRow) => row.assignee !== undefined),
-                summarize({
-                    [`${label}`]: (group) => sumCalculatePVs(group, baseDate),
-                    // 基準日ごとに、担当者でグルーピングされたPVデータを足している
-                })
+                groupBy('assignee', [
+                    summarize({
+                        [`${label}`]: (group) =>
+                            calcPVS
+                                ? sumCalculatePV(group, baseDate)
+                                : sumCalculatePVs(group, baseDate), // 基準日ごとに、担当者でグルーピングされたPVデータを足している
+                    }),
+                ])
             )
             // console.table(result)
 
             // nameごとに、baseDate(label)プロパティを追加していく(pvデータを横並びにしたい)
             for (const row of result) {
                 const name = (row.assignee ?? '(未割当)') as string
-                if (!wideMap.has(name)) {
-                    wideMap.set(name, { プロジェクト名: projectName })
-                }
-                wideMap.get(name)![`${label}`] = row[`${label}`]
+                longFormat.push({
+                    assignee: name,
+                    baseDate: label,
+                    pv: row[label],
+                })
+                // if (!wideMap.has(name)) {
+                //     wideMap.set(name, { assignee: name })
+                // }
+                // wideMap.get(name)![`${label}`] = row[`${label}`]
             }
         }
+        return longFormat
 
-        const wideResult = Array.from(wideMap.values())
-        return wideResult
+        // const wideResult = Array.from(wideMap.values())
+        // return wideResult
     }
 
+    get pvByNameLong() {
+        return this._internalPvByNameLong()
+    }
     /**
      *
      * @param rows ヒトで集計サンプル。
-     * @param baseDatesff
+     * @param baseDates
      * @returns
      */
     get pvByName() {
-        // const baseDate = project.baseDate
-        const from = this._startDate
-        const to = this._endDate
-        // const projectName = project.name
-
-        if (!(from && to)) {
-            throw new Error('fromかtoが取得できませんでした')
-        }
-
-        const baseDates = generateBaseDates(from, to)
-        const rows = this.toTaskRows()
-
+        const longDatas = this._internalPvByNameLong()
         const wideMap = new Map<string, Record<string, unknown>>()
-
-        for (const baseDate of baseDates) {
-            const label = dateStr(baseDate)
-
-            const result = tidy(
-                rows,
-                filter((row: TaskRow) => row.isLeaf!), //フォルダの情報は不要
-                // filter((row: TaskRow) => row.assignee !== undefined),
-                groupBy('assignee', [
-                    summarize({
-                        [`${label}`]: (group) => sumCalculatePV(group, baseDate), // 基準日ごとに、担当者でグルーピングされたPVデータを足している
-                    }),
-                ])
-            )
-            // console.table(result)
-
-            // nameごとに、baseDate(label)プロパティを追加していく(pvデータを横並びにしたい)
-            for (const row of result) {
-                const name = (row.assignee ?? '(未割当)') as string
-                if (!wideMap.has(name)) {
-                    wideMap.set(name, { assignee: name })
-                }
-                wideMap.get(name)![`${label}`] = row[`${label}`]
+        for (const row of longDatas) {
+            const { assignee, baseDate, pv } = row
+            if (!wideMap.has(assignee)) {
+                wideMap.set(assignee, { assignee })
             }
+            wideMap.get(assignee)![baseDate] = pv
         }
 
         const wideResult = Array.from(wideMap.values())
@@ -279,53 +309,30 @@ export class Project {
     /**
      *
      * @param rows ヒトで集計サンプル。
-     * @param baseDatesff
+     * @param baseDates
      * @returns
      */
     get pvsByName() {
-        // const baseDate = project.baseDate
-        const from = this._startDate
-        const to = this._endDate
-        // const projectName = project.name
-
-        if (!(from && to)) {
-            throw new Error('fromかtoが取得できませんでした')
-        }
-
-        const baseDates = generateBaseDates(from, to)
-        const rows = this.toTaskRows()
-
+        const longDatas = this._internalPvByNameLong(true)
         const wideMap = new Map<string, Record<string, unknown>>()
-
-        for (const baseDate of baseDates) {
-            const label = dateStr(baseDate)
-
-            const result = tidy(
-                rows,
-                filter((row: TaskRow) => row.isLeaf!), //フォルダの情報は不要
-                // filter((row: TaskRow) => row.assignee !== undefined),
-                groupBy('assignee', [
-                    summarize({
-                        [`${label}`]: (group) => sumCalculatePVs(group, baseDate),
-                        // 基準日ごとに、担当者でグルーピングされたPVデータを足している
-                    }),
-                ])
-            )
-            // console.table(result)
-
-            // nameごとに、baseDate(label)プロパティを追加していく(pvデータを横並びにしたい)
-            for (const row of result) {
-                const name = (row.assignee ?? '(未割当)') as string
-                if (!wideMap.has(name)) {
-                    wideMap.set(name, { assignee: name })
-                }
-                wideMap.get(name)![`${label}`] = row[`${label}`]
+        for (const row of longDatas) {
+            const { assignee, baseDate, pv } = row
+            if (!wideMap.has(assignee)) {
+                wideMap.set(assignee, { assignee })
             }
+            wideMap.get(assignee)![baseDate] = pv
         }
 
         const wideResult = Array.from(wideMap.values())
         return wideResult
     }
+}
+
+type LongData = {
+    // プロジェクト名: string
+    assignee: string
+    baseDate: string
+    pv: unknown
 }
 
 const sumWorkload = (group: TaskRow[]) => sum(group.map((d) => d.workload ?? 0))
