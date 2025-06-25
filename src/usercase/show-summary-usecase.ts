@@ -14,13 +14,15 @@ export class ShowSummaryUsecase {
 
         const baseDate = new Date('2025-06-13T00:00:00+0900')
         const dispRows = rows.map((row) => {
-            const { id, name, assignee, pv, calculatePV } = row
+            const { id, name, assignee, pv, calculatePV, ev, spi } = row
             return {
                 id,
                 name,
                 assignee,
                 pv,
                 calcPv1: calculatePV(baseDate),
+                ev,
+                spi,
             }
         })
 

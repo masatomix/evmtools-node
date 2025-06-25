@@ -12,6 +12,6 @@ export class ShowProjectUsecase {
 
     async execute() {
         const project = await this._creator.createProject()
-        this._repository.save(project)
+        await this._repository.save(project)
     }
 }

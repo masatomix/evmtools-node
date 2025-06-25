@@ -1,7 +1,7 @@
 import { createWorkbook, json2workbook, toFileAsync } from 'excel-csv-read-write'
 import { dateStr } from '../common'
 import { createStyles } from '../common/styles'
-import { ProjectStatistics, AssigneeStatistics, Project } from '../domain'
+import { Project } from '../domain'
 import { ProjectRepository } from '../domain/ProjectRepository'
 
 export class ProjectRepositoryImpl implements ProjectRepository {
@@ -131,26 +131,4 @@ export class ProjectRepositoryImpl implements ProjectRepository {
         workbook.deleteSheet('Sheet1')
         await toFileAsync(workbook, path)
     }
-
-    writeProjectInfo: (data: {
-        statisticsByProject?: ProjectStatistics[]
-        statisticsByName?: AssigneeStatistics[]
-        pvByProject?: Record<string, unknown>[]
-        pvsByProject?: Record<string, unknown>[]
-        pvByName?: Record<string, unknown>[]
-        pvsByName?: Record<string, unknown>[]
-        projectData?: Record<string, unknown>[]
-        baseDate: Date
-        path: string
-    }) => Promise<void> = async ({
-        statisticsByProject,
-        statisticsByName,
-        pvByProject,
-        pvsByProject,
-        pvByName,
-        pvsByName,
-        projectData,
-        baseDate,
-        path,
-    }) => {}
 }

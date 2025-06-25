@@ -111,6 +111,8 @@ export class Project {
                 基準日: () => dateStr(baseDate),
                 ['基準日終了時PV累積(Excel)']: sumPVs,
                 ['基準日終了時PV累積(計算)']: (group) => sumCalculatePVs(group, baseDate),
+                ['基準日終了時EV累積']: sumEVs,
+                ['基準日終了時SPI']: sumSPI,
             })
         )
         // console.table(result)
@@ -134,6 +136,8 @@ export class Project {
                     基準日: () => dateStr(baseDate),
                     ['基準日終了時PV累積(Excel)']: sumPVs,
                     ['基準日終了時PV累積(計算)']: (group) => sumCalculatePVs(group, baseDate),
+                    ['基準日終了時EV累積']: sumEVs,
+                    ['基準日終了時SPI']: sumSPI,
                 }),
             ])
         )
@@ -312,6 +316,24 @@ const sumPVs = (group: TaskRow[]) =>
         3
     ) // 基準日ごとに、担当者でグルーピングされたPVデータを足している
 
+const sumEVs = (group: TaskRow[]) =>
+    sum(
+        group.map((d) => d.ev ?? 0),
+        3
+    )
+
+const isValidNumber = (value: unknown): value is number =>
+    typeof value === 'number' && !Number.isNaN(value)
+
+const sumSPI = (group: TaskRow[]) => {
+    const ev = sumEVs(group)
+    const pv = sumPVs(group)
+    if (isValidNumber(pv) && isValidNumber(ev) && pv !== 0) {
+        return ev / pv
+    }
+    return undefined
+}
+
 export type Statistics = {
     全体タスク数?: number
     ['全体工数の和(Excel)']?: number
@@ -320,6 +342,8 @@ export type Statistics = {
     基準日: string
     ['基準日終了時PV累積(Excel)']?: number
     ['基準日終了時PV累積(計算)']?: number
+    ['基準日終了時EV累積']?: number
+    ['基準日終了時SPI']?: number
 }
 
 export type ProjectStatistics = {
