@@ -97,22 +97,22 @@ export class Project {
         const startDate = this._startDate
         const endDate = this._endDate
         const rows = this.toTaskRows()
-        const result = tidy(
+        const result: ProjectStatistics[] = tidy(
             rows,
             filter((row) => row.isLeaf!), //フォルダの情報は不要
             summarize({
-                プロジェクト名: () => name,
-                開始予定日: () => dateStr(startDate),
-                終了予定日: () => dateStr(endDate),
-                全体タスク数: (group) => group.length,
-                ['全体工数の和(Excel)']: sumWorkload,
-                ['全体工数の和(計算)']: (group) => sumCalculatePVs(group, endDate!),
-                全体工数平均: averageWorkload,
-                基準日: () => dateStr(baseDate),
-                ['基準日終了時PV累積(Excel)']: sumPVs,
-                ['基準日終了時PV累積(計算)']: (group) => sumCalculatePVs(group, baseDate),
-                ['基準日終了時EV累積']: sumEVs,
-                ['基準日終了時SPI']: sumSPI,
+                projectName: () => name,
+                startDate: () => dateStr(startDate),
+                endDate: () => dateStr(endDate),
+                totalTasksCount: (group) => group.length,
+                totalWorkloadExcel: sumWorkload,
+                totalWorkloadCalculated: (group) => sumCalculatePVs(group, endDate!),
+                averageWorkload: averageWorkload,
+                baseDate: () => dateStr(baseDate),
+                totalPvExcel: sumPVs,
+                totalPvCalculated: (group) => sumCalculatePVs(group, baseDate),
+                totalEv: sumEVs,
+                spi: calcSPI,
             })
         )
         // console.table(result)
@@ -129,15 +129,15 @@ export class Project {
             filter((row) => row.isLeaf!), //フォルダの情報は不要
             groupBy('assignee', [
                 summarize({
-                    全体タスク数: (group) => group.length,
-                    ['全体工数の和(Excel)']: sumWorkload,
-                    ['全体工数の和(計算)']: (group) => sumCalculatePVs(group, endDate!),
-                    全体工数平均: averageWorkload,
-                    基準日: () => dateStr(baseDate),
-                    ['基準日終了時PV累積(Excel)']: sumPVs,
-                    ['基準日終了時PV累積(計算)']: (group) => sumCalculatePVs(group, baseDate),
-                    ['基準日終了時EV累積']: sumEVs,
-                    ['基準日終了時SPI']: sumSPI,
+                    totalTasksCount: (group) => group.length,
+                    totalWorkloadExcel: sumWorkload,
+                    totalWorkloadCalculated: (group) => sumCalculatePVs(group, endDate!),
+                    averageWorkload: averageWorkload,
+                    baseDate: () => dateStr(baseDate),
+                    totalPvExcel: sumPVs,
+                    totalPvCalculated: (group) => sumCalculatePVs(group, baseDate),
+                    totalEv: sumEVs,
+                    spi: calcSPI,
                 }),
             ])
         )
@@ -322,10 +322,10 @@ const sumEVs = (group: TaskRow[]) =>
         3
     )
 
-const isValidNumber = (value: unknown): value is number =>
+export const isValidNumber = (value: unknown): value is number =>
     typeof value === 'number' && !Number.isNaN(value)
 
-const sumSPI = (group: TaskRow[]) => {
+const calcSPI = (group: TaskRow[]) => {
     const ev = sumEVs(group)
     const pv = sumPVs(group)
     if (isValidNumber(pv) && isValidNumber(ev) && pv !== 0) {
@@ -334,22 +334,40 @@ const sumSPI = (group: TaskRow[]) => {
     return undefined
 }
 
+// export type Statistics = {
+//     全体タスク数?: number
+//     ['全体工数の和(Excel)']?: number
+//     ['全体工数の和(計算)']?: number
+//     ['全体工数平均']?: number
+//     基準日: string
+//     ['基準日終了時PV累積(Excel)']?: number
+//     ['基準日終了時PV累積(計算)']?: number
+//     ['基準日終了時EV累積']?: number
+//     ['基準日終了時SPI']?: number
+// }
+
+// export type ProjectStatistics = {
+//     プロジェクト名?: string
+//     開始予定日: string // 日付を文字列化している
+//     終了予定日: string
+// } & Statistics
+
 export type Statistics = {
-    全体タスク数?: number
-    ['全体工数の和(Excel)']?: number
-    ['全体工数の和(計算)']?: number
-    ['全体工数平均']?: number
-    基準日: string
-    ['基準日終了時PV累積(Excel)']?: number
-    ['基準日終了時PV累積(計算)']?: number
-    ['基準日終了時EV累積']?: number
-    ['基準日終了時SPI']?: number
+    totalTasksCount?: number
+    totalWorkloadExcel?: number
+    totalWorkloadCalculated?: number
+    averageWorkload?: number
+    baseDate: string
+    totalPvExcel?: number
+    totalPvCalculated?: number
+    totalEv?: number
+    spi?: number
 }
 
 export type ProjectStatistics = {
-    プロジェクト名?: string
-    開始予定日: string // 日付を文字列化している
-    終了予定日: string
+    projectName?: string
+    startDate: string
+    endDate: string
 } & Statistics
 
 export type AssigneeStatistics = {

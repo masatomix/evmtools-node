@@ -1,7 +1,9 @@
 export * from './Project'
 export * from './ProjectCreator'
 export * from './ProjectRepository'
+export * from './ProjectService'
 export * from './TaskNode'
 export * from './TaskRow'
 export * from './TaskRowCreator'
 export * from './TaskService'
+
