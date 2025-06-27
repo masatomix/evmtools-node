@@ -1,8 +1,11 @@
+import { tidy, groupBy, summarize } from '@tidyjs/tidy'
 import { Project } from './Project'
 import { TaskRow } from './TaskRow'
+import { sum } from '../common/utils'
+import { number } from 'yargs'
 
 export class ProjectService {
-    calculateProjectDiffs(now: Project, prev: Project): TaskDiff[] {
+    calculateTaskDiffs(now: Project, prev: Project): TaskDiff[] {
         // key:TaskRow#id, value: TaskRow のMap
         const prevTasksMap = new Map(prev.toTaskRows().map((row) => [row.id, row]))
         const nowTasks = now.toTaskRows()
@@ -26,8 +29,10 @@ export class ProjectService {
 
                 return {
                     id: nowTask.id,
-                    name: fullName,
+                    name: nowTask.name,
+                    fullName,
                     assignee: nowTask.assignee,
+                    parentId: nowTask.parentId,
                     deltaProgressRate,
                     deltaPV,
                     deltaEV,
@@ -37,6 +42,44 @@ export class ProjectService {
             })
     }
 
+    calculateProjectDiffs(now: Project, prev: Project): ProjectDiff[] {
+        const taskDiffs = this.calculateTaskDiffs(now, prev)
+        const result = tidy(
+            taskDiffs,
+            summarize({
+                deltaProgressRate: (group) => sumDelta(group.map((g) => g.deltaProgressRate)),
+                deltaPV: (group) => sumDelta(group.map((g) => g.deltaPV)),
+                deltaEV: (group) => sumDelta(group.map((g) => g.deltaEV)),
+                deltaSPI: (group) => sumDelta(group.map((g) => g.deltaSPI)), // これはおかしい。
+                hasDiff: (group) => group.some((g) => g.hasDiff),
+            })
+        )
+        return result
+    }
+
+    calculateAssigneeDiffs(now: Project, prev: Project): AssigneeDiff[] {
+        const taskDiffs = this.calculateTaskDiffs(now, prev)
+        const result = tidy(
+            taskDiffs,
+            groupBy('assignee', [
+                summarize({
+                    deltaProgressRate: (group) => sumDelta(group.map((g) => g.deltaProgressRate)),
+                    deltaPV: (group) => sumDelta(group.map((g) => g.deltaPV)),
+                    deltaEV: (group) => sumDelta(group.map((g) => g.deltaEV)),
+                    deltaSPI: (group) => sumDelta(group.map((g) => g.deltaSPI)), // これはおかしい。
+                    hasDiff: (group) => group.some((g) => g.hasDiff),
+                }),
+            ])
+        )
+        return result
+    }
+
+    /**
+     * 親を遡って、名前を"/"でjoinする
+     * @param task  子のタスク
+     * @param taskMap 親のタスクIDも存在する、<id,TaskRow>なMap
+     * @returns
+     */
     private buildFullTaskName(task: TaskRow, taskMap: Map<number, TaskRow>): string {
         const names: string[] = []
         let current: TaskRow | undefined = task
@@ -58,13 +101,32 @@ function delta(a?: number, b?: number): number | undefined {
     return undefined
 }
 
-export type TaskDiff = {
-    readonly id: number
-    readonly name: string
-    readonly assignee?: string
+export type TaskDiffBase = {
     readonly deltaProgressRate?: number
     readonly deltaPV?: number
     readonly deltaEV?: number
     readonly deltaSPI?: number
     readonly hasDiff: boolean
 }
+
+export type ProjectDiff = {
+    //
+} & TaskDiffBase
+
+export type AssigneeDiff = {
+    readonly assignee?: string
+} & TaskDiffBase
+
+export type TaskDiff = {
+    readonly id: number
+    readonly name: string
+    readonly fullName: string
+    readonly assignee?: string
+    readonly parentId?: number
+} & TaskDiffBase
+
+const sumDelta = (numbers: (number | undefined)[]): number | undefined =>
+    sum(
+        numbers.filter((v): v is number => v !== undefined),
+        3
+    )
