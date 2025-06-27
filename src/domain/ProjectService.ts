@@ -2,7 +2,6 @@ import { tidy, groupBy, summarize } from '@tidyjs/tidy'
 import { Project } from './Project'
 import { TaskRow } from './TaskRow'
 import { sum } from '../common/utils'
-import { number } from 'yargs'
 
 export class ProjectService {
     calculateTaskDiffs(now: Project, prev: Project): TaskDiff[] {
@@ -19,15 +18,16 @@ export class ProjectService {
                 const deltaProgressRate = delta(nowTask.progressRate, prevTask.progressRate)
                 const deltaPV = delta(nowTask.pv, prevTask.pv)
                 const deltaEV = delta(nowTask.ev, prevTask.ev)
-                const deltaSPI = delta(nowTask.spi, prevTask.spi)
+                // const deltaSPI = delta(nowTask.spi, prevTask.spi)
 
-                const hasDiff = [deltaProgressRate, deltaPV, deltaEV, deltaSPI].some(
+                const hasDiff = [deltaProgressRate, deltaPV, deltaEV /*deltaSPI*/].some(
                     (d) => d !== undefined && d !== 0
                 )
 
                 const fullName = this.buildFullTaskName(nowTask, nowTasksMap)
+                const finished = nowTask.progressRate === 1.0
 
-                return {
+                const taskDiffs: TaskDiff = {
                     id: nowTask.id,
                     name: nowTask.name,
                     fullName,
@@ -36,22 +36,32 @@ export class ProjectService {
                     deltaProgressRate,
                     deltaPV,
                     deltaEV,
-                    deltaSPI,
+                    // deltaSPI,
                     hasDiff,
+                    finished,
                 }
+
+                return taskDiffs
             })
     }
 
+    // private _calcProgressRafe(group: TaskDiff[]) {
+    //     const pv = sumDelta(group.map((g) => g.deltaPV))
+    //     const ev = sumDelta(group.map((g) => g.deltaEV))
+    //     return calcRate(ev, pv)
+    // }
+
     calculateProjectDiffs(now: Project, prev: Project): ProjectDiff[] {
         const taskDiffs = this.calculateTaskDiffs(now, prev)
-        const result = tidy(
+        const result: ProjectDiff[] = tidy(
             taskDiffs,
             summarize({
-                deltaProgressRate: (group) => sumDelta(group.map((g) => g.deltaProgressRate)),
+                // deltaProgressRate: (group) => this._calcProgressRate(group),
                 deltaPV: (group) => sumDelta(group.map((g) => g.deltaPV)),
                 deltaEV: (group) => sumDelta(group.map((g) => g.deltaEV)),
-                deltaSPI: (group) => sumDelta(group.map((g) => g.deltaSPI)), // これはおかしい。
+                // deltaSPI: (group) => sumDelta(group.map((g) => g.deltaSPI)), // これはおかしい。
                 hasDiff: (group) => group.some((g) => g.hasDiff),
+                finished: (group) => group.every((g) => g.finished),
             })
         )
         return result
@@ -63,11 +73,12 @@ export class ProjectService {
             taskDiffs,
             groupBy('assignee', [
                 summarize({
-                    deltaProgressRate: (group) => sumDelta(group.map((g) => g.deltaProgressRate)),
+                    // deltaProgressRate: (group) => this._calcProgressRate(group),
                     deltaPV: (group) => sumDelta(group.map((g) => g.deltaPV)),
                     deltaEV: (group) => sumDelta(group.map((g) => g.deltaEV)),
-                    deltaSPI: (group) => sumDelta(group.map((g) => g.deltaSPI)), // これはおかしい。
+                    // deltaSPI: (group) => sumDelta(group.map((g) => g.deltaSPI)), // これはおかしい。
                     hasDiff: (group) => group.some((g) => g.hasDiff),
+                    finished: (group) => group.every((g) => g.finished),
                 }),
             ])
         )
@@ -93,20 +104,38 @@ export class ProjectService {
     }
 }
 
+/**
+ * bのみがundefinedのばあいはa
+ * aのみがundefinedの場合は-b
+ * 両方undefinedの場合はundefined
+ * あとは a-b
+ * a-bがゼロの場合は変化なしの意味でundefined
+ * @param a
+ * @param b
+ * @returns
+ */
 function delta(a?: number, b?: number): number | undefined {
-    if (typeof a === 'number' && typeof b === 'number') {
-        const result = a - b
-        return result !== 0 ? result : undefined
+    const aIsNum = typeof a === 'number'
+    const bIsNum = typeof b === 'number'
+
+    if (aIsNum && bIsNum) {
+        const diff = a - b
+        // return diff !== 0 ? diff : undefined
+        return diff
     }
+
+    if (aIsNum) return a
+    if (bIsNum) return -b
+
     return undefined
 }
 
 export type TaskDiffBase = {
-    readonly deltaProgressRate?: number
     readonly deltaPV?: number
     readonly deltaEV?: number
-    readonly deltaSPI?: number
+    // readonly deltaSPI?: number
     readonly hasDiff: boolean
+    readonly finished: boolean
 }
 
 export type ProjectDiff = {
@@ -123,6 +152,7 @@ export type TaskDiff = {
     readonly fullName: string
     readonly assignee?: string
     readonly parentId?: number
+    readonly deltaProgressRate?: number
 } & TaskDiffBase
 
 const sumDelta = (numbers: (number | undefined)[]): number | undefined =>

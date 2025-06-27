@@ -328,8 +328,12 @@ export const isValidNumber = (value: unknown): value is number =>
 const calcSPI = (group: TaskRow[]) => {
     const ev = sumEVs(group)
     const pv = sumPVs(group)
-    if (isValidNumber(pv) && isValidNumber(ev) && pv !== 0) {
-        return ev / pv
+    return calcRate(ev, pv)
+}
+
+export const calcRate = (a: number | undefined, b: number | undefined) => {
+    if (isValidNumber(b) && isValidNumber(a) && b !== 0) {
+        return a / b
     }
     return undefined
 }
