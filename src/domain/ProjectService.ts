@@ -36,6 +36,12 @@ export class ProjectService {
                     deltaProgressRate,
                     deltaPV,
                     deltaEV,
+                    prevPV: prevTask.pv,
+                    prevEV: prevTask.ev,
+                    currentPV: nowTask.pv,
+                    currentEV: nowTask.ev,
+                    prevProgressRate: prevTask.progressRate,
+                    currentProgressRate: nowTask.progressRate,
                     // deltaSPI,
                     hasDiff,
                     finished,
@@ -60,6 +66,10 @@ export class ProjectService {
                 deltaPV: (group) => sumDelta(group.map((g) => g.deltaPV)),
                 deltaEV: (group) => sumDelta(group.map((g) => g.deltaEV)),
                 // deltaSPI: (group) => sumDelta(group.map((g) => g.deltaSPI)), // これはおかしい。
+                prevPV: (group) => sumDelta(group.map((g) => g.prevPV)),
+                prevEV: (group) => sumDelta(group.map((g) => g.prevEV)),
+                currentPV: (group) => sumDelta(group.map((g) => g.currentPV)),
+                currentEV: (group) => sumDelta(group.map((g) => g.currentEV)),
                 hasDiff: (group) => group.some((g) => g.hasDiff),
                 finished: (group) => group.every((g) => g.finished),
             })
@@ -77,6 +87,10 @@ export class ProjectService {
                     deltaPV: (group) => sumDelta(group.map((g) => g.deltaPV)),
                     deltaEV: (group) => sumDelta(group.map((g) => g.deltaEV)),
                     // deltaSPI: (group) => sumDelta(group.map((g) => g.deltaSPI)), // これはおかしい。
+                    prevPV: (group) => sumDelta(group.map((g) => g.prevPV)),
+                    prevEV: (group) => sumDelta(group.map((g) => g.prevEV)),
+                    currentPV: (group) => sumDelta(group.map((g) => g.currentPV)),
+                    currentEV: (group) => sumDelta(group.map((g) => g.currentEV)),
                     hasDiff: (group) => group.some((g) => g.hasDiff),
                     finished: (group) => group.every((g) => g.finished),
                 }),
@@ -131,6 +145,10 @@ function delta(a?: number, b?: number): number | undefined {
 }
 
 export type TaskDiffBase = {
+    readonly prevPV?: number
+    readonly currentPV?: number
+    readonly prevEV?: number
+    readonly currentEV?: number
     readonly deltaPV?: number
     readonly deltaEV?: number
     // readonly deltaSPI?: number
@@ -153,6 +171,8 @@ export type TaskDiff = {
     readonly assignee?: string
     readonly parentId?: number
     readonly deltaProgressRate?: number
+    readonly prevProgressRate?: number
+    readonly currentProgressRate?: number
 } & TaskDiffBase
 
 const sumDelta = (numbers: (number | undefined)[]): number | undefined =>
