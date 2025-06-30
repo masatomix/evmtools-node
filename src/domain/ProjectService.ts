@@ -5,50 +5,108 @@ import { sum } from '../common/utils'
 
 export class ProjectService {
     calculateTaskDiffs(now: Project, prev: Project): TaskDiff[] {
+        const prevTasks = prev.toTaskRows()
         // key:TaskRow#id, value: TaskRow のMap
-        const prevTasksMap = new Map(prev.toTaskRows().map((row) => [row.id, row]))
+        const prevTasksMap = new Map(prevTasks.map((row) => [row.id, row]))
         const nowTasks = now.toTaskRows()
         const nowTasksMap = new Map(nowTasks.map((row) => [row.id, row]))
 
-        return nowTasks
-            .filter((nowTask) => nowTask.isLeaf && prevTasksMap.has(nowTask.id)) // isLeaf かつ prevにあるタスクのみ
-            .map((nowTask) => {
-                const prevTask = prevTasksMap.get(nowTask.id)! //フィルタしたので必ずある
+        const diffs: TaskDiff[] = []
 
-                const deltaProgressRate = delta(nowTask.progressRate, prevTask.progressRate)
-                const deltaPV = delta(nowTask.pv, prevTask.pv)
-                const deltaEV = delta(nowTask.ev, prevTask.ev)
-                // const deltaSPI = delta(nowTask.spi, prevTask.spi)
+        for (const nowTask of nowTasks) {
+            // isLeaf かつ prevにあるタスクのみ後続処理
+            if (!nowTask.isLeaf || !prevTasksMap.has(nowTask.id)) continue
 
-                const hasDiff = [deltaProgressRate, deltaPV, deltaEV /*deltaSPI*/].some(
-                    (d) => d !== undefined && d !== 0
-                )
+            const prevTask = prevTasksMap.get(nowTask.id)! //フィルタしたので必ずある
 
-                const fullName = this.buildFullTaskName(nowTask, nowTasksMap)
-                const finished = nowTask.progressRate === 1.0
+            const deltaProgressRate = delta(nowTask.progressRate, prevTask.progressRate)
+            const deltaPV = delta(nowTask.pv, prevTask.pv)
+            const deltaEV = delta(nowTask.ev, prevTask.ev)
+            // const deltaSPI = delta(nowTask.spi, prevTask.spi)
 
-                const taskDiffs: TaskDiff = {
-                    id: nowTask.id,
-                    name: nowTask.name,
-                    fullName,
-                    assignee: nowTask.assignee,
-                    parentId: nowTask.parentId,
-                    deltaProgressRate,
-                    deltaPV,
-                    deltaEV,
-                    prevPV: prevTask.pv,
-                    prevEV: prevTask.ev,
-                    currentPV: nowTask.pv,
-                    currentEV: nowTask.ev,
-                    prevProgressRate: prevTask.progressRate,
-                    currentProgressRate: nowTask.progressRate,
-                    // deltaSPI,
-                    hasDiff,
-                    finished,
-                }
+            const hasDiff = [deltaProgressRate, deltaPV, deltaEV /*deltaSPI*/].some(
+                (d) => d !== undefined && d !== 0
+            )
 
-                return taskDiffs
+            const fullName = this.buildFullTaskName(nowTask, nowTasksMap)
+            const finished = nowTask.progressRate === 1.0
+
+            diffs.push({
+                id: nowTask.id,
+                name: nowTask.name,
+                fullName,
+                assignee: nowTask.assignee,
+                parentId: nowTask.parentId,
+                deltaProgressRate,
+                deltaPV,
+                deltaEV,
+                prevPV: prevTask.pv,
+                prevEV: prevTask.ev,
+                currentPV: nowTask.pv,
+                currentEV: nowTask.ev,
+                prevProgressRate: prevTask.progressRate,
+                currentProgressRate: nowTask.progressRate,
+                // deltaSPI,
+                hasDiff,
+                finished,
             })
+        }
+
+        // 新規タスク
+        for (const nowTask of nowTasks) {
+            if (!nowTask.isLeaf || prevTasksMap.has(nowTask.id)) continue
+
+            const fullName = this.buildFullTaskName(nowTask, nowTasksMap)
+            const finished = nowTask.progressRate === 1.0
+
+            diffs.push({
+                id: nowTask.id,
+                name: nowTask.name,
+                fullName,
+                assignee: nowTask.assignee,
+                parentId: nowTask.parentId,
+                deltaProgressRate: undefined,
+                deltaPV: undefined,
+                deltaEV: undefined,
+                prevPV: undefined,
+                prevEV: undefined,
+                currentPV: nowTask.pv,
+                currentEV: nowTask.ev,
+                prevProgressRate: undefined,
+                currentProgressRate: nowTask.progressRate,
+                hasDiff: true, // 新規は常に差分ありとみなす
+                finished,
+            })
+        }
+
+        // 削除されたタスク
+        for (const prevTask of prevTasks) {
+            if (!prevTask.isLeaf || nowTasksMap.has(prevTask.id)) continue
+
+            const fullName = this.buildFullTaskName(prevTask, prevTasksMap)
+            const finished = prevTask.progressRate === 1.0
+
+            diffs.push({
+                id: prevTask.id,
+                name: prevTask.name,
+                fullName,
+                assignee: prevTask.assignee,
+                parentId: prevTask.parentId,
+                deltaProgressRate: undefined,
+                deltaPV: undefined,
+                deltaEV: undefined,
+                prevPV: prevTask.pv,
+                prevEV: prevTask.ev,
+                currentPV: undefined,
+                currentEV: undefined,
+                prevProgressRate: prevTask.progressRate,
+                currentProgressRate: undefined,
+                hasDiff: true, // 削除も常に差分ありとみなす
+                finished,
+            })
+        }
+
+        return diffs
     }
 
     // private _calcProgressRafe(group: TaskDiff[]) {
