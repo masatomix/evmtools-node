@@ -55,7 +55,12 @@ export class ProjectService {
 
         // 新規タスク
         for (const nowTask of nowTasks) {
+            // isLeaf かつ prevにないタスクのみ後続処理
             if (!nowTask.isLeaf || prevTasksMap.has(nowTask.id)) continue
+
+            const deltaProgressRate = delta(nowTask.progressRate, undefined)
+            const deltaPV = delta(nowTask.pv, undefined)
+            const deltaEV = delta(nowTask.ev, undefined)
 
             const fullName = this.buildFullTaskName(nowTask, nowTasksMap)
             const finished = nowTask.progressRate === 1.0
@@ -66,9 +71,9 @@ export class ProjectService {
                 fullName,
                 assignee: nowTask.assignee,
                 parentId: nowTask.parentId,
-                deltaProgressRate: undefined,
-                deltaPV: undefined,
-                deltaEV: undefined,
+                deltaProgressRate,
+                deltaPV,
+                deltaEV,
                 prevPV: undefined,
                 prevEV: undefined,
                 currentPV: nowTask.pv,
@@ -83,7 +88,12 @@ export class ProjectService {
 
         // 削除されたタスク
         for (const prevTask of prevTasks) {
+            // isLeaf かつ nowにないタスクのみ後続処理
             if (!prevTask.isLeaf || nowTasksMap.has(prevTask.id)) continue
+
+            const deltaProgressRate = delta(undefined, prevTask.progressRate)
+            const deltaPV = delta(undefined, prevTask.pv)
+            const deltaEV = delta(undefined, prevTask.ev)
 
             const fullName = this.buildFullTaskName(prevTask, prevTasksMap)
             const finished = prevTask.progressRate === 1.0
@@ -94,9 +104,9 @@ export class ProjectService {
                 fullName,
                 assignee: prevTask.assignee,
                 parentId: prevTask.parentId,
-                deltaProgressRate: undefined,
-                deltaPV: undefined,
-                deltaEV: undefined,
+                deltaProgressRate,
+                deltaPV,
+                deltaEV,
                 prevPV: prevTask.pv,
                 prevEV: prevTask.ev,
                 currentPV: undefined,
@@ -192,7 +202,6 @@ export class ProjectService {
  * aのみがundefinedの場合は-b
  * 両方undefinedの場合はundefined
  * あとは a-b
- * a-bがゼロの場合は変化なしの意味でundefined
  * @param a
  * @param b
  * @returns
