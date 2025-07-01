@@ -24,7 +24,7 @@ export class ProjectService {
             const deltaEV = delta(nowTask.ev, prevTask.ev)
             // const deltaSPI = delta(nowTask.spi, prevTask.spi)
 
-            const hasDiff = [deltaProgressRate, deltaPV, deltaEV /*deltaSPI*/].some(
+            const hasAnyChange = [deltaProgressRate, deltaPV, deltaEV /*deltaSPI*/].some(
                 (d) => d !== undefined && d !== 0
             )
 
@@ -47,7 +47,8 @@ export class ProjectService {
                 prevProgressRate: prevTask.progressRate,
                 currentProgressRate: nowTask.progressRate,
                 // deltaSPI,
-                hasDiff,
+                hasDiff: hasAnyChange,
+                diffType: hasAnyChange ? 'modified' : 'none',
                 finished,
             })
         }
@@ -75,6 +76,7 @@ export class ProjectService {
                 prevProgressRate: undefined,
                 currentProgressRate: nowTask.progressRate,
                 hasDiff: true, // 新規は常に差分ありとみなす
+                diffType: 'added',
                 finished,
             })
         }
@@ -102,6 +104,7 @@ export class ProjectService {
                 prevProgressRate: prevTask.progressRate,
                 currentProgressRate: undefined,
                 hasDiff: true, // 削除も常に差分ありとみなす
+                diffType: 'removed',
                 finished,
             })
         }
@@ -128,7 +131,11 @@ export class ProjectService {
                 prevEV: (group) => sumDelta(group.map((g) => g.prevEV)),
                 currentPV: (group) => sumDelta(group.map((g) => g.currentPV)),
                 currentEV: (group) => sumDelta(group.map((g) => g.currentEV)),
-                hasDiff: (group) => group.some((g) => g.hasDiff),
+                modifiedCount: (group) => group.filter((g) => g.diffType === 'modified').length,
+                addedCount: (group) => group.filter((g) => g.diffType === 'added').length,
+                removedCount: (group) => group.filter((g) => g.diffType === 'removed').length,
+                hasDiff: (group) =>
+                    group.some((g) => ['modified', 'added', 'removed'].includes(g.diffType)),
                 finished: (group) => group.every((g) => g.finished),
             })
         )
@@ -149,7 +156,11 @@ export class ProjectService {
                     prevEV: (group) => sumDelta(group.map((g) => g.prevEV)),
                     currentPV: (group) => sumDelta(group.map((g) => g.currentPV)),
                     currentEV: (group) => sumDelta(group.map((g) => g.currentEV)),
-                    hasDiff: (group) => group.some((g) => g.hasDiff),
+                    modifiedCount: (group) => group.filter((g) => g.diffType === 'modified').length,
+                    addedCount: (group) => group.filter((g) => g.diffType === 'added').length,
+                    removedCount: (group) => group.filter((g) => g.diffType === 'removed').length,
+                    hasDiff: (group) =>
+                        group.some((g) => ['modified', 'added', 'removed'].includes(g.diffType)),
                     finished: (group) => group.every((g) => g.finished),
                 }),
             ])
@@ -202,6 +213,8 @@ function delta(a?: number, b?: number): number | undefined {
     return undefined
 }
 
+export type DiffType = 'modified' | 'added' | 'removed' | 'none'
+
 export type TaskDiffBase = {
     readonly prevPV?: number
     readonly currentPV?: number
@@ -215,10 +228,16 @@ export type TaskDiffBase = {
 }
 
 export type ProjectDiff = {
+    modifiedCount: number
+    addedCount: number
+    removedCount: number
     //
 } & TaskDiffBase
 
 export type AssigneeDiff = {
+    modifiedCount: number
+    addedCount: number
+    removedCount: number
     readonly assignee?: string
 } & TaskDiffBase
 
@@ -231,6 +250,7 @@ export type TaskDiff = {
     readonly deltaProgressRate?: number
     readonly prevProgressRate?: number
     readonly currentProgressRate?: number
+    readonly diffType: DiffType
 } & TaskDiffBase
 
 const sumDelta = (numbers: (number | undefined)[]): number | undefined =>
