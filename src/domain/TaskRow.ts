@@ -144,6 +144,22 @@ export class TaskRow {
         return undefined
     }
 
+    get finished(): boolean {
+        return this.progressRate === 1.0
+    }
+
+    /**
+     * 指定した基準日で、タスクが期限切れかどうかを判定する。
+     * - 終了日 < 基準日 かつ 未完了 の場合に true を返す
+     */
+    isOverdueAt(baseDate: Date): boolean {
+        if (!this.endDate || typeof this.progressRate !== 'number') {
+            return false
+        }
+
+        return this.endDate < baseDate && this.progressRate < 1.0
+    }
+
     /**
      * 基準日(その日のみの)のPVを計算する。
      * 基本、稼働予定の日数 / 予定工数 の値。

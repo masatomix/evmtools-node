@@ -2,7 +2,10 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 // import { getLogger } from '../logger'
 import { ExcelProjectCreator } from '../infrastructure'
-import { ProjectService } from '../domain/ProjectService'
+import { AssigneeDiff, ProjectDiff, ProjectService, TaskDiff } from '../domain/ProjectService'
+import { createWorkbook, json2workbook, toFileAsync } from 'excel-csv-read-write'
+import { createStyles } from '../common'
+import { Project } from '../domain'
 
 // const logger = getLogger('main')
 
@@ -16,13 +19,15 @@ const main = async () => {
     const prevP = await prevCreator.createProject()
 
     const projectDiffs = new ProjectService().calculateProjectDiffs(nowP, prevP)
-    console.table(projectDiffs.filter((row) => row.hasDiff))
+    // console.table(projectDiffs.filter((row) => row.hasDiff))
 
     const assigneeDiffs = new ProjectService().calculateAssigneeDiffs(nowP, prevP)
-    console.table(assigneeDiffs.filter((row) => row.hasDiff))
+    // console.table(assigneeDiffs.filter((row) => row.hasDiff))
 
     const taskDiffs = new ProjectService().calculateTaskDiffs(nowP, prevP)
-    console.table(taskDiffs.filter((row) => row.hasDiff))
+    // console.table(taskDiffs.filter((row) => row.hasDiff))
+
+    await execute(nowP, prevP, projectDiffs, assigneeDiffs, taskDiffs)
 }
 
 const createArgs = () => {
@@ -44,3 +49,50 @@ const createArgs = () => {
 }
 
 main()
+
+async function execute(
+    currentProject: Project,
+    prevProject: Project,
+    projectDiffs: ProjectDiff[],
+    assigneeDiffs: AssigneeDiff[],
+    taskDiffs: TaskDiff[]
+) {
+    const path = `${currentProject.name}-diff.xlsx`
+    const workbook = await createWorkbook()
+    // const dateStrHyphen = dateStr(currentProject.baseDate).replace(/\//g, '-')
+
+    if (projectDiffs) {
+        console.log('プロジェクトDiff')
+        console.table(projectDiffs.filter((row) => row.hasDiff))
+        json2workbook({
+            instances: projectDiffs,
+            workbook,
+            sheetName: `プロジェクトDiff`,
+            applyStyles: createStyles(),
+        })
+    }
+    if (assigneeDiffs) {
+        console.log('担当Diff')
+        console.table(assigneeDiffs.filter((row) => row.hasDiff))
+        json2workbook({
+            instances: assigneeDiffs,
+            workbook,
+            sheetName: '担当Diff',
+            applyStyles: createStyles(),
+        })
+    }
+
+    if (taskDiffs) {
+        console.log('タスクDiff')
+        console.table(taskDiffs.filter((row) => row.hasDiff))
+        json2workbook({
+            instances: taskDiffs,
+            workbook,
+            sheetName: `タスクDiff`,
+            applyStyles: createStyles(),
+        })
+    }
+
+    workbook.deleteSheet('Sheet1')
+    await toFileAsync(workbook, path)
+}

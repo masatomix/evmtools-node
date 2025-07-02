@@ -14,6 +14,7 @@ export class ProjectService {
         const diffs: TaskDiff[] = []
 
         // 変更 or 追加 の処理を1ループにまとめる
+        // nowTaskはあるがprevTaskはない、時がある
         for (const nowTask of nowTasks) {
             // isLeaf なタスクのみ後続処理
             if (!nowTask.isLeaf) continue
@@ -30,7 +31,8 @@ export class ProjectService {
                 [deltaProgressRate, deltaPV, deltaEV].some((d) => d !== undefined && d !== 0)
 
             const fullName = this.buildFullTaskName(nowTask, nowTasksMap)
-            const finished = nowTask.progressRate === 1.0
+
+            const isOverdueAt = nowTask.isOverdueAt(now.baseDate)
 
             diffs.push({
                 id: nowTask.id,
@@ -49,8 +51,10 @@ export class ProjectService {
                 currentProgressRate: nowTask.progressRate,
                 hasDiff: hasAnyChange,
                 diffType: isNew ? 'added' : hasAnyChange ? 'modified' : 'none',
-                finished,
-                taskRow: nowTask,
+                finished: nowTask.finished,
+                isOverdueAt,
+                currentTask: nowTask,
+                prevTask,
             })
             // console.log(nowTask.id)
             // console.log(nowTask.plotMap)
@@ -66,7 +70,7 @@ export class ProjectService {
             const deltaEV = delta(undefined, prevTask.ev)
 
             const fullName = this.buildFullTaskName(prevTask, prevTasksMap)
-            const finished = prevTask.progressRate === 1.0
+            const isOverdueAt = prevTask.isOverdueAt(prev.baseDate)
 
             diffs.push({
                 id: prevTask.id,
@@ -85,8 +89,10 @@ export class ProjectService {
                 currentProgressRate: undefined,
                 hasDiff: true, // 削除も常に差分ありとみなす
                 diffType: 'removed',
-                finished,
-                taskRow: prevTask,
+                finished: prevTask.finished,
+                isOverdueAt,
+                currentTask: undefined,
+                prevTask,
             })
         }
 
@@ -231,7 +237,9 @@ export type TaskDiff = {
     readonly prevProgressRate?: number
     readonly currentProgressRate?: number
     readonly diffType: DiffType
-    readonly taskRow: TaskRow
+    readonly isOverdueAt: boolean
+    readonly prevTask?: TaskRow
+    readonly currentTask?: TaskRow
 } & TaskDiffBase
 
 const sumDelta = (numbers: (number | undefined)[]): number | undefined =>
