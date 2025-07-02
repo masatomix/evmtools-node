@@ -150,14 +150,15 @@ export class TaskRow {
 
     /**
      * 指定した基準日で、タスクが期限切れかどうかを判定する。
-     * - 終了日 < 基準日 かつ 未完了 の場合に true を返す
+     * - 終了日 <= 基準日 かつ 未完了 の場合に true を返す
+     * (あくまで基準日の業務が終わったときの状況を算出する考えなので、等号を入れた)
+     * progressRate はundefinedの場合もある(未完了と見なす)
      */
     isOverdueAt(baseDate: Date): boolean {
-        if (!this.endDate || typeof this.progressRate !== 'number') {
-            return false
-        }
+        if (!this.endDate) return false
 
-        return this.endDate < baseDate && this.progressRate < 1.0
+        const isNotFinished = this.progressRate === undefined || this.progressRate < 1.0
+        return isNotFinished && this.endDate <= baseDate
     }
 
     /**
