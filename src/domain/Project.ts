@@ -7,7 +7,6 @@ import { TaskRow } from './TaskRow'
 export class Project {
     private _taskService = new TaskService()
 
-    // PV/EV/SPIとか出してあげたい(baseDateの)
     constructor(
         private _taskNodes: TaskNode[],
         private _baseDate: Date,
@@ -94,8 +93,8 @@ export class Project {
     get statisticsByProject(): ProjectStatistics[] {
         const name = this._name
         const baseDate = this._baseDate
-        const startDate = this._startDate
-        const endDate = this._endDate
+        const startDate = this._startDate // Date|undefinedだけど、実際はほぼ確実に、存在する(タスクが0コとか)
+        const endDate = this._endDate // Date|undefinedだけど、実際はほぼ確実に、存在する(タスクが0コとか)
         const rows = this.toTaskRows()
         const result: ProjectStatistics[] = tidy(
             rows,
@@ -105,14 +104,14 @@ export class Project {
                 startDate: () => dateStr(startDate),
                 endDate: () => dateStr(endDate),
                 totalTasksCount: (group) => group.length,
-                totalWorkloadExcel: sumWorkload,
-                totalWorkloadCalculated: (group) => sumCalculatePVs(group, endDate!),
+                totalWorkloadExcel: sumWorkload, // Excel工数(task#workload) の 足し算
+                totalWorkloadCalculated: (group) => sumCalculatePVs(group, endDate!), // endDate時の、計算、累積pv(したのヤツ) の、足し算
                 averageWorkload: averageWorkload,
                 baseDate: () => dateStr(baseDate),
-                totalPvExcel: sumPVs,
-                totalPvCalculated: (group) => sumCalculatePVs(group, baseDate),
-                totalEv: sumEVs,
-                spi: calcSPI,
+                totalPvExcel: sumPVs, // Excel累積pv(TaskRow#pv) の足し算
+                totalPvCalculated: (group) => sumCalculatePVs(group, baseDate), // 計算、累積pv(TaskRow#calculatePVs(baseDate)) の、足し算
+                totalEv: sumEVs, // Excel累積Ev(TaskRow#ev) の足し算
+                spi: (group) => calculateSPI(group, baseDate),
             })
         )
         // console.table(result)
@@ -137,7 +136,7 @@ export class Project {
                     totalPvExcel: sumPVs,
                     totalPvCalculated: (group) => sumCalculatePVs(group, baseDate),
                     totalEv: sumEVs,
-                    spi: calcSPI,
+                    spi: (group) => calculateSPI(group, baseDate),
                 }),
             ])
         )
@@ -325,9 +324,15 @@ const sumEVs = (group: TaskRow[]) =>
 export const isValidNumber = (value: unknown): value is number =>
     typeof value === 'number' && !Number.isNaN(value)
 
-const calcSPI = (group: TaskRow[]) => {
+// const calcSPI = (group: TaskRow[]) => {
+//     const ev = sumEVs(group)
+//     const pv = sumPVs(group)
+//     return calcRate(ev, pv)
+// }
+
+const calculateSPI = (group: TaskRow[], baseDate: Date) => {
     const ev = sumEVs(group)
-    const pv = sumPVs(group)
+    const pv = sumCalculatePVs(group, baseDate)
     return calcRate(ev, pv)
 }
 

@@ -13,20 +13,21 @@ export class ProjectService {
 
         const diffs: TaskDiff[] = []
 
+        // 変更 or 追加 の処理を1ループにまとめる
         for (const nowTask of nowTasks) {
-            // isLeaf かつ prevにあるタスクのみ後続処理
-            if (!nowTask.isLeaf || !prevTasksMap.has(nowTask.id)) continue
+            // isLeaf なタスクのみ後続処理
+            if (!nowTask.isLeaf) continue
 
-            const prevTask = prevTasksMap.get(nowTask.id)! //フィルタしたので必ずある
+            const prevTask = prevTasksMap.get(nowTask.id)
+            const isNew = !prevTask // prevTaskがなかったらNew
 
-            const deltaProgressRate = delta(nowTask.progressRate, prevTask.progressRate)
-            const deltaPV = delta(nowTask.pv, prevTask.pv)
-            const deltaEV = delta(nowTask.ev, prevTask.ev)
+            const deltaProgressRate = delta(nowTask.progressRate, prevTask?.progressRate)
+            const deltaPV = delta(nowTask.pv, prevTask?.pv)
+            const deltaEV = delta(nowTask.ev, prevTask?.ev)
             // const deltaSPI = delta(nowTask.spi, prevTask.spi)
-
-            const hasAnyChange = [deltaProgressRate, deltaPV, deltaEV /*deltaSPI*/].some(
-                (d) => d !== undefined && d !== 0
-            )
+            const hasAnyChange =
+                isNew ||
+                [deltaProgressRate, deltaPV, deltaEV].some((d) => d !== undefined && d !== 0)
 
             const fullName = this.buildFullTaskName(nowTask, nowTasksMap)
             const finished = nowTask.progressRate === 1.0
@@ -40,50 +41,19 @@ export class ProjectService {
                 deltaProgressRate,
                 deltaPV,
                 deltaEV,
-                prevPV: prevTask.pv,
-                prevEV: prevTask.ev,
+                prevPV: prevTask?.pv,
+                prevEV: prevTask?.ev,
                 currentPV: nowTask.pv,
                 currentEV: nowTask.ev,
-                prevProgressRate: prevTask.progressRate,
+                prevProgressRate: prevTask?.progressRate,
                 currentProgressRate: nowTask.progressRate,
-                // deltaSPI,
                 hasDiff: hasAnyChange,
-                diffType: hasAnyChange ? 'modified' : 'none',
+                diffType: isNew ? 'added' : hasAnyChange ? 'modified' : 'none',
                 finished,
+                taskRow: nowTask,
             })
-        }
-
-        // 新規タスク
-        for (const nowTask of nowTasks) {
-            // isLeaf かつ prevにないタスクのみ後続処理
-            if (!nowTask.isLeaf || prevTasksMap.has(nowTask.id)) continue
-
-            const deltaProgressRate = delta(nowTask.progressRate, undefined)
-            const deltaPV = delta(nowTask.pv, undefined)
-            const deltaEV = delta(nowTask.ev, undefined)
-
-            const fullName = this.buildFullTaskName(nowTask, nowTasksMap)
-            const finished = nowTask.progressRate === 1.0
-
-            diffs.push({
-                id: nowTask.id,
-                name: nowTask.name,
-                fullName,
-                assignee: nowTask.assignee,
-                parentId: nowTask.parentId,
-                deltaProgressRate,
-                deltaPV,
-                deltaEV,
-                prevPV: undefined,
-                prevEV: undefined,
-                currentPV: nowTask.pv,
-                currentEV: nowTask.ev,
-                prevProgressRate: undefined,
-                currentProgressRate: nowTask.progressRate,
-                hasDiff: true, // 新規は常に差分ありとみなす
-                diffType: 'added',
-                finished,
-            })
+            // console.log(nowTask.id)
+            // console.log(nowTask.plotMap)
         }
 
         // 削除されたタスク
@@ -116,6 +86,7 @@ export class ProjectService {
                 hasDiff: true, // 削除も常に差分ありとみなす
                 diffType: 'removed',
                 finished,
+                taskRow: prevTask,
             })
         }
 
@@ -260,6 +231,7 @@ export type TaskDiff = {
     readonly prevProgressRate?: number
     readonly currentProgressRate?: number
     readonly diffType: DiffType
+    readonly taskRow: TaskRow
 } & TaskDiffBase
 
 const sumDelta = (numbers: (number | undefined)[]): number | undefined =>
