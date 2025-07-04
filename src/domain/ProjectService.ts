@@ -105,8 +105,7 @@ export class ProjectService {
     //     return calcRate(ev, pv)
     // }
 
-    calculateProjectDiffs(now: Project, prev: Project): ProjectDiff[] {
-        const taskDiffs = this.calculateTaskDiffs(now, prev)
+    calculateProjectDiffs(taskDiffs: TaskDiff[]): ProjectDiff[] {
         const result: ProjectDiff[] = tidy(
             taskDiffs,
             summarize({
@@ -129,8 +128,7 @@ export class ProjectService {
         return result
     }
 
-    calculateAssigneeDiffs(now: Project, prev: Project): AssigneeDiff[] {
-        const taskDiffs = this.calculateTaskDiffs(now, prev)
+    calculateAssigneeDiffs(taskDiffs: TaskDiff[]): AssigneeDiff[] {
         const result = tidy(
             taskDiffs,
             groupBy('assignee', [
