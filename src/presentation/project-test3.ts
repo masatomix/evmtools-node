@@ -18,14 +18,16 @@ const main = async () => {
     const prevCreator = new ExcelProjectCreator(excelPrevPath)
     const prevP = await prevCreator.createProject()
 
-    const projectDiffs = new ProjectService().calculateProjectDiffs(nowP, prevP)
-    // console.table(projectDiffs.filter((row) => row.hasDiff))
-
-    const assigneeDiffs = new ProjectService().calculateAssigneeDiffs(nowP, prevP)
-    // console.table(assigneeDiffs.filter((row) => row.hasDiff))
-
+    
     const taskDiffs = new ProjectService().calculateTaskDiffs(nowP, prevP)
     // console.table(taskDiffs.filter((row) => row.hasDiff))
+
+    const projectDiffs = new ProjectService().calculateProjectDiffs(taskDiffs)
+    // console.table(projectDiffs.filter((row) => row.hasDiff))
+
+    const assigneeDiffs = new ProjectService().calculateAssigneeDiffs(taskDiffs)
+    // console.table(assigneeDiffs.filter((row) => row.hasDiff))
+
 
     await execute(nowP, prevP, projectDiffs, assigneeDiffs, taskDiffs)
 }
