@@ -30,6 +30,11 @@ export class ProjectService {
                 isNew ||
                 [deltaProgressRate, deltaPV, deltaEV].some((d) => d !== undefined && d !== 0)
 
+            // 個々の変更アリナシ
+            const hasProgressRateDiff = deltaProgressRate !== undefined && deltaProgressRate !== 0
+            const hasPvDiff = deltaPV !== undefined && deltaPV !== 0
+            const hasEvDiff = deltaEV !== undefined && deltaEV !== 0
+
             const fullName = this.buildFullTaskName(nowTask, nowTasksMap)
 
             const isOverdueAt = nowTask.isOverdueAt(now.baseDate)
@@ -50,6 +55,9 @@ export class ProjectService {
                 prevProgressRate: prevTask?.progressRate,
                 currentProgressRate: nowTask.progressRate,
                 hasDiff: hasAnyChange,
+                hasProgressRateDiff,
+                hasPvDiff,
+                hasEvDiff,
                 diffType: isNew ? 'added' : hasAnyChange ? 'modified' : 'none',
                 finished: nowTask.finished,
                 isOverdueAt,
@@ -68,6 +76,11 @@ export class ProjectService {
             const deltaProgressRate = delta(undefined, prevTask.progressRate)
             const deltaPV = delta(undefined, prevTask.pv)
             const deltaEV = delta(undefined, prevTask.ev)
+
+            // 個々の変更アリナシ
+            const hasProgressRateDiff = deltaProgressRate !== undefined && deltaProgressRate !== 0
+            const hasPvDiff = deltaPV !== undefined && deltaPV !== 0
+            const hasEvDiff = deltaEV !== undefined && deltaEV !== 0
 
             const fullName = this.buildFullTaskName(prevTask, prevTasksMap)
             const isOverdueAt = prevTask.isOverdueAt(prev.baseDate)
@@ -88,6 +101,9 @@ export class ProjectService {
                 prevProgressRate: prevTask.progressRate,
                 currentProgressRate: undefined,
                 hasDiff: true, // 削除も常に差分ありとみなす
+                hasProgressRateDiff,
+                hasPvDiff,
+                hasEvDiff,
                 diffType: 'removed',
                 finished: prevTask.finished,
                 isOverdueAt,
@@ -107,16 +123,19 @@ export class ProjectService {
 
     calculateProjectDiffs(taskDiffs: TaskDiff[]): ProjectDiff[] {
         const result: ProjectDiff[] = tidy(
-            taskDiffs,
+            taskDiffs.filter(taskDiff=>taskDiff.hasDiff),
+            // taskDiffs,
             summarize({
                 // deltaProgressRate: (group) => this._calcProgressRate(group),
                 deltaPV: (group) => sumDelta(group.map((g) => g.deltaPV)),
                 deltaEV: (group) => sumDelta(group.map((g) => g.deltaEV)),
                 // deltaSPI: (group) => sumDelta(group.map((g) => g.deltaSPI)), // これはおかしい。
-                prevPV: (group) => sumDelta(group.map((g) => g.prevPV)),
-                prevEV: (group) => sumDelta(group.map((g) => g.prevEV)),
-                currentPV: (group) => sumDelta(group.map((g) => g.currentPV)),
-                currentEV: (group) => sumDelta(group.map((g) => g.currentEV)),
+                prevPV: (group) => sumDelta(group.filter((g) => g.hasPvDiff).map((g) => g.prevPV)),
+                prevEV: (group) => sumDelta(group.filter((g) => g.hasEvDiff).map((g) => g.prevEV)),
+                currentPV: (group) =>
+                    sumDelta(group.filter((g) => g.hasPvDiff).map((g) => g.currentPV)),
+                currentEV: (group) =>
+                    sumDelta(group.filter((g) => g.hasEvDiff).map((g) => g.currentEV)),
                 modifiedCount: (group) => group.filter((g) => g.diffType === 'modified').length,
                 addedCount: (group) => group.filter((g) => g.diffType === 'added').length,
                 removedCount: (group) => group.filter((g) => g.diffType === 'removed').length,
@@ -130,17 +149,22 @@ export class ProjectService {
 
     calculateAssigneeDiffs(taskDiffs: TaskDiff[]): AssigneeDiff[] {
         const result = tidy(
-            taskDiffs,
+            taskDiffs.filter(taskDiff=>taskDiff.hasDiff),
+            // taskDiffs,
             groupBy('assignee', [
                 summarize({
                     // deltaProgressRate: (group) => this._calcProgressRate(group),
                     deltaPV: (group) => sumDelta(group.map((g) => g.deltaPV)),
                     deltaEV: (group) => sumDelta(group.map((g) => g.deltaEV)),
                     // deltaSPI: (group) => sumDelta(group.map((g) => g.deltaSPI)), // これはおかしい。
-                    prevPV: (group) => sumDelta(group.map((g) => g.prevPV)),
-                    prevEV: (group) => sumDelta(group.map((g) => g.prevEV)),
-                    currentPV: (group) => sumDelta(group.map((g) => g.currentPV)),
-                    currentEV: (group) => sumDelta(group.map((g) => g.currentEV)),
+                    prevPV: (group) =>
+                        sumDelta(group.filter((g) => g.hasPvDiff).map((g) => g.prevPV)),
+                    prevEV: (group) =>
+                        sumDelta(group.filter((g) => g.hasEvDiff).map((g) => g.prevEV)),
+                    currentPV: (group) =>
+                        sumDelta(group.filter((g) => g.hasPvDiff).map((g) => g.currentPV)),
+                    currentEV: (group) =>
+                        sumDelta(group.filter((g) => g.hasEvDiff).map((g) => g.currentEV)),
                     modifiedCount: (group) => group.filter((g) => g.diffType === 'modified').length,
                     addedCount: (group) => group.filter((g) => g.diffType === 'added').length,
                     removedCount: (group) => group.filter((g) => g.diffType === 'removed').length,
@@ -234,6 +258,9 @@ export type TaskDiff = {
     readonly deltaProgressRate?: number
     readonly prevProgressRate?: number
     readonly currentProgressRate?: number
+    readonly hasProgressRateDiff: boolean
+    readonly hasPvDiff: boolean
+    readonly hasEvDiff: boolean
     readonly diffType: DiffType
     readonly isOverdueAt: boolean
     readonly prevTask?: TaskRow
