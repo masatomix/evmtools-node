@@ -18,7 +18,6 @@ const main = async () => {
     const prevCreator = new ExcelProjectCreator(excelPrevPath)
     const prevP = await prevCreator.createProject()
 
-    
     const taskDiffs = new ProjectService().calculateTaskDiffs(nowP, prevP)
     // console.table(taskDiffs.filter((row) => row.hasDiff))
 
@@ -27,7 +26,6 @@ const main = async () => {
 
     const assigneeDiffs = new ProjectService().calculateAssigneeDiffs(taskDiffs)
     // console.table(assigneeDiffs.filter((row) => row.hasDiff))
-
 
     await execute(nowP, prevP, projectDiffs, assigneeDiffs, taskDiffs)
 }

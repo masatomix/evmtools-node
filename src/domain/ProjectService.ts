@@ -1,7 +1,7 @@
 import { tidy, groupBy, summarize } from '@tidyjs/tidy'
 import { Project } from './Project'
 import { TaskRow } from './TaskRow'
-import { sum } from '../common/utils'
+import { formatRelativeDays, formatRelativeDaysNumber, sum } from '../common/utils'
 
 export class ProjectService {
     calculateTaskDiffs(now: Project, prev: Project): TaskDiff[] {
@@ -39,6 +39,13 @@ export class ProjectService {
 
             const isOverdueAt = nowTask.isOverdueAt(now.baseDate)
 
+            const prevBaseDate = prevTask ? prev.baseDate : undefined
+            const currentBaseDate = now.baseDate
+            const baseDate = currentBaseDate
+
+            const daysOverdueAt = formatRelativeDaysNumber(baseDate, nowTask.endDate)
+            const daysStrOverdueAt = formatRelativeDays(baseDate, nowTask.endDate)
+
             diffs.push({
                 id: nowTask.id,
                 name: nowTask.name,
@@ -61,6 +68,11 @@ export class ProjectService {
                 diffType: isNew ? 'added' : hasAnyChange ? 'modified' : 'none',
                 finished: nowTask.finished,
                 isOverdueAt,
+                prevBaseDate,
+                currentBaseDate,
+                baseDate,
+                daysOverdueAt,
+                daysStrOverdueAt,
                 currentTask: nowTask,
                 prevTask,
             })
@@ -85,6 +97,13 @@ export class ProjectService {
             const fullName = this.buildFullTaskName(prevTask, prevTasksMap)
             const isOverdueAt = prevTask.isOverdueAt(prev.baseDate)
 
+            const prevBaseDate = prev.baseDate
+            const currentBaseDate = undefined
+            const baseDate = prevBaseDate
+
+            const daysOverdueAt = formatRelativeDaysNumber(baseDate, prevTask.endDate)
+            const daysStrOverdueAt = formatRelativeDays(baseDate, prevTask.endDate)
+
             diffs.push({
                 id: prevTask.id,
                 name: prevTask.name,
@@ -107,6 +126,11 @@ export class ProjectService {
                 diffType: 'removed',
                 finished: prevTask.finished,
                 isOverdueAt,
+                prevBaseDate,
+                currentBaseDate,
+                baseDate,
+                daysOverdueAt,
+                daysStrOverdueAt,
                 currentTask: undefined,
                 prevTask,
             })
@@ -123,7 +147,7 @@ export class ProjectService {
 
     calculateProjectDiffs(taskDiffs: TaskDiff[]): ProjectDiff[] {
         const result: ProjectDiff[] = tidy(
-            taskDiffs.filter(taskDiff=>taskDiff.hasDiff),
+            taskDiffs.filter((taskDiff) => taskDiff.hasDiff),
             // taskDiffs,
             summarize({
                 // deltaProgressRate: (group) => this._calcProgressRate(group),
@@ -142,6 +166,8 @@ export class ProjectService {
                 hasDiff: (group) =>
                     group.some((g) => ['modified', 'added', 'removed'].includes(g.diffType)),
                 finished: (group) => group.every((g) => g.finished),
+                // prevBaseDate:(group) => group.map((g) => g.prevBaseDate)?.[0],
+                // currentBaseDate:(group) => group.map((g) => g.currentBaseDate)?.[0],
             })
         )
         return result
@@ -149,7 +175,7 @@ export class ProjectService {
 
     calculateAssigneeDiffs(taskDiffs: TaskDiff[]): AssigneeDiff[] {
         const result = tidy(
-            taskDiffs.filter(taskDiff=>taskDiff.hasDiff),
+            taskDiffs.filter((taskDiff) => taskDiff.hasDiff),
             // taskDiffs,
             groupBy('assignee', [
                 summarize({
@@ -171,6 +197,8 @@ export class ProjectService {
                     hasDiff: (group) =>
                         group.some((g) => ['modified', 'added', 'removed'].includes(g.diffType)),
                     finished: (group) => group.every((g) => g.finished),
+                    // prevBaseDate:(group) => group.map((g) => g.prevBaseDate)?.[0],
+                    // currentBaseDate:(group) => group.map((g) => g.currentBaseDate)?.[0],
                 }),
             ])
         )
@@ -265,6 +293,11 @@ export type TaskDiff = {
     readonly isOverdueAt: boolean
     readonly prevTask?: TaskRow
     readonly currentTask?: TaskRow
+    readonly prevBaseDate?: Date
+    readonly currentBaseDate?: Date
+    readonly baseDate?: Date
+    readonly daysOverdueAt?: number
+    readonly daysStrOverdueAt?: string
 } & TaskDiffBase
 
 const sumDelta = (numbers: (number | undefined)[]): number | undefined =>
