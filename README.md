@@ -1,8 +1,5 @@
-<h1 align="center">Welcome to copy-utils-generator</h1>
+<h1 align="center">Welcome to evmtools-node</h1>
 <p>
-  <a href="https://www.npmjs.com/package/copy-utils-generator" target="_blank">
-    <img alt="Version" src="https://img.shields.io/npm/v/copy-utils-generator.svg">
-  </a>
   <a href="#" target="_blank">
     <img alt="License: ISC" src="https://img.shields.io/badge/License-ISC-yellow.svg" />
   </a>
@@ -11,61 +8,16 @@
   </a>
 </p>
 
-## Copy Utils Generator
+## evmtools-node
 
-JavaのJava Beansをコピーするライブラリ [MapStruct](https://mapstruct.org/)のコードをExcelの設定ファイルから自動生成するライブラリです。
+このツールは、プライムブレインズ社が内部で利用している「進捗管理ツール(Excel)」ファイルを読み込み、 プロジェクトの進捗状況や要員別の作業量を可視化するためのツールです。
 
-### [サンプルサイト](https://github.com/masatomix/copy-utils-generator-sample)
+### [サンプルサイト](https://masatomix.github.io/copy-utils-generator-webui/#/gamen3)
 
-## Install
-
-```sh
-npm install copy-utils-generator
-npm install --save-dev pino-pretty (オプション。Logの出力でpino-prettyを使いたい場合のみ。)
-```
 
 ## コマンド
 
-MapStructのコードを自動生成します。
 
-```console
-$ npx generate-mapping --help
-Options:
-  --version    Show version number                                     [boolean]
-  --excelPath  Excel file Path          [string] [default: "./mappingdata.xlsx"]
-  --output     Output directory                   [string] [default: "./output"]
-  --help       Show help                                               [boolean]
-$ 
-```
-
-例: 
-
-```console
-$ npx generate-mapping --src mappingdata.xlsx --output output/src/main/java/
-```
-
-Java Beansも自動生成します。
-
-```console
-$ npx generate-class --help
-Options:
-  --version    Show version number                                     [boolean]
-  --excelPath  Excel file Path            [string] [default: "./classdata.xlsx"]
-  --output     Output directory                   [string] [default: "./output"]
-  --help       Show help                                               [boolean]
-```
-
-
-例: 
-```console
-$ npx generate-class --src classdata.xlsx --output output/src/main/java/
-```
-
-<!-- ## Run tests
-
-```sh
-npm run test
-``` -->
 
 ## Author
 
@@ -76,7 +28,7 @@ npm run test
 
 ## 🤝 Contributing
 
-Contributions, issues and feature requests are welcome!<br />Feel free to check [issues page](https://github.com/masatomix/copy-utils-generator-sample/issues). 
+Contributions, issues and feature requests are welcome!<br />Feel free to check [issues page](https://github.com/masatomix/evmtools-node/issues). 
 
 ## Show your support
 
@@ -84,14 +36,7 @@ Give a ⭐️ if this project helped you!
 
 
 ## 改訂履歴
-- 0.0.12 他のライブラリからimportして各クラスをつかえるように。
-  - ExcelデータをArrayBufferからもらえるようにした(classDefinitionFactoryExceBufferImpl )。
-  - テンプレートを文字列で渡すように仕様変更。ほか。
-- 0.0.10 ESLintとPrettierによるコードフォーマットを実施(ロジックは変更なし)
-- 0.0.9 ログまわりを整理して、利用者が設定変更できるようにした
-- 0.0.8 MapStructコード生成のテンプレートで、<> などがサニタイズされていたバグを修正
-- 0.0.7 クラス生成のテンプレートで、<> などがサニタイズされていたバグを修正
-- 0.0.6 初回リリース
+- 0.0.5-SNAPSHOT 初回リリース(絶賛開発中)
 
 
 ## 🔧 Logger 設定のカスタマイズ
@@ -102,7 +47,7 @@ Give a ⭐️ if this project helped you!
 
 ```json
 {
-  "copy-utils-generator-logger": {
+  "evmtools-node-logger": {
     "level": "warn",  // 全体のログレベル
     "moduleLogLevels": { // ソースごとにlevelを変えたい場合
       "groupMappings": "info",

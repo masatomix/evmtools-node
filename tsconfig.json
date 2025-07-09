@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "outDir": "dist", // 出力ディレクトリ
+    "rootDir": "src", // ソースコードのルート
+    "strict": true, // 厳格な型チェック
+    "esModuleInterop": true, // ESModules との互換性
+    "forceConsistentCasingInFileNames": true, // 大文字小文字の不一致を禁止
+    "declaration": true, // 型定義ファイル（.d.ts）を出力
+    "declarationMap": true, // .d.ts.map ファイルも出力（補完改善）
+    "sourceMap": true, // .js.map ファイル出力（デバッグ用）
+    "skipLibCheck": true, // 外部ライブラリの型チェックをスキップ
+    "moduleResolution": "node", // モジュール解決方法を Node.js 準拠に
+    "resolveJsonModule": true, // JSONのimport許可
+    "isolatedModules": true // 各ファイルをモジュールとして扱う
+  },
+  "include": ["src"],
+  "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.spec.ts"]
+}
