@@ -1,0 +1,72 @@
+{
+    "name": "evmtools-node",
+    "version": "0.0.5",
+    "description": "このライブラリは、プライムブレインズ社で利用している「進捗管理ツール(Excel)」ファイルを読み込み、 プロジェクトの進捗状況や要員別の作業量を可視化するためのライブラリです。",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        "./common": "./dist/common/index.js",
+        "./domain": "./dist/domain/index.js",
+        "./infrastructure": "./dist/infrastructure/index.js",
+        "./presentation": "./dist/presentation/index.js",
+        "./usercase": "./dist/usercase/index.js"
+    },
+    "bin": {
+        "pbevm-show-project": "./dist/presentation/cli-pbevm-show-project.js",
+        "pbevm-diff": "./dist/presentation/cli-pbevm-diff.js"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "lint": "eslint . --ext .ts",
+        "lint:fix": "eslint . --ext .ts --fix",
+        "format": "prettier --check 'src/**/*.ts'",
+        "format:fix": "prettier --write 'src/**/*.ts'",
+        "clean:modules": "rimraf node_modules pnpm-lock.yaml",
+        "clean": "rimraf dist",
+        "tsc": "tsc",
+        "copy:assets": "cpx \"src/**/*.hbs\" dist",
+        "build": "npm-run-all clean tsc copy:assets",
+        "pack": "npm pack",
+        "prepublishOnly": "npm run build",
+        "pbevm-show-project": "ts-node ./src/presentation/cli-pbevm-show-project --path now.xlsm",
+        "pbevm-diff": "ts-node ./src/presentation/cli-pbevm-diff --path now.xlsm --prevPath prev.xlsm",
+        "cli-test": "ts-node ./src/presentation/cli-test --excelPath now.xlsm",
+        "pbevm-summary": "ts-node ./src/presentation/cli-pbevm-summary --path now.xlsm"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/masatomix/evmtools-node.git"
+    },
+    "keywords": [
+        "typescript",
+        "javascript"
+    ],
+    "author": "Masatomi KINO <masatomix@ki-no.org> (http://qiita.com/masatomix)",
+    "license": "ISC",
+    "dependencies": {
+        "@tidyjs/tidy": "^2.5.2",
+        "config": "^4.0.0",
+        "excel-csv-read-write": "0.2.4",
+        "handlebars": "^4.7.8",
+        "pino": "^9.7.0",
+        "ts-node": "^10.9.2",
+        "yargs": "^17.7.2"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.28.0",
+        "@types/config": "^3.3.5",
+        "@types/node": "^22.15.21",
+        "@types/xlsx-populate": "github:JanLoebel/types-xlsx-populate",
+        "@types/yargs": "^17.0.33",
+        "cpx": "^1.5.0",
+        "eslint": "^9.28.0",
+        "eslint-config-prettier": "^10.1.5",
+        "eslint-plugin-import": "^2.31.0",
+        "npm-run-all": "^4.1.5",
+        "pino-pretty": "^13.0.0",
+        "prettier": "^3.5.3",
+        "rimraf": "^6.0.1",
+        "typescript": "^5.8.3",
+        "typescript-eslint": "^8.33.1"
+    }
+}
