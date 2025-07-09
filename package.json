@@ -1,6 +1,6 @@
 {
     "name": "evmtools-node",
-    "version": "0.0.5-SNAPSHOT",
+    "version": "0.0.5",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -27,9 +27,10 @@
         "build": "npm-run-all clean tsc copy:assets",
         "pack": "npm pack",
         "prepublishOnly": "npm run build",
-        "cli-test": "ts-node ./src/presentation/cli-test --excelPath test.xlsm",
-        "summary-test": "ts-node ./src/presentation/summary-test --excelPath test.xlsm",
-        "project-test": "ts-node ./src/presentation/project-test --excelPath test.xlsm"
+        "pbevm-summary": "ts-node ./src/presentation/cli-pbevm-summary --path now.xlsm",
+        "pbevm-diff": "ts-node ./src/presentation/cli-pbevm-diff --path now.xlsm --prevPath prev.xlsm",
+        "cli-test": "ts-node ./src/presentation/cli-test --excelPath now.xlsm",
+        "pbevm-show-project": "ts-node ./src/presentation/cli-pbevm-show-project --path now.xlsm"
     },
     "repository": {
         "type": "git",

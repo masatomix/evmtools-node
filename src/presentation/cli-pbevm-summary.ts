@@ -4,23 +4,23 @@ import { hideBin } from 'yargs/helpers'
 // import { getLogger } from '../logger'
 import { TaskRowCreator } from '../domain/TaskRowCreator'
 import { ExcelTaskRowCreator } from '../infrastructure/ExcelTaskRowCreator'
+import { PbevmSummaryUsecase } from '../usercase/pbevm-summary-usercase'
 
-import { ShowSummaryUsecase } from '../usercase/show-summary-usecase'
 // const logger = getLogger('main')
 
 const main = () => {
-    const { excelPath } = createArgs()
+    const { path } = createArgs()
 
-    const reader: TaskRowCreator = new ExcelTaskRowCreator(excelPath)
-    new ShowSummaryUsecase(reader).execute().catch((error) => console.error(error))
+    const reader: TaskRowCreator = new ExcelTaskRowCreator(path)
+    new PbevmSummaryUsecase(reader).execute().catch((error) => console.error(error))
 }
 
 const createArgs = () => {
     const argv = yargs(hideBin(process.argv))
-        .option('excelPath', {
+        .option('path', {
             type: 'string',
             description: 'Excel file Path',
-            default: './classdata.xlsx',
+            default: './now.xlsm',
         })
         .option('output', {
             type: 'string',

@@ -37,3 +37,12 @@ export const style5: StyleFC = ({ sheet, rowCount }): void => {
     sheet.range(`S2:S${rowCount + 1}`).style('numberFormat', 'yyyy/mm/dd') // 書式: 日付
     // sheet.range(`H2:H${rowCount + 1}`).style('numberFormat', 'yyyy/mm/dd hh:mm') // 書式: 日付+時刻
 }
+
+export const style6: StyleFC = ({ sheet, rowCount }): void => {
+    // よくある整形パタン。
+    // sheet.range(`C2:C${rowCount + 1}`).style('numberFormat', '@') // 書式: 文字(コレをやらないと、見かけ上文字だが、F2で抜けると数字になっちゃう)
+    sheet.range(`V2:V${rowCount + 1}`).style('numberFormat', 'yyyy/mm/dd') // 書式: 日付
+    sheet.range(`W2:W${rowCount + 1}`).style('numberFormat', 'yyyy/mm/dd') // 書式: 日付
+    sheet.range(`X2:X${rowCount + 1}`).style('numberFormat', 'yyyy/mm/dd') // 書式: 日付
+    // sheet.range(`H2:H${rowCount + 1}`).style('numberFormat', 'yyyy/mm/dd hh:mm') // 書式: 日付+時刻
+}

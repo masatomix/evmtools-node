@@ -2,7 +2,7 @@ import { ProjectCreator } from '../domain/ProjectCreator'
 import { getLogger } from '../logger'
 import { ProjectRepository } from '../domain/ProjectRepository'
 
-export class ShowProjectUsecase {
+export class PbevmShowProjectUsecase {
     private logger = getLogger('ShowProjectUsecase')
 
     constructor(

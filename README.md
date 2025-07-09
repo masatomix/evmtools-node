@@ -36,7 +36,7 @@ Give a ⭐️ if this project helped you!
 
 
 ## 改訂履歴
-- 0.0.5-SNAPSHOT 初回リリース(絶賛開発中)
+- 0.0.5 初回リリース(絶賛開発中)
 
 
 ## 🔧 Logger 設定のカスタマイズ

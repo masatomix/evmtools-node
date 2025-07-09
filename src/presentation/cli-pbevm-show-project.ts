@@ -2,22 +2,24 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 // import { getLogger } from '../logger'
 import { ExcelProjectCreator } from '../infrastructure/ExcelProjectCreator'
-import { ShowProjectUsecase } from '../usercase/show-project-usecase'
+import { PbevmShowProjectUsecase } from '../usercase/pbevm-show-project-usecase'
 import { ProjectRepositoryImpl } from '../infrastructure/ProjectRepositoryImpl'
 
 // const logger = getLogger('main')
 
 const main = () => {
-    const { excelPath } = createArgs()
+    const { path } = createArgs()
 
-    const creator = new ExcelProjectCreator(excelPath)
+    const creator = new ExcelProjectCreator(path)
     const repository = new ProjectRepositoryImpl()
-    new ShowProjectUsecase(creator, repository).execute().catch((error) => console.error(error))
+    new PbevmShowProjectUsecase(creator, repository)
+        .execute()
+        .catch((error) => console.error(error))
 }
 
 const createArgs = () => {
     const argv = yargs(hideBin(process.argv))
-        .option('excelPath', {
+        .option('path', {
             type: 'string',
             description: 'Excel file Path',
             default: './classdata.xlsx',
