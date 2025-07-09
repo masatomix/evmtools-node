@@ -8,6 +8,7 @@ import { PbevmSummaryUsecase } from '../usercase/pbevm-summary-usercase'
 
 // const logger = getLogger('main')
 
+// TaskRowCreator を使ったサンプル。また tidy をつかって集計などをテストしてる
 const main = () => {
     const { path } = createArgs()
 

@@ -12,6 +12,7 @@ import { createStyles } from '../common/styles'
 
 // const logger = getLogger('main')
 
+// こちらもTaskRowCreatorのサンプル。
 const main = async () => {
     const { excelPath } = createArgs()
 
