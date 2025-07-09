@@ -4,8 +4,8 @@ import { TaskRow } from '../domain'
 import { TaskRowCreator } from '../domain/TaskRowCreator'
 import { average, dateStr, sum } from '../common'
 
-export class ShowSummaryUsecase {
-    private logger = getLogger('ShowSummaryUsecase')
+export class PbevmSummaryUsecase {
+    private logger = getLogger('PbevmSummaryUsecase')
 
     constructor(private _creator: TaskRowCreator) {}
 

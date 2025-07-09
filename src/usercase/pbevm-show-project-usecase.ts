@@ -2,7 +2,9 @@ import { ProjectCreator } from '../domain/ProjectCreator'
 import { getLogger } from '../logger'
 import { ProjectRepository } from '../domain/ProjectRepository'
 
-export class ShowProjectUsecase {
+// ProjectCreatorを使ったサンプル。プロジェクトを生成してSaveしている
+// Projectがもつ属性をExcelに出力している。
+export class PbevmShowProjectUsecase {
     private logger = getLogger('ShowProjectUsecase')
 
     constructor(
