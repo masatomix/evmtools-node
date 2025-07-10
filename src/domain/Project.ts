@@ -45,7 +45,11 @@ export class Project {
         const taskRows = this.toTaskRows().filter((taskRow) => taskRow.isLeaf)
 
         return taskRows.filter((taskRow) => {
-            const hasPV = baseDates.some((baseDate) => taskRow.calculatePV(baseDate) !== 0) //0じゃないヤツが、その日にあるタスク
+            // const hasPV = baseDates.some((baseDate) => taskRow.calculatePV(baseDate) !== 0) //0じゃないヤツが、その日にあるタスク
+            const hasPV = baseDates.some((baseDate) => {
+                const pv = taskRow.calculatePV(baseDate)
+                return typeof pv === 'number' && pv !== 0
+            })
             const assigneeMatch = !assignee || taskRow.assignee === assignee
             return hasPV && assigneeMatch
         })
