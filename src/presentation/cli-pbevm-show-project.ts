@@ -22,13 +22,13 @@ const createArgs = () => {
         .option('path', {
             type: 'string',
             description: 'Excel file Path',
-            default: './classdata.xlsx',
+            default: './now.xlsm',
         })
-        .option('output', {
-            type: 'string',
-            description: 'Output directory',
-            default: './output',
-        })
+        // .option('output', {
+        //     type: 'string',
+        //     description: 'Output directory',
+        //     default: './output',
+        // })
         .help()
         .parseSync() // 型付きで取得
     return argv
