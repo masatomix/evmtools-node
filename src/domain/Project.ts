@@ -40,6 +40,21 @@ export class Project {
         return this._taskService.convertToTaskRows(this._taskNodes)
     }
 
+    getTaskRows(fromDate: Date, toDate?: Date, assignee?: string): TaskRow[] {
+        const baseDates = generateBaseDates(fromDate, toDate ?? fromDate)
+        const taskRows = this.toTaskRows().filter((taskRow) => taskRow.isLeaf)
+
+        return taskRows.filter((taskRow) => {
+            // const hasPV = baseDates.some((baseDate) => taskRow.calculatePV(baseDate) !== 0) //0じゃないヤツが、その日にあるタスク
+            const hasPV = baseDates.some((baseDate) => {
+                const pv = taskRow.calculatePV(baseDate)
+                return typeof pv === 'number' && pv !== 0
+            })
+            const assigneeMatch = !assignee || taskRow.assignee === assignee
+            return hasPV && assigneeMatch
+        })
+    }
+
     printAndGetRawData = (printRowNum?: number) => {
         console.log(`プロジェクト名: ${this._name}`)
         console.log(`開始日: ${dateStr(this._startDate)}`)

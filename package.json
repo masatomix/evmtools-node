@@ -13,7 +13,8 @@
     },
     "bin": {
         "pbevm-show-project": "./dist/presentation/cli-pbevm-show-project.js",
-        "pbevm-diff": "./dist/presentation/cli-pbevm-diff.js"
+        "pbevm-diff": "./dist/presentation/cli-pbevm-diff.js",
+        "pbevm-show-pv": "./dist/presentation/cli-pbevm-show-pv.js"
     },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
@@ -30,6 +31,7 @@
         "prepublishOnly": "npm run build",
         "pbevm-show-project": "ts-node ./src/presentation/cli-pbevm-show-project --path now.xlsm",
         "pbevm-diff": "ts-node ./src/presentation/cli-pbevm-diff --path now.xlsm --prevPath prev.xlsm",
+        "pbevm-show-pv": "ts-node ./src/presentation/cli-pbevm-show-pv --path now.xlsm",
         "cli-test": "ts-node ./src/presentation/cli-test --excelPath now.xlsm",
         "pbevm-summary": "ts-node ./src/presentation/cli-pbevm-summary --path now.xlsm"
     },
