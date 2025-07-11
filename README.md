@@ -226,13 +226,12 @@ Give a ⭐️ if this project helped you!
 ```json
 {
   "evmtools-node-logger": {
-    "level": "warn",  // 全体のログレベル
-    "moduleLogLevels": { // ソースごとにlevelを変えたい場合
-      "groupMappings": "info",
-      "FileClassRepository": "info"
+    "level": "warn",
+    "moduleLogLevels": {
+      "main": "info"
     },
-    "transport": { // pino のtransport設定
-      "target": "pino-pretty", // この場合は npm install --save-dev pino-pretty すること
+    "transport": { 
+      "target": "pino-pretty", 
       "options": {
         "translateTime": "SYS:standard",
         "ignore": "id,hostname",
@@ -241,6 +240,14 @@ Give a ⭐️ if this project helped you!
     }
   }
 }
+```
+
+
+```
+"level": "warn",  // 全体のログレベルを指定
+"moduleLogLevels": // ソースごとにlevelを変えたい場合、この中に記述
+"transport":  // pino のtransport設定などを記述
+"target": "pino-pretty", // この場合は npm install --save-dev pino-pretty すること
 ```
 
 
