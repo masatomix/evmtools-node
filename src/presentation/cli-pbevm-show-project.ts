@@ -19,8 +19,8 @@ const main = () => {
 
 const createArgs = () => {
     const argv = yargs(hideBin(process.argv))
-    .usage('Usage: npx pbevm-show-project [options]')
-    .example('npx pbevm-show-project --path ./now.xlsm', '')
+        .usage('Usage: npx pbevm-show-project [options]')
+        .example('npx pbevm-show-project --path ./now.xlsm', '')
         .option('path', {
             type: 'string',
             description: 'Excel file Path',
