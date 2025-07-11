@@ -26,6 +26,12 @@ const main = () => {
 
 const createArgs = () => {
     const argv = yargs(hideBin(process.argv))
+        .usage('Usage: npx pbevm-show-pv [options]')
+        .example(
+            `npx pbevm-show-pv --path now.xlsm --fromDate 2025-07-07 --toDate 2025-07-11 \
+ --assignee '要員A'`,
+            ''
+        )
         .option('path', {
             type: 'string',
             description: 'Excel file Path',

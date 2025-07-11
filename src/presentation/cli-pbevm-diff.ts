@@ -21,6 +21,8 @@ const main = () => {
 
 const createArgs = () => {
     const argv = yargs(hideBin(process.argv))
+        .usage('Usage: npx pbevm-diff [options]')
+        .example('npx pbevm-diff --path now.xlsm --prevPath prev.xlsm', '')
         .option('path', {
             type: 'string',
             description: 'Excel file Path',
@@ -31,7 +33,6 @@ const createArgs = () => {
             description: 'Excel file Path',
             default: './prev.xlsm',
         })
-
         .help()
         .parseSync() // 型付きで取得
     return argv
