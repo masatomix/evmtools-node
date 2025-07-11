@@ -19,16 +19,18 @@ const main = () => {
 
 const createArgs = () => {
     const argv = yargs(hideBin(process.argv))
+        .usage('Usage: npx pbevm-show-project [options]')
+        .example('npx pbevm-show-project --path ./now.xlsm', '')
         .option('path', {
             type: 'string',
             description: 'Excel file Path',
-            default: './classdata.xlsx',
+            default: './now.xlsm',
         })
-        .option('output', {
-            type: 'string',
-            description: 'Output directory',
-            default: './output',
-        })
+        // .option('output', {
+        //     type: 'string',
+        //     description: 'Output directory',
+        //     default: './output',
+        // })
         .help()
         .parseSync() // 型付きで取得
     return argv
