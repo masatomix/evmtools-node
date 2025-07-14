@@ -59,12 +59,12 @@ export class Project {
      * @param taskMap 親のタスクIDも存在する、<id,TaskRow>なMap
      * @returns
      */
-    getFullTaskName(task: TaskRow): string {
+    getFullTaskName(task?: TaskRow): string {
         const names: string[] = []
-        let current: TaskRow | undefined = task
+        let current = task
 
         while (current) {
-            names.unshift(current.name)
+            names.unshift(current.name) // 先頭に名前追加
             current = current.parentId ? this.getTask(current.parentId) : undefined
         }
 
