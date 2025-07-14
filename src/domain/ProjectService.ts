@@ -35,8 +35,7 @@ export class ProjectService {
             const hasPvDiff = deltaPV !== undefined && deltaPV !== 0
             const hasEvDiff = deltaEV !== undefined && deltaEV !== 0
 
-            const fullName = this.buildFullTaskName(nowTask, nowTasksMap)
-
+            const fullName = now.getFullTaskName(nowTask)
             const isOverdueAt = nowTask.isOverdueAt(now.baseDate)
 
             const prevBaseDate = prevTask ? prev.baseDate : undefined
@@ -94,7 +93,7 @@ export class ProjectService {
             const hasPvDiff = deltaPV !== undefined && deltaPV !== 0
             const hasEvDiff = deltaEV !== undefined && deltaEV !== 0
 
-            const fullName = this.buildFullTaskName(prevTask, prevTasksMap)
+            const fullName = prev.getFullTaskName(prevTask)
             const isOverdueAt = prevTask.isOverdueAt(prev.baseDate)
 
             const prevBaseDate = prev.baseDate
@@ -203,24 +202,6 @@ export class ProjectService {
             ])
         )
         return result
-    }
-
-    /**
-     * 親を遡って、名前を"/"でjoinする
-     * @param task  子のタスク
-     * @param taskMap 親のタスクIDも存在する、<id,TaskRow>なMap
-     * @returns
-     */
-    private buildFullTaskName(task: TaskRow, taskMap: Map<number, TaskRow>): string {
-        const names: string[] = []
-        let current: TaskRow | undefined = task
-
-        while (current) {
-            names.unshift(current.name)
-            current = current.parentId ? taskMap.get(current.parentId) : undefined
-        }
-
-        return names.join('/')
     }
 }
 
