@@ -6,13 +6,15 @@ import { TaskRow } from './TaskRow'
 
 export class Project {
     private _taskService = new TaskService()
+    private _cachedTaskRows?: TaskRow[]
+    private _cachedTaskMap?: Map<number, TaskRow>
 
     constructor(
-        private _taskNodes: TaskNode[],
-        private _baseDate: Date,
-        private _startDate?: Date,
-        private _endDate?: Date,
-        private _name?: string
+        private readonly _taskNodes: TaskNode[],
+        private readonly _baseDate: Date,
+        private readonly _startDate?: Date,
+        private readonly _endDate?: Date,
+        private readonly _name?: string
     ) {}
 
     get baseDate() {
@@ -36,10 +38,46 @@ export class Project {
         return this.toTaskRows().length
     }
 
-    toTaskRows(): TaskRow[] {
-        return this._taskService.convertToTaskRows(this._taskNodes)
+    getTask(id: number): TaskRow | undefined {
+        if (!this._cachedTaskMap) {
+            this._cachedTaskMap = new Map(this.toTaskRows().map((row) => [row.id, row]))
+        }
+        return this._cachedTaskMap.get(id)
     }
 
+    toTaskRows(): TaskRow[] {
+        if (!this._cachedTaskRows) {
+            this._cachedTaskRows = this._taskService.convertToTaskRows(this._taskNodes)
+        }
+        return this._cachedTaskRows
+        // return this._taskService.convertToTaskRows(this._taskNodes)
+    }
+
+    /**
+     * 親を遡って、名前を"/"でjoinする
+     * @param task  子のタスク
+     * @param taskMap 親のタスクIDも存在する、<id,TaskRow>なMap
+     * @returns
+     */
+    getFullTaskName(task: TaskRow): string {
+        const names: string[] = []
+        let current: TaskRow | undefined = task
+
+        while (current) {
+            names.unshift(current.name)
+            current = current.parentId ? this.getTask(current.parentId) : undefined
+        }
+
+        return names.join('/')
+    }
+
+    /**
+     * 指定された期間、担当者のタスク配列を返す。親タスクは除外しています。
+     * @param fromDate
+     * @param toDate
+     * @param assignee
+     * @returns
+     */
     getTaskRows(fromDate: Date, toDate?: Date, assignee?: string): TaskRow[] {
         const baseDates = generateBaseDates(fromDate, toDate ?? fromDate)
         const taskRows = this.toTaskRows().filter((taskRow) => taskRow.isLeaf)
