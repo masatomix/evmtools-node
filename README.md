@@ -212,8 +212,8 @@ Give a ⭐️ if this project helped you!
 
 
 ## 改訂履歴
+- 0.0.7 内部のリファクタリング(キャッシュして処理改善)
 - 0.0.6 README.md(このファイル)を更新。Project#getTaskRows で、条件に合致するTaskRowを返すメソッドを追加
-
 - 0.0.5 初回リリース(絶賛開発中)
 
 
