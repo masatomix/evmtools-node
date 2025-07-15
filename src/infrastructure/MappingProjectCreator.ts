@@ -4,11 +4,13 @@ import { ProjectCreator } from '../domain/ProjectCreator'
 import { TaskRowCreatorImpl } from './TaskRowCreatorImpl'
 import { TaskService } from '../domain/TaskService'
 import { maxDate, minDate } from '../common'
+import { HolidayData } from '../domain/HolidayData'
 
 export class MappingProjectCreator implements ProjectCreator {
     constructor(
         private _mappings: unknown[],
-        private _projectName: string
+        private _projectName: string,
+        private _holidayDatas: HolidayData[]
     ) {}
 
     async createProject(): Promise<Project> {
@@ -36,7 +38,14 @@ export class MappingProjectCreator implements ProjectCreator {
         const taskNodes = taskService.buildTaskTree(taskRows)
 
         // 基準日をセット
-        const project = new Project(taskNodes, dateFromSn(baseDate), from, to, projectName)
+        const project = new Project(
+            taskNodes,
+            dateFromSn(baseDate),
+            this._holidayDatas,
+            from,
+            to,
+            projectName
+        )
         return project
     }
 }
