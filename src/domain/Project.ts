@@ -3,6 +3,7 @@ import { average, dateStr, generateBaseDates, sum } from '../common'
 import { TaskNode } from './TaskNode'
 import { TaskService } from './TaskService'
 import { TaskRow } from './TaskRow'
+import { HolidayData } from './HolidayData'
 
 export class Project {
     private _taskService = new TaskService()
@@ -12,6 +13,7 @@ export class Project {
     constructor(
         private readonly _taskNodes: TaskNode[],
         private readonly _baseDate: Date,
+        private readonly _holidayDatas: HolidayData[],
         private readonly _startDate?: Date,
         private readonly _endDate?: Date,
         private readonly _name?: string
@@ -32,6 +34,10 @@ export class Project {
     }
     get name() {
         return this._name
+    }
+
+    get holidayDatas() {
+        return this._holidayDatas
     }
 
     get length() {
