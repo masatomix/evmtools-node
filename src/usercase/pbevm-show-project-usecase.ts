@@ -18,8 +18,8 @@ export class PbevmShowProjectUsecase {
 
         // const holidayDatas = project.holidayDatas
         // console.table(holidayDatas)
-
-        // console.log(isHoliday(new Date('2025-01-01')))
+        // console.log(isHoliday(new Date('2025-07-21'), project))
+        // console.log(project.isHoliday(new Date('2025-07-21')))
         await this._repository.save(project)
     }
 }
