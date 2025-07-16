@@ -1,4 +1,7 @@
 import { Project, TaskNode, TaskRow } from '../domain'
+import { getLogger } from '../logger'
+
+const logger = getLogger('common/utils')
 
 /**
  * FROM/TOの日付を渡して、日付配列を作る。今のところJSTで作成する事
@@ -193,31 +196,17 @@ export const formatRelativeDays = (
 export function isHoliday(date: Date, project?: Project): boolean {
     const day = date.getDay() // 0: 日, 6: 土
     const isWeekend = day === 0 || day === 6
+
+    // Projectが保持する holidayDatasに同じ日付のデータがあれば祝日
     const isProjectHoliday =
         project?.holidayDatas.some((d) => {
-            console.log(d.date.toDateString())
+            logger.debug(`Projectの祝日:${d.date.toDateString()}`)
             return d.date.toDateString() === date.toDateString()
         }) ?? false
 
-    console.log(`weekend? ${isWeekend}`)
-    console.log(`holiday? ${isProjectHoliday}`)
+    logger.debug(`weekend? ${isWeekend}`)
+    logger.debug(`holiday? ${isProjectHoliday}`)
     return isWeekend || isProjectHoliday
 }
-
-// export function isHoliday(dateStr: string, project?: Project): boolean {
-//     // 将来的に、Projectから休日データをもらって、その内容も反映させたい
-
-//     const day = new Date(dateStr).getDay() // 0: 日, 6: 土
-//     const isWeekend = day === 0 || day === 6
-//     const isProjectHoliday =
-//         project?.holidayDatas.some((d) => {
-//             console.log(new Date(d.date).toDateString())
-//             return new Date(d.date).toDateString() === new Date(dateStr).toDateString()
-//         }) ?? false
-
-//     console.log(`weekend? ${isWeekend}`)
-//     console.log(`holiday? ${isProjectHoliday}`)
-//     return isWeekend || isProjectHoliday
-// }
 
 // if (!module.parent) { /* empty */ }

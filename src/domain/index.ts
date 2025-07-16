@@ -1,3 +1,4 @@
+export * from './HolidayData'
 export * from './Project'
 export * from './ProjectCreator'
 export * from './ProjectRepository'
