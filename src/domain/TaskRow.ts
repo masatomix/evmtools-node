@@ -3,11 +3,11 @@ import { getLogger } from '../logger'
 import { dateStr } from '../common'
 import { TaskNode } from './TaskNode'
 
-const logger = getLogger('domain/TaskRow')
 /**
  * タスクを表す基本エンティティ（リーフまたは中間ノード）
  */
 export class TaskRow {
+    private logger = getLogger('domain/TaskRow')
     constructor(
         /**
          * 表示順や構造上の識別に使われる行番号（"#"に対応）
@@ -137,7 +137,7 @@ export class TaskRow {
         ) {
             return workload / scheduledWorkDays
         }
-        logger.warn(
+        this.logger.warn(
             `タスクID:${id} 日数エラー(0/空)。稼動予定日数:[${scheduledWorkDays}],予定工数:[${workload}]. タスク名: ${name}`
         )
 
@@ -231,14 +231,14 @@ export class TaskRow {
     checkStartEndDateAndPlotMap = (): this is NonNullDateAndPlotMap => {
         const { startDate, endDate, plotMap, id, name } = this
         if (!startDate || !endDate) {
-            logger.warn(
+            this.logger.warn(
                 `タスクID:${id} 日付エラー。開始日:[${dateStr(startDate)}],終了日:[${dateStr(endDate)}]が取得できず.タスク名: ${name}`
             )
             return false
         }
 
         if (!plotMap) {
-            logger.warn(`タスクID:${id} plotMapエラー(undefined)`)
+            this.logger.warn(`タスクID:${id} plotMapエラー(undefined)`)
             return false
         }
         return true
