@@ -1,8 +1,9 @@
 import { tidy, filter, summarize, groupBy } from '@tidyjs/tidy'
-import { average, dateStr, generateBaseDates, sum } from '../common'
+import { average, dateStr, generateBaseDates, isHoliday, sum } from '../common'
 import { TaskNode } from './TaskNode'
 import { TaskService } from './TaskService'
 import { TaskRow } from './TaskRow'
+import { HolidayData } from './HolidayData'
 
 export class Project {
     private _taskService = new TaskService()
@@ -12,6 +13,7 @@ export class Project {
     constructor(
         private readonly _taskNodes: TaskNode[],
         private readonly _baseDate: Date,
+        private readonly _holidayDatas: HolidayData[],
         private readonly _startDate?: Date,
         private readonly _endDate?: Date,
         private readonly _name?: string
@@ -32,6 +34,10 @@ export class Project {
     }
     get name() {
         return this._name
+    }
+
+    get holidayDatas() {
+        return this._holidayDatas
     }
 
     get length() {
@@ -347,6 +353,10 @@ export class Project {
 
     get pvsByName() {
         return this._internalPvByName(true)
+    }
+
+    isHoliday(date: Date): boolean {
+        return isHoliday(date, this)
     }
 }
 

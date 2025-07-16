@@ -16,11 +16,17 @@ export class ExcelProjectCreator implements ProjectCreator {
                 // columnEndIndex: 26,
             },
         })
+
+        const holidayRawDatas = await excel2json2({
+            filePath: this._excelPath,
+            sheetName: '休日テーブル',
+        })
+
         // プロジェクト名
         const projectName = getFilenameWithoutExtension(this._excelPath)
         // 基準日をセット
 
-        return new MappingProjectCreator(mappings, projectName).createProject()
+        return new MappingProjectCreator(mappings, projectName, holidayRawDatas).createProject()
     }
 }
 

@@ -1,4 +1,7 @@
-import { TaskNode, TaskRow } from '../domain'
+import { Project, TaskNode, TaskRow } from '../domain'
+import { getLogger } from '../logger'
+
+const logger = getLogger('common/utils')
 
 /**
  * FROM/TOの日付を渡して、日付配列を作る。今のところJSTで作成する事
@@ -188,6 +191,22 @@ export const formatRelativeDays = (
 
     const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
     return rtf.format(diffDays, 'day') // "in 3 days" → "3日後"
+}
+
+export function isHoliday(date: Date, project?: Project): boolean {
+    const day = date.getDay() // 0: 日, 6: 土
+    const isWeekend = day === 0 || day === 6
+
+    // Projectが保持する holidayDatasに同じ日付のデータがあれば祝日
+    const isProjectHoliday =
+        project?.holidayDatas.some((d) => {
+            logger.debug(`Projectの祝日:${d.date.toDateString()}`)
+            return d.date.toDateString() === date.toDateString()
+        }) ?? false
+
+    logger.debug(`weekend? ${isWeekend}`)
+    logger.debug(`holiday? ${isProjectHoliday}`)
+    return isWeekend || isProjectHoliday
 }
 
 // if (!module.parent) { /* empty */ }
