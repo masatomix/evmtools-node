@@ -23,20 +23,32 @@ interface LoggerConfig {
 // デフォルトの設定(このlibrary標準の動き)
 const defaultLoggerOptions: LoggerConfig = {
     level: 'warn',
-    moduleLogLevels: {
-        FileClassRepository: 'info',
-        GenerateMappingClassUserCase: 'info',
-    },
+    moduleLogLevels: {},
     transport: undefined,
 }
 
-// 利用者の設定
-const userLoggerConfig: LoggerConfig | object = config.has('evmtools-node-logger')
-    ? config.get('evmtools-node-logger')
-    : {}
-const loggerConfig = { ...defaultLoggerOptions, ...userLoggerConfig }
+const isBrowser = typeof window !== 'undefined'
 
-const { transport, moduleLogLevels, level: loglevel } = loggerConfig
+// 外から設定を上書きできるようにしておく
+let loggerConfig: LoggerConfig = {
+    ...defaultLoggerOptions,
+    ...(isBrowser
+        ? {} // ブラウザでは config 無効
+        : config.has('evmtools-node-logger')
+          ? config.get('evmtools-node-logger')
+          : {}),
+}
+
+export function setLoggerConfig(config: LoggerConfig) {
+    loggerConfig = {
+        ...defaultLoggerOptions,
+        ...config,
+    }
+    // 必要なら既存ログレベルをリセットして再構築する処理も入れられる
+    for (const key of Object.keys(loggers)) {
+        delete loggers[key]
+    }
+}
 
 /**
  * モジュール名を指定して Logger を取得。
@@ -44,6 +56,7 @@ const { transport, moduleLogLevels, level: loglevel } = loggerConfig
  */
 export function getLogger(moduleName: string): Logger {
     if (!loggers[moduleName]) {
+        const { transport, moduleLogLevels, level: loglevel } = loggerConfig
         const level = moduleLogLevels[moduleName] ?? loglevel
         // console.log(`${moduleName}はなかったので${level}で作る`)
         loggers[moduleName] = pino({
