@@ -1,5 +1,5 @@
 import { tidy, filter, summarize, groupBy } from '@tidyjs/tidy'
-import { average, dateStr, generateBaseDates, sum } from '../common'
+import { average, dateStr, generateBaseDates, isHoliday, sum } from '../common'
 import { TaskNode } from './TaskNode'
 import { TaskService } from './TaskService'
 import { TaskRow } from './TaskRow'
@@ -353,6 +353,10 @@ export class Project {
 
     get pvsByName() {
         return this._internalPvByName(true)
+    }
+
+    isHoliday(date: Date): boolean {
+        return isHoliday(date, this)
     }
 }
 

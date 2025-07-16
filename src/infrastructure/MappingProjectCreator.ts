@@ -10,7 +10,7 @@ export class MappingProjectCreator implements ProjectCreator {
     constructor(
         private _mappings: unknown[],
         private _projectName: string,
-        private _holidayDatas: HolidayData[]
+        private _holidayRawDatas: unknown[]
     ) {}
 
     async createProject(): Promise<Project> {
@@ -37,11 +37,20 @@ export class MappingProjectCreator implements ProjectCreator {
         const taskService = new TaskService()
         const taskNodes = taskService.buildTaskTree(taskRows)
 
+        const holidayDatas = (this._holidayRawDatas as Record<string, any>[]).map((rawData) => {
+            return new HolidayData(
+                dateFromSn(rawData['日付'] as number),
+                rawData['祝日'] as string | undefined,
+                rawData['祝日定義ルール'] as string | undefined,
+                rawData['振替'] as string | undefined
+            )
+        })
+
         // 基準日をセット
         const project = new Project(
             taskNodes,
             dateFromSn(baseDate),
-            this._holidayDatas,
+            holidayDatas,
             from,
             to,
             projectName
