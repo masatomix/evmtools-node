@@ -16,8 +16,10 @@ export class ExcelBufferProjectCreator implements ProjectCreator {
             // columnEndIndex: 26,
         })
 
+        const holidayRawDatas = await excelBuffer2json(this._buffer, '休日テーブル')
+
         // プロジェクト名
         const projectName = this._projectName
-        return new MappingProjectCreator(mappings, projectName).createProject()
+        return new MappingProjectCreator(mappings, projectName, holidayRawDatas).createProject()
     }
 }
