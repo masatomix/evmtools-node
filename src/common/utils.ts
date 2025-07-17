@@ -81,7 +81,6 @@ export function printTask(row: TaskRow, baseDates: Date[]) {
     }
 }
 
-
 /**
  * Date配列を引数にとり、MaxやMinを選んで返す
  *

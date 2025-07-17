@@ -5,8 +5,10 @@ import { TaskService } from './TaskService'
 import { TaskRow } from './TaskRow'
 import { HolidayData } from './HolidayData'
 import { calcRate } from '../common/calcUtils'
+import { getLogger } from '../logger'
 
 export class Project {
+    private logger = getLogger('domain/Project')
     private _taskService = new TaskService()
     private _cachedTaskRows?: TaskRow[]
     private _cachedTaskMap?: Map<number, TaskRow>
@@ -101,10 +103,10 @@ export class Project {
     }
 
     printAndGetRawData = (printRowNum?: number) => {
-        console.log(`プロジェクト名: ${this._name}`)
-        console.log(`開始日: ${dateStr(this._startDate)}`)
-        console.log(`終了日: ${dateStr(this._endDate)}`)
-        console.log(`基準日: ${dateStr(this._baseDate)}`)
+        this.logger.info(`プロジェクト名: ${this._name}`)
+        this.logger.info(`開始日: ${dateStr(this._startDate)}`)
+        this.logger.info(`終了日: ${dateStr(this._endDate)}`)
+        this.logger.info(`基準日: ${dateStr(this._baseDate)}`)
         // console.table(this._taskNodes)
 
         const taskRows = this.toTaskRows()
@@ -138,9 +140,9 @@ export class Project {
         // ユーザ入力値か、未指定なら全部。入力値が大きいときも全部
         // const num = printRowNum && printRowNum <= rows.length ? printRowNum : rows.length
         const taskCount = rows.length
-        console.log(`タスク数:${taskCount}件`)
+        this.logger.info(`タスク数:${taskCount}件`)
         const numToShow = Math.min(printRowNum ?? taskCount, taskCount)
-        console.log(`先頭${numToShow}行データ:`)
+        this.logger.info(`先頭${numToShow}行データ:`)
         console.table(rows.slice(0, numToShow))
         return rows
     }
