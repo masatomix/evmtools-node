@@ -4,6 +4,7 @@ import { TaskNode } from './TaskNode'
 import { TaskService } from './TaskService'
 import { TaskRow } from './TaskRow'
 import { HolidayData } from './HolidayData'
+import { calcRate } from '../common/calcUtils'
 
 export class Project {
     private _taskService = new TaskService()
@@ -384,26 +385,10 @@ const sumEVs = (group: TaskRow[]) =>
         3
     )
 
-export const isValidNumber = (value: unknown): value is number =>
-    typeof value === 'number' && !Number.isNaN(value)
-
-// const calcSPI = (group: TaskRow[]) => {
-//     const ev = sumEVs(group)
-//     const pv = sumPVs(group)
-//     return calcRate(ev, pv)
-// }
-
 const calculateSPI = (group: TaskRow[], baseDate: Date) => {
     const ev = sumEVs(group)
     const pv = sumCalculatePVs(group, baseDate)
     return calcRate(ev, pv)
-}
-
-export const calcRate = (a: number | undefined, b: number | undefined) => {
-    if (isValidNumber(b) && isValidNumber(a) && b !== 0) {
-        return a / b
-    }
-    return undefined
 }
 
 // export type Statistics = {

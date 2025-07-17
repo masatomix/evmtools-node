@@ -1,6 +1,6 @@
 import { date2Sn, dateFromSn } from 'excel-csv-read-write'
 import { getLogger } from '../logger'
-import { dateStr } from '../common'
+import { calcRate, dateStr, isValidNumber, subtract } from '../common'
 import { TaskNode } from './TaskNode'
 
 /**
@@ -127,8 +127,6 @@ export class TaskRow {
     get workloadPerDay(): number | undefined {
         const { workload, scheduledWorkDays } = this
         const { id, name } = this
-        const isValidNumber = (value: unknown): value is number =>
-            typeof value === 'number' && !Number.isNaN(value)
 
         if (
             isValidNumber(workload) &&
@@ -144,6 +142,9 @@ export class TaskRow {
         return undefined
     }
 
+    /**
+     * 進捗率が100% ならtrueそれ以外はfalse
+     */
     get finished(): boolean {
         return this.progressRate === 1.0
     }
@@ -176,13 +177,7 @@ export class TaskRow {
             return undefined
         }
 
-        const {
-            // scheduledWorkDays, // 稼働予定の日数を取得 N (calculatePVsにあわせるなら、ココホントはplotMapの数にすべきか)
-            // workload, // 予定工数を取得 M
-            startDate,
-            endDate,
-            plotMap,
-        } = this
+        const { startDate, endDate, plotMap } = this
 
         const workloadPerDay = this.workloadPerDay
         if (workloadPerDay === undefined) {
@@ -199,8 +194,6 @@ export class TaskRow {
 
     /**
      * 基準日終了時点の累積PVを返す。タスクが始まっていなかったら0.
-     * なんらかの理由で、予定工数がNaN/undefinedの場合、undefinedを返す。
-     * なんらかの理由で、稼働予定日数がNaN/undefined/ゼロの場合、undefinedを返す。
      * plotMapからカウントしている。(Excelから読む際は稼働予定日数より□のプロット優先となるってこと)
      * plotMapが取れなかったらゼロ
      * 開始日終了日が取れなかったらゼロ
@@ -228,6 +221,32 @@ export class TaskRow {
         return pvs
     }
 
+    /**
+     * Schedule Performance Index (SPI = EV/PV)
+     * baseDateを元に導出した累積PVを用いて計算した、SPI
+     * @param baseDate
+     * @returns
+     */
+    calculateSPI = (baseDate: Date): number | undefined => {
+        const pvs = this.calculatePVs(baseDate)
+        return calcRate(this.ev, pvs)
+    }
+
+    /**
+     * Schedule Variance (SV = EV-PV)を返す
+     * baseDateを元に導出した累積PVを用いて計算した、EV-PV
+     * @param baseDate
+     * @returns
+     */
+    calculateSV = (baseDate: Date): number | undefined => {
+        const pvs = this.calculatePVs(baseDate)
+        return subtract(this.ev, pvs)
+    }
+
+    /**
+     * startDate, endDate ,plotMap がundefinedだったらfalse
+     * @returns
+     */
     checkStartEndDateAndPlotMap = (): this is NonNullDateAndPlotMap => {
         const { startDate, endDate, plotMap, id, name } = this
         if (!startDate || !endDate) {
@@ -280,6 +299,7 @@ export class TaskRow {
 
 /**
  * baseDateがレンジにあるかどうか
+ * baseDateがplotMapにある、かつ、start/endに含まれていたらtrue
  * @param baseDate
  * @param startDate
  * @param endDate
