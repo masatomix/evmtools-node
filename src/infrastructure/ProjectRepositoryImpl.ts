@@ -3,8 +3,10 @@ import { dateStr } from '../common'
 import { createStyles } from '../common/styles'
 import { Project } from '../domain'
 import { ProjectRepository } from '../domain/ProjectRepository'
+import { getLogger } from '../logger'
 
 export class ProjectRepositoryImpl implements ProjectRepository {
+    private logger = getLogger('infrastructure/ProjectRepositoryImpl')
     async save(project: Project): Promise<void> {
         const projectData = project.printAndGetRawData(20)
 
@@ -30,7 +32,7 @@ export class ProjectRepositoryImpl implements ProjectRepository {
         const dateStrHyphen = dateStr(baseDate).replace(/\//g, '-')
 
         if (statisticsByProject) {
-            console.log('プロジェクト情報')
+            this.logger.info('プロジェクト情報')
             console.table(statisticsByProject)
             json2workbook({
                 instances: statisticsByProject,
@@ -40,7 +42,7 @@ export class ProjectRepositoryImpl implements ProjectRepository {
             })
         }
         if (statisticsByName) {
-            console.log('要員ごと統計')
+            this.logger.info('要員ごと統計')
             console.table(statisticsByName)
             json2workbook({
                 instances: statisticsByName,

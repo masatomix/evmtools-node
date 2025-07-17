@@ -4,8 +4,11 @@ import { TaskNode } from './TaskNode'
 import { TaskService } from './TaskService'
 import { TaskRow } from './TaskRow'
 import { HolidayData } from './HolidayData'
+import { calcRate } from '../common/calcUtils'
+import { getLogger } from '../logger'
 
 export class Project {
+    private logger = getLogger('domain/Project')
     private _taskService = new TaskService()
     private _cachedTaskRows?: TaskRow[]
     private _cachedTaskMap?: Map<number, TaskRow>
@@ -100,10 +103,10 @@ export class Project {
     }
 
     printAndGetRawData = (printRowNum?: number) => {
-        console.log(`プロジェクト名: ${this._name}`)
-        console.log(`開始日: ${dateStr(this._startDate)}`)
-        console.log(`終了日: ${dateStr(this._endDate)}`)
-        console.log(`基準日: ${dateStr(this._baseDate)}`)
+        this.logger.info(`プロジェクト名: ${this._name}`)
+        this.logger.info(`開始日: ${dateStr(this._startDate)}`)
+        this.logger.info(`終了日: ${dateStr(this._endDate)}`)
+        this.logger.info(`基準日: ${dateStr(this._baseDate)}`)
         // console.table(this._taskNodes)
 
         const taskRows = this.toTaskRows()
@@ -137,9 +140,9 @@ export class Project {
         // ユーザ入力値か、未指定なら全部。入力値が大きいときも全部
         // const num = printRowNum && printRowNum <= rows.length ? printRowNum : rows.length
         const taskCount = rows.length
-        console.log(`タスク数:${taskCount}件`)
+        this.logger.info(`タスク数:${taskCount}件`)
         const numToShow = Math.min(printRowNum ?? taskCount, taskCount)
-        console.log(`先頭${numToShow}行データ:`)
+        this.logger.info(`先頭${numToShow}行データ:`)
         console.table(rows.slice(0, numToShow))
         return rows
     }
@@ -184,6 +187,9 @@ export class Project {
 
         const result = tidy(
             rows,
+            // mutate({
+            //     assignee: (row) => row.assignee?.trim() ?? '', // 🔧 trim()を適用
+            //   }),
             filter((row) => row.isLeaf!), //フォルダの情報は不要
             groupBy('assignee', [
                 summarize({
@@ -384,26 +390,10 @@ const sumEVs = (group: TaskRow[]) =>
         3
     )
 
-export const isValidNumber = (value: unknown): value is number =>
-    typeof value === 'number' && !Number.isNaN(value)
-
-// const calcSPI = (group: TaskRow[]) => {
-//     const ev = sumEVs(group)
-//     const pv = sumPVs(group)
-//     return calcRate(ev, pv)
-// }
-
 const calculateSPI = (group: TaskRow[], baseDate: Date) => {
     const ev = sumEVs(group)
     const pv = sumCalculatePVs(group, baseDate)
     return calcRate(ev, pv)
-}
-
-export const calcRate = (a: number | undefined, b: number | undefined) => {
-    if (isValidNumber(b) && isValidNumber(a) && b !== 0) {
-        return a / b
-    }
-    return undefined
 }
 
 // export type Statistics = {

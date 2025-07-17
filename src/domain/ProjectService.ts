@@ -1,7 +1,7 @@
 import { tidy, groupBy, summarize } from '@tidyjs/tidy'
 import { Project } from './Project'
 import { TaskRow } from './TaskRow'
-import { formatRelativeDays, formatRelativeDaysNumber, sum } from '../common/utils'
+import { formatRelativeDays, formatRelativeDaysNumber, sum } from '../common'
 
 export class ProjectService {
     calculateTaskDiffs(now: Project, prev: Project): TaskDiff[] {
