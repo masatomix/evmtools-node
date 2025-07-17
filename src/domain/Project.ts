@@ -187,6 +187,9 @@ export class Project {
 
         const result = tidy(
             rows,
+            // mutate({
+            //     assignee: (row) => row.assignee?.trim() ?? '', // 🔧 trim()を適用
+            //   }),
             filter((row) => row.isLeaf!), //フォルダの情報は不要
             groupBy('assignee', [
                 summarize({
