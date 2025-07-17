@@ -4,7 +4,7 @@ import { hideBin } from 'yargs/helpers'
 import { dateFromSn, excel2json2, excelBuffer2json } from 'excel-csv-read-write'
 import { ProjectProgressCreator } from '../domain/ProjectProgressCreator'
 import { ExcelProjectCreator } from '../infrastructure'
-import { isValidNumber } from '../domain'
+import { isValidNumber } from '../common'
 import { dateStr } from '../common'
 
 // const logger = getLogger('main')

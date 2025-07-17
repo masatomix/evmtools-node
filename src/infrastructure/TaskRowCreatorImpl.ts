@@ -46,7 +46,7 @@ export function convertToTaskRow(
         id: Number(data['1']),
         level,
         name,
-        assignee: toStr(data, 13),
+        assignee: toStr(data, 13)?.trim(),
         workload: toNumber(data, 14),
         startDate: toDate(data, 15),
         endDate: toDate(data, 16),
