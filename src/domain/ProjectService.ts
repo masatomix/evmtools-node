@@ -1,7 +1,7 @@
 import { tidy, groupBy, summarize } from '@tidyjs/tidy'
-import { Project } from './Project'
+import { Project, ProjectStatistics } from './Project'
 import { TaskRow } from './TaskRow'
-import { formatRelativeDays, formatRelativeDaysNumber, sum } from '../common'
+import { dateStr, formatRelativeDays, formatRelativeDaysNumber, sum } from '../common'
 
 export class ProjectService {
     calculateTaskDiffs(now: Project, prev: Project): TaskDiff[] {
@@ -202,6 +202,76 @@ export class ProjectService {
             ])
         )
         return result
+    }
+
+    /**
+     * existingに対してincomingをマージする。おなじプロジェクト名でおなじ基準日のデータは上書きする。
+     * @param existing
+     * @param incoming
+     * @returns
+     */
+    mergeProjectStatistics = (
+        existing: ProjectStatistics[],
+        incoming: ProjectStatistics[]
+    ): ProjectStatistics[] => {
+        const map = new Map<string, ProjectStatistics>()
+        for (const stat of existing) {
+            const key = `${stat.projectName}_${stat.baseDate}`
+            map.set(key, stat)
+        }
+
+        for (const stat of incoming) {
+            const key = `${stat.projectName}_${stat.baseDate}`
+            map.set(key, stat) // 同じprojectNameでも日付が違えば別物として扱う
+        }
+        // return Array.from(map.values());
+        // 基準日で降順ソート（新しい順）
+        return Array.from(map.values()).sort(
+            (a, b) => new Date(b.baseDate).getTime() - new Date(a.baseDate).getTime()
+        )
+    }
+
+    /**
+     * 欠落している間のデータを補間して返す
+     * (たとえば、土日データを金曜日のデータで補間しています)
+     * @param projectStatisticsArray
+     * @returns
+     */
+    fillMissingDates = (projectStatisticsArray: ProjectStatistics[]) => {
+        const filledStats: ProjectStatistics[] = []
+        if (projectStatisticsArray.length === 0) return filledStats
+
+        const sorted = [...projectStatisticsArray].sort(
+            (a, b) => new Date(a.baseDate).getTime() - new Date(b.baseDate).getTime()
+        )
+
+        let prev = sorted[0]
+        filledStats.push(prev)
+
+        for (let i = 1; i < sorted.length; i++) {
+            const current = sorted[i]
+            const date = new Date(prev.baseDate)
+            const targetDate = new Date(current.baseDate)
+
+            date.setDate(date.getDate() + 1)
+
+            while (date < targetDate) {
+                const clone: ProjectStatistics = {
+                    ...prev,
+                    baseDate: dateStr(date),
+                }
+                filledStats.push(clone)
+                date.setDate(date.getDate() + 1)
+            }
+
+            filledStats.push(current)
+            prev = current
+        }
+
+        const final = filledStats.sort(
+            (a, b) => new Date(b.baseDate).getTime() - new Date(a.baseDate).getTime()
+        )
+        return final
     }
 }
 
