@@ -37,6 +37,7 @@ export class ProjectService {
 
             const fullName = now.getFullTaskName(nowTask)
             const isOverdueAt = nowTask.isOverdueAt(now.baseDate)
+            const workload = nowTask.workload
 
             const prevBaseDate = prevTask ? prev.baseDate : undefined
             const currentBaseDate = now.baseDate
@@ -67,6 +68,7 @@ export class ProjectService {
                 diffType: isNew ? 'added' : hasAnyChange ? 'modified' : 'none',
                 finished: nowTask.finished,
                 isOverdueAt,
+                workload,
                 prevBaseDate,
                 currentBaseDate,
                 baseDate,
@@ -95,6 +97,7 @@ export class ProjectService {
 
             const fullName = prev.getFullTaskName(prevTask)
             const isOverdueAt = prevTask.isOverdueAt(prev.baseDate)
+            const workload = prevTask.workload
 
             const prevBaseDate = prev.baseDate
             const currentBaseDate = undefined
@@ -125,6 +128,7 @@ export class ProjectService {
                 diffType: 'removed',
                 finished: prevTask.finished,
                 isOverdueAt,
+                workload,
                 prevBaseDate,
                 currentBaseDate,
                 baseDate,
@@ -342,6 +346,7 @@ export type TaskDiff = {
     readonly hasEvDiff: boolean
     readonly diffType: DiffType
     readonly isOverdueAt: boolean
+    readonly workload?: number
     readonly prevTask?: TaskRow
     readonly currentTask?: TaskRow
     readonly prevBaseDate?: Date
