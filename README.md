@@ -212,6 +212,7 @@ Give a ⭐️ if this project helped you!
 
 
 ## 改訂履歴
+- 0.0.13 Diffのプロパティに工数(workload)を追加。
 - 0.0.12 時系列の統計データを読み込む ProjectStatisticsCreator を追加。
 - 0.0.11 指定した基準日のSPI/SV(EV-PV)を返すメソッドをTaskRowに追加。
 - 0.0.10 内部処理の見直し(ログ関連)。
