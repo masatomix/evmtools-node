@@ -1,6 +1,6 @@
 {
     "name": "evmtools-node",
-    "version": "0.0.13",
+    "version": "0.0.14-SNAPSHOT",
     "description": "このライブラリは、プライムブレインズ社で利用している「進捗管理ツール(Excel)」ファイルを読み込み、 プロジェクトの進捗状況や要員別の作業量を可視化するためのライブラリです。",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -34,7 +34,8 @@
         "pbevm-diff": "ts-node ./src/presentation/cli-pbevm-diff --path now.xlsm --prevPath prev.xlsm",
         "pbevm-show-pv": "ts-node ./src/presentation/cli-pbevm-show-pv --path now.xlsm",
         "cli-test": "ts-node ./src/presentation/cli-test --excelPath now.xlsm",
-        "pbevm-summary": "ts-node ./src/presentation/cli-pbevm-summary --path now.xlsm"
+        "pbevm-summary": "ts-node ./src/presentation/cli-pbevm-summary --path now.xlsm",
+        "pbevm-show-resourceplan": "ts-node ./src/resource/presentation/cli-pbevm-show-resourceplan"
     },
     "repository": {
         "type": "git",
