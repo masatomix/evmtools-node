@@ -34,7 +34,8 @@
         "pbevm-diff": "ts-node ./src/presentation/cli-pbevm-diff --path now.xlsm --prevPath prev.xlsm",
         "pbevm-show-pv": "ts-node ./src/presentation/cli-pbevm-show-pv --path now.xlsm",
         "cli-test": "ts-node ./src/presentation/cli-test --excelPath now.xlsm",
-        "pbevm-summary": "ts-node ./src/presentation/cli-pbevm-summary --path now.xlsm"
+        "pbevm-summary": "ts-node ./src/presentation/cli-pbevm-summary --path now.xlsm",
+        "pbevm-show-resourceplan": "ts-node ./src/resource/presentation/cli-pbevm-show-resourceplan"
     },
     "repository": {
         "type": "git",
