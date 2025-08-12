@@ -1,6 +1,6 @@
 {
     "name": "evmtools-node",
-    "version": "0.0.13",
+    "version": "0.0.14",
     "description": "このライブラリは、プライムブレインズ社で利用している「進捗管理ツール(Excel)」ファイルを読み込み、 プロジェクトの進捗状況や要員別の作業量を可視化するためのライブラリです。",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -9,13 +9,14 @@
         "./domain": "./dist/domain/index.js",
         "./infrastructure": "./dist/infrastructure/index.js",
         "./presentation": "./dist/presentation/index.js",
-        "./usercase": "./dist/usercase/index.js",
+        "./usecase": "./dist/usecase/index.js",
         "./logger": "./dist/logger.js"
     },
     "bin": {
         "pbevm-show-project": "./dist/presentation/cli-pbevm-show-project.js",
         "pbevm-diff": "./dist/presentation/cli-pbevm-diff.js",
-        "pbevm-show-pv": "./dist/presentation/cli-pbevm-show-pv.js"
+        "pbevm-show-pv": "./dist/presentation/cli-pbevm-show-pv.js",
+        "pbevm-show-resourceplan": "./dist/resource/presentation/cli-pbevm-show-resourceplan.js"
     },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
@@ -34,7 +35,8 @@
         "pbevm-diff": "ts-node ./src/presentation/cli-pbevm-diff --path now.xlsm --prevPath prev.xlsm",
         "pbevm-show-pv": "ts-node ./src/presentation/cli-pbevm-show-pv --path now.xlsm",
         "cli-test": "ts-node ./src/presentation/cli-test --excelPath now.xlsm",
-        "pbevm-summary": "ts-node ./src/presentation/cli-pbevm-summary --path now.xlsm"
+        "pbevm-summary": "ts-node ./src/presentation/cli-pbevm-summary --path now.xlsm",
+        "pbevm-show-resourceplan": "ts-node ./src/resource/presentation/cli-pbevm-show-resourceplan"
     },
     "repository": {
         "type": "git",

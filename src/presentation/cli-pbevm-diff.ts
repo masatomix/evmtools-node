@@ -2,7 +2,7 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 // import { getLogger } from '../logger'
 import { ExcelProjectCreator } from '../infrastructure'
-import { PbevmDiffUsercase } from '../usercase/pbevm-diff-usercase'
+import { PbevmDiffUsecase } from '../usecase/pbevm-diff-usecase'
 import { ProjectService } from '../domain'
 
 // const logger = getLogger('main')
@@ -14,7 +14,7 @@ const main = () => {
     const prevCreator = new ExcelProjectCreator(prevPath)
     const service = new ProjectService()
 
-    new PbevmDiffUsercase(creator, prevCreator, service)
+    new PbevmDiffUsecase(creator, prevCreator, service)
         .execute()
         .catch((error) => console.error(error))
 }

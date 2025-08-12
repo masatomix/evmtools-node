@@ -366,27 +366,27 @@ export class Project {
     }
 }
 
-const sumWorkload = (group: TaskRow[]) => sum(group.map((d) => d.workload ?? 0))
-const averageWorkload = (group: TaskRow[]) => average(group.map((d) => d.workload ?? 0))
+const sumWorkload = (group: TaskRow[]) => sum(group.map((d) => d.workload))
+const averageWorkload = (group: TaskRow[]) => average(group.map((d) => d.workload))
 const sumCalculatePV = (group: TaskRow[], baseDate: Date) =>
     sum(
-        group.map((d) => d.calculatePV(baseDate) ?? 0),
+        group.map((d) => d.calculatePV(baseDate)),
         3
     )
 const sumCalculatePVs = (group: TaskRow[], baseDate: Date) =>
     sum(
-        group.map((d) => d.calculatePVs(baseDate) ?? 0),
+        group.map((d) => d.calculatePVs(baseDate)),
         3
     )
 const sumPVs = (group: TaskRow[]) =>
     sum(
-        group.map((d) => d.pv ?? 0),
+        group.map((d) => d.pv),
         3
     ) // 基準日ごとに、担当者でグルーピングされたPVデータを足している
 
 const sumEVs = (group: TaskRow[]) =>
     sum(
-        group.map((d) => d.ev ?? 0),
+        group.map((d) => d.ev),
         3
     )
 

@@ -35,8 +35,8 @@ export class PbevmSummaryUsecase {
                 groupBy('assignee', [
                     summarize({
                         担当のタスク数: (group) => group.length,
-                        担当の工数の和: (group) => sum(group.map((d) => d.workload ?? 0)),
-                        担当の工数の平均: (group) => average(group.map((d) => d.workload ?? 0)),
+                        担当の工数の和: (group) => sum(group.map((d) => d.workload)),
+                        担当の工数の平均: (group) => average(group.map((d) => d.workload)),
                         // pv: (group) => group.map((d) => d.pv),
                         // calcPv_baseDate_の列: (group) => group.map((d) => d.calculatePV(baseDate)),
                         [`${dateStr(baseDate)}までのPV累積`]: (group) =>
