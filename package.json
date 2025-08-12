@@ -15,7 +15,8 @@
     "bin": {
         "pbevm-show-project": "./dist/presentation/cli-pbevm-show-project.js",
         "pbevm-diff": "./dist/presentation/cli-pbevm-diff.js",
-        "pbevm-show-pv": "./dist/presentation/cli-pbevm-show-pv.js"
+        "pbevm-show-pv": "./dist/presentation/cli-pbevm-show-pv.js",
+        "pbevm-show-resourceplan": "./dist/resource/presentation/cli-pbevm-show-resourceplan.js"
     },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",

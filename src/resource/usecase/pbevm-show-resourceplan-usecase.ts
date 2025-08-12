@@ -18,9 +18,14 @@ import { style0, style1, style2, style21, style3, style4 } from '../../common/my
 export class PbevmShowResourcePlanUsecase {
     private logger = getLogger('PbevmShowResourcePlanUsercase')
 
+    constructor(
+        private _path: string,
+        private _outputDir: string
+    ) {}
+
     async execute() {
-        const unitResults = await toUnitInfoArray('要員計画202009.xlsx')
-        const outputDir = 'output'
+        const unitResults = await toUnitInfoArray(this._path)
+        const outputDir = this._outputDir
         fs.existsSync(outputDir) || fs.mkdirSync(outputDir)
 
         const workbook = await createWorkbook()
