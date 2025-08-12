@@ -1,7 +1,7 @@
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { ExcelProjectCreator } from '../infrastructure'
-import { PbevmShowPvUsecase } from '../usecase/pbevm-show-pv-usercase'
+import { PbevmShowPvUsecase } from '../usecase/pbevm-show-pv-usecase'
 import { dateStr } from '../common'
 import { getLogger } from '../logger'
 
