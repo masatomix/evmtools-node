@@ -2,7 +2,7 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 // import { getLogger } from '../logger'
 import { ExcelProjectCreator } from '../infrastructure'
-import { PbevmDiffUsercase } from '../usercase/pbevm-diff-usercase'
+import { PbevmDiffUsercase } from '../usecase/pbevm-diff-usercase'
 import { ProjectService } from '../domain'
 
 // const logger = getLogger('main')
