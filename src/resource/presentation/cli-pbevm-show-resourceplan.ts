@@ -1,6 +1,6 @@
 // import yargs from 'yargs'
 // import { hideBin } from 'yargs/helpers'
-import { PbevmShowResourcePlanUsecase } from '../usercase/pbevm-show-resourceplan-usecase'
+import { PbevmShowResourcePlanUsecase } from '../usecase/pbevm-show-resourceplan-usecase'
 
 // const logger = getLogger('main')
 
