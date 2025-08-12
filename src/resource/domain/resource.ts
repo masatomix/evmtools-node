@@ -23,7 +23,7 @@ export type MonthTypes = { [key in MonthType]?: number }
 export type MonthTypesArray = { [key in MonthType]: number[] }
 
 export type PriceTypes = {
-    社内単価: number
+    社内単価?: number
     プロジェクト単価?: number
 }
 
@@ -55,5 +55,5 @@ export type UnitInfo = {
 export type MemberInfo = {
     役職: string
     名前: string
-    社内単価: number
+    社内単価?: number
 }

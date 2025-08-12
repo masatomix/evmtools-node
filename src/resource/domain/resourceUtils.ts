@@ -63,9 +63,9 @@ export const toGroupBy = (key: AttrType, resourcePlans: ResourcePlan[]): Resourc
                 社内単価: (group) =>
                     ['役職', '名前'].includes(key)
                         ? group[0].社内単価
-                        : (average(group.map((instance) => instance.社内単価)) as number),
+                        : average(group.map((instance) => instance.社内単価)),
                 プロジェクト単価: (group) =>
-                    average(group.map((instance) => instance.プロジェクト単価 as number)),
+                    average(group.map((instance) => instance.プロジェクト単価)),
                 // ユニットコード: unitAttrs.includes(key) ? instance.ユニットコード[0] : '',
                 // ユニット名: unitAttrs.includes(key) ? instance.ユニット名[0] : '',
                 // 役職: ['役職', '名前'].includes(key) ? instance.役職[0] : '',
@@ -189,7 +189,7 @@ export const toProjectMemberInfo = (resourcePlans: ResourcePlan[]): ResourcePlan
                     名前: (instances) => instances[0].名前,
                     社内単価: (instances) => instances[0].社内単価,
                     プロジェクト単価: (group) =>
-                        average(group.map((instance) => instance.プロジェクト単価 as number)),
+                        average(group.map((instance) => instance.プロジェクト単価)),
                     ...monthlyAggregators(),
                 }),
             ]
@@ -205,7 +205,7 @@ export const 単価単位調整 = (instance: ResourcePlan, unit = 1000, scale = 
 
     return {
         ...instance,
-        社内単価: calc(instance.社内単価) as number,
+        社内単価: calc(instance.社内単価),
         プロジェクト単価: calc(instance.プロジェクト単価),
     }
 }

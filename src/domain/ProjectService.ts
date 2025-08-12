@@ -154,15 +154,13 @@ export class ProjectService {
             // taskDiffs,
             summarize({
                 // deltaProgressRate: (group) => this._calcProgressRate(group),
-                deltaPV: (group) => sumDelta(group.map((g) => g.deltaPV)),
-                deltaEV: (group) => sumDelta(group.map((g) => g.deltaEV)),
+                deltaPV: (group) => sum(group.map((g) => g.deltaPV)),
+                deltaEV: (group) => sum(group.map((g) => g.deltaEV)),
                 // deltaSPI: (group) => sumDelta(group.map((g) => g.deltaSPI)), // これはおかしい。
-                prevPV: (group) => sumDelta(group.filter((g) => g.hasPvDiff).map((g) => g.prevPV)),
-                prevEV: (group) => sumDelta(group.filter((g) => g.hasEvDiff).map((g) => g.prevEV)),
-                currentPV: (group) =>
-                    sumDelta(group.filter((g) => g.hasPvDiff).map((g) => g.currentPV)),
-                currentEV: (group) =>
-                    sumDelta(group.filter((g) => g.hasEvDiff).map((g) => g.currentEV)),
+                prevPV: (group) => sum(group.filter((g) => g.hasPvDiff).map((g) => g.prevPV)),
+                prevEV: (group) => sum(group.filter((g) => g.hasEvDiff).map((g) => g.prevEV)),
+                currentPV: (group) => sum(group.filter((g) => g.hasPvDiff).map((g) => g.currentPV)),
+                currentEV: (group) => sum(group.filter((g) => g.hasEvDiff).map((g) => g.currentEV)),
                 modifiedCount: (group) => group.filter((g) => g.diffType === 'modified').length,
                 addedCount: (group) => group.filter((g) => g.diffType === 'added').length,
                 removedCount: (group) => group.filter((g) => g.diffType === 'removed').length,
@@ -183,17 +181,15 @@ export class ProjectService {
             groupBy('assignee', [
                 summarize({
                     // deltaProgressRate: (group) => this._calcProgressRate(group),
-                    deltaPV: (group) => sumDelta(group.map((g) => g.deltaPV)),
-                    deltaEV: (group) => sumDelta(group.map((g) => g.deltaEV)),
+                    deltaPV: (group) => sum(group.map((g) => g.deltaPV)),
+                    deltaEV: (group) => sum(group.map((g) => g.deltaEV)),
                     // deltaSPI: (group) => sumDelta(group.map((g) => g.deltaSPI)), // これはおかしい。
-                    prevPV: (group) =>
-                        sumDelta(group.filter((g) => g.hasPvDiff).map((g) => g.prevPV)),
-                    prevEV: (group) =>
-                        sumDelta(group.filter((g) => g.hasEvDiff).map((g) => g.prevEV)),
+                    prevPV: (group) => sum(group.filter((g) => g.hasPvDiff).map((g) => g.prevPV)),
+                    prevEV: (group) => sum(group.filter((g) => g.hasEvDiff).map((g) => g.prevEV)),
                     currentPV: (group) =>
-                        sumDelta(group.filter((g) => g.hasPvDiff).map((g) => g.currentPV)),
+                        sum(group.filter((g) => g.hasPvDiff).map((g) => g.currentPV)),
                     currentEV: (group) =>
-                        sumDelta(group.filter((g) => g.hasEvDiff).map((g) => g.currentEV)),
+                        sum(group.filter((g) => g.hasEvDiff).map((g) => g.currentEV)),
                     modifiedCount: (group) => group.filter((g) => g.diffType === 'modified').length,
                     addedCount: (group) => group.filter((g) => g.diffType === 'added').length,
                     removedCount: (group) => group.filter((g) => g.diffType === 'removed').length,
@@ -355,9 +351,3 @@ export type TaskDiff = {
     readonly daysOverdueAt?: number
     readonly daysStrOverdueAt?: string
 } & TaskDiffBase
-
-const sumDelta = (numbers: (number | undefined)[]): number | undefined =>
-    sum(
-        numbers.filter((v): v is number => v !== undefined),
-        3
-    )
