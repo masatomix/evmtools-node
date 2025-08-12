@@ -4,7 +4,7 @@ import { hideBin } from 'yargs/helpers'
 // import { getLogger } from '../logger'
 import { TaskRowCreator } from '../domain/TaskRowCreator'
 import { ExcelTaskRowCreator } from '../infrastructure/ExcelTaskRowCreator'
-import { PbevmSummaryUsecase } from '../usercase/pbevm-summary-usercase'
+import { PbevmSummaryUsecase } from '../usecase/pbevm-summary-usecase'
 
 // const logger = getLogger('main')
 

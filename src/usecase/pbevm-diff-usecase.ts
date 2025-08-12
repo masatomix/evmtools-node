@@ -9,7 +9,7 @@ import {
     TaskDiff,
 } from '../domain'
 
-export class PbevmDiffUsercase {
+export class PbevmDiffUsecase {
     constructor(
         private _nowProjectCreator: ProjectCreator,
         private _prevProjectCreator: ProjectCreator,

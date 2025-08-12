@@ -2,7 +2,7 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 // import { getLogger } from '../logger'
 import { ExcelProjectCreator } from '../infrastructure/ExcelProjectCreator'
-import { PbevmShowProjectUsecase } from '../usercase/pbevm-show-project-usecase'
+import { PbevmShowProjectUsecase } from '../usecase/pbevm-show-project-usecase'
 import { ProjectRepositoryImpl } from '../infrastructure/ProjectRepositoryImpl'
 
 // const logger = getLogger('main')
