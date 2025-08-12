@@ -8,7 +8,7 @@ import {
     ResourcePlan,
     UnitInfo,
 } from './resource'
-import { average, round, sum } from './utils'
+import { average, round, sum } from '../../common'
 import { groupBy, summarize, tidy } from '@tidyjs/tidy'
 
 /**
@@ -28,7 +28,6 @@ export const toUnitInfoArray = async (
                 ユニット名: '',
             }
             const resourcePlans = results.map((record) => {
-                console.log(record)
                 const currentUnit = (({ ユニットコード, ユニット名 }) => ({
                     ユニットコード,
                     ユニット名,
@@ -42,7 +41,7 @@ export const toUnitInfoArray = async (
                 ) // 前回情報を返却値から取り出して持っておく
                 return ret
             })
-            console.table(resourcePlans)
+            // console.table(resourcePlans)
 
             return resourcePlans
         })
@@ -60,7 +59,11 @@ export const toGroupBy = (key: AttrType, resourcePlans: ResourcePlan[]): Resourc
                 ユニット名: (instance) => (unitAttrs.includes(key) ? instance[0].ユニット名 : ''),
                 役職: (instance) => (['役職', '名前'].includes(key) ? instance[0].役職 : ''),
                 名前: (instance) => (['名前'].includes(key) ? instance[0].名前 : ''),
-                社内単価: (instance) => instance[0].社内単価,
+                // 社内単価: (instance) => instance[0].社内単価,
+                社内単価: (group) =>
+                    ['役職', '名前'].includes(key)
+                        ? group[0].社内単価
+                        : (average(group.map((instance) => instance.社内単価)) as number),
                 プロジェクト単価: (group) =>
                     average(group.map((instance) => instance.プロジェクト単価 as number)),
                 // ユニットコード: unitAttrs.includes(key) ? instance.ユニットコード[0] : '',
@@ -117,10 +120,9 @@ export const toUnitInfo = (resourcePlans: ResourcePlan[]): UnitInfo[] => {
             summarize({
                 ユニットコード: (instance) => instance[0].ユニットコード,
                 ユニット名: (instance) => instance[0].ユニット名,
-                社内平均単価: (group) =>
-                    average(group.map((instance) => instance.社内単価)) as number,
+                社内平均単価: (group) => average(group.map((instance) => instance.社内単価)),
                 プロジェクト平均単価: (group) =>
-                    average(group.map((instance) => instance.プロジェクト単価 as number)),
+                    average(group.map((instance) => instance.プロジェクト単価)),
                 ...monthlyAggregators(),
             }),
         ])
@@ -169,7 +171,7 @@ function monthlyAggregators() {
     return Object.fromEntries(
         monthTypeStrs.map((month) => [
             month,
-            (group: ResourcePlan[]) => sum(group.map((instance) => instance[month] ?? 0)),
+            (group: ResourcePlan[]) => sum(group.map((instance) => instance[month])),
         ])
     )
 }

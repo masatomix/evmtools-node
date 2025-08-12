@@ -48,7 +48,7 @@ export const isResourcePlan = (arg: unknown): arg is ResourcePlan => {
 export type UnitInfo = {
     ユニットコード: string
     ユニット名: string
-    社内平均単価: number
+    社内平均単価?: number
     プロジェクト平均単価?: number
 } & MonthTypes
 
