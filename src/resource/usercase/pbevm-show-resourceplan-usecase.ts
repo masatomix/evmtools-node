@@ -27,7 +27,7 @@ export class PbevmShowResourcePlanUsecase {
         console.table(unitResults)
 
         const byNameInfo = toGroupBy('名前', unitResults)
-        
+
         console.log('名前ごと')
         console.table(byNameInfo)
 

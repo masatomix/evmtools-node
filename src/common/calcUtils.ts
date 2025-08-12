@@ -20,23 +20,6 @@ export const sumOrZero = (numbers?: (number | undefined)[], scale?: number): num
 }
 
 /**
- * 足し算する
- */
-// const sumFunc = (prev: number, current: number): number => (current ? prev + current : prev)
-
-// export const sum = (numbers?: (number | undefined)[], scale?: number): number | undefined => {
-//     if (numbers) {
-//         // const nonNullDatas = numbers.filter((number) => !!number) // undefinedを除去 (0も除外されてた)
-//         const nonNullDatas = numbers.filter((number) => number != null) // null または undefined を除去
-//         if (nonNullDatas.length > 0) {
-//             const result = nonNullDatas.reduce(sumFunc, 0)
-
-//             return round(result, scale)
-//         }
-//     }
-// }
-
-/**
  * 引数がundefined、引数はあるけど空配列とかのときはundefined
  * 配列中の undefined/nullは除去して足し算する
  * @param numbers (number | undefined)[] は、基本numberの配列だけど要素にundefinedもありえる型
@@ -68,27 +51,6 @@ export const subtract = (a: number | undefined, b: number | undefined): number |
  */
 export const round = (num: number, scale = 10): number =>
     Math.round(num * 10 ** scale) / 10 ** scale
-
-// /**
-//  *
-//  * @param numbers 平均
-//  * @returns
-//  */
-// export const average = (
-//     numbers?: (number | undefined)[],
-//     scale?: number
-// ): number | undefined => {
-//     if (numbers) {
-//         // const nonNullDatas = numbers.filter((data) => !!data) // undefinedを除去
-//         const nonNullDatas = numbers.filter((data) => data != null) // null または undefined を除去
-//         // console.log(nonNullDatas)
-//         if (nonNullDatas.length > 0) {
-//             const result = (sum(nonNullDatas) as number) / nonNullDatas.length
-
-//             return round(result, scale)
-//         }
-//     }
-// }
 
 export const averageOrZero = (numbers?: (number | undefined)[], scale?: number): number => {
     if (!numbers) return 0 //そもそも配列がundefined、もしくは空配列
