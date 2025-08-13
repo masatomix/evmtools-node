@@ -11,41 +11,6 @@ import {
 import { average, round, sum } from '../../common'
 import { groupBy, summarize, tidy } from '@tidyjs/tidy'
 
-/**
- * Excelファイルを読み込んで、UnitInfoデータの配列を作る
- * @param path
- * @returns
- */
-export const toUnitInfoArray = async (
-    path: string,
-    sheetName = '要員(工数)'
-): Promise<ResourcePlan[]> => {
-    return await excel2json(path, sheetName)
-        .then((results) => results.filter((result) => isResourcePlan(result)))
-        .then((results) => {
-            let prevUnit = {
-                ユニットコード: '',
-                ユニット名: '',
-            }
-            const resourcePlans = results.map((record) => {
-                const currentUnit = (({ ユニットコード, ユニット名 }) => ({
-                    ユニットコード,
-                    ユニット名,
-                }))(record) // そのプロパティだけ取り出す
-
-                // 各ユニットの先頭の行にしか、ユニット関連情報がないので、ユニットの切り替わりまで、前行の情報を引き継ぐ
-                const ret =
-                    currentUnit.ユニットコード === undefined ? { ...record, ...prevUnit } : record // ユニットコードが未定義だったら、前回ので上書き、そうでなかったらそのまま
-                prevUnit = (({ ユニットコード, ユニット名 }) => ({ ユニットコード, ユニット名 }))(
-                    ret
-                ) // 前回情報を返却値から取り出して持っておく
-                return ret
-            })
-            // console.table(resourcePlans)
-
-            return resourcePlans
-        })
-}
 
 export const toGroupBy = (key: AttrType, resourcePlans: ResourcePlan[]): ResourcePlan[] => {
     const unitAttrs = ['ユニットコード', 'ユニット名']

@@ -216,13 +216,13 @@ export class ProjectService {
     ): ProjectStatistics[] => {
         const map = new Map<string, ProjectStatistics>()
         for (const stat of existing) {
-            const key = `${stat.projectName}_${stat.baseDate}`
+            const key = stat.baseDate
             map.set(key, stat)
         }
 
         for (const stat of incoming) {
-            const key = `${stat.projectName}_${stat.baseDate}`
-            map.set(key, stat) // 同じprojectNameでも日付が違えば別物として扱う
+            const key = stat.baseDate
+            map.set(key, stat) // 同じ基準日は、上書き
         }
         // return Array.from(map.values());
         // 基準日で降順ソート（新しい順）
