@@ -212,6 +212,7 @@ Give a ⭐️ if this project helped you!
 
 
 ## 改訂履歴
+- 0.0.15 微調整
 - 0.0.14 もろもろリファクタリング。要員計画を読み込むコードのβ版リリース
 - 0.0.13 Diffのプロパティに工数(workload)を追加。
 - 0.0.12 時系列の統計データを読み込む ProjectStatisticsCreator を追加。
