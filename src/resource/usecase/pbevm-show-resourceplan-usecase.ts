@@ -7,24 +7,25 @@ import {
     toProjectMemberInfo,
     toSales,
     toUnitInfo,
-    toUnitInfoArray,
     単価単位調整,
 } from '../domain/resourceUtils'
 import path from 'node:path'
 import fs from 'node:fs'
 import { createStyles } from '../domain/styles'
 import { style0, style1, style2, style21, style3, style4 } from '../../common/myStyles'
+import { ResourcePlansCreator } from '../domain/ResourcePlansCreator'
 
 export class PbevmShowResourcePlanUsecase {
     private logger = getLogger('PbevmShowResourcePlanUsercase')
 
     constructor(
-        private _path: string,
+        private _creator: ResourcePlansCreator,
         private _outputDir: string
     ) {}
 
     async execute() {
-        const unitResults = await toUnitInfoArray(this._path)
+        // const creator = new ResourcePlansCreatorImpl(this._path)
+        const unitResults = await this._creator.createResourcePlans()
         const outputDir = this._outputDir
         fs.existsSync(outputDir) || fs.mkdirSync(outputDir)
 

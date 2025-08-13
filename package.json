@@ -1,16 +1,42 @@
 {
     "name": "evmtools-node",
-    "version": "0.0.14",
+    "version": "0.0.15",
     "description": "このライブラリは、プライムブレインズ社で利用している「進捗管理ツール(Excel)」ファイルを読み込み、 プロジェクトの進捗状況や要員別の作業量を可視化するためのライブラリです。",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "exports": {
-        "./common": "./dist/common/index.js",
-        "./domain": "./dist/domain/index.js",
-        "./infrastructure": "./dist/infrastructure/index.js",
-        "./presentation": "./dist/presentation/index.js",
-        "./usecase": "./dist/usecase/index.js",
-        "./logger": "./dist/logger.js"
+        "./common": {
+            "types": "./dist/common/index.d.ts",
+            "import": "./dist/common/index.js"
+        },
+        "./domain": {
+            "types": "./dist/domain/index.d.ts",
+            "import": "./dist/domain/index.js"
+        },
+        "./infrastructure": {
+            "types": "./dist/infrastructure/index.d.ts",
+            "import": "./dist/infrastructure/index.js"
+        },
+        "./presentation": {
+            "types": "./dist/presentation/index.d.ts",
+            "import": "./dist/presentation/index.js"
+        },
+        "./usecase": {
+            "types": "./dist/usecase/index.d.ts",
+            "import": "./dist/usecase/index.js"
+        },
+        "./logger": {
+            "types": "./dist/logger.d.ts",
+            "import": "./dist/logger.js"
+        },
+        "./project": {
+            "types": "./dist/project/index.d.ts",
+            "import": "./dist/project/index.js"
+        },
+        "./resource": {
+            "types": "./dist/resource/index.d.ts",
+            "import": "./dist/resource/index.js"
+        }
     },
     "bin": {
         "pbevm-show-project": "./dist/presentation/cli-pbevm-show-project.js",
