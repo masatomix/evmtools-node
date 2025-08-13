@@ -1,12 +1,17 @@
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { PbevmShowResourcePlanUsecase } from '../usecase/pbevm-show-resourceplan-usecase'
+import { ExcelResourcePlansCreator } from '../infrastructure/ExcelResourcePlansCreator'
 
 // const logger = getLogger('main')
 
 const main = () => {
     const { path, output } = createArgs()
-    new PbevmShowResourcePlanUsecase(path, output).execute().catch((error) => console.error(error))
+
+    const creator = new ExcelResourcePlansCreator(path)
+    new PbevmShowResourcePlanUsecase(creator, output)
+        .execute()
+        .catch((error) => console.error(error))
 }
 
 const createArgs = () => {
