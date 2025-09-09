@@ -162,6 +162,38 @@ export class TaskRow {
         return isNotFinished && this.endDate <= baseDate
     }
 
+    get validStatus(): ValidStatus {
+        let invalidReason: string | undefined = undefined
+
+        const { id, name } = this
+
+        // checkStartEndDateAndPlotMap のチェック
+        const { startDate, endDate, plotMap } = this
+        if (!startDate || !endDate) {
+            invalidReason = `タスクID:${id} 日付エラー。開始日:[${dateStr(startDate)}],終了日:[${dateStr(endDate)}]が取得できず.タスク名: ${name}`
+            return { isValid: false, invalidReason }
+        }
+        if (!plotMap) {
+            invalidReason = `タスクID:${id} plotMapエラー(undefined)`
+            return { isValid: false, invalidReason }
+        }
+        // checkStartEndDateAndPlotMap のチェック
+
+        // workloadPerDay のチェック
+        const { workload, scheduledWorkDays } = this
+
+        if (
+            isValidNumber(workload) &&
+            isValidNumber(scheduledWorkDays) &&
+            scheduledWorkDays !== 0
+        ) {
+            return { isValid: true }
+        }
+        invalidReason = `タスクID:${id} 日数エラー(0/空)。稼動予定日数:[${scheduledWorkDays}],予定工数:[${workload}]. タスク名: ${name}`
+        return { isValid: false, invalidReason }
+        // workloadPerDay のチェック
+    }
+
     /**
      * 基準日(その日のみの)のPVを計算する。
      * 基本、稼働予定の日数 / 予定工数 の値。
@@ -323,6 +355,11 @@ type NonNullDateAndPlotMap = {
     endDate: Date
     plotMap: Map<number, boolean>
     // id: number
+}
+
+type ValidStatus = {
+    isValid: boolean
+    invalidReason?: string
 }
 
 // const baseDates = [
