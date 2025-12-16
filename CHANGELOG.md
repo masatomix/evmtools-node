@@ -21,6 +21,11 @@
   - 既存ドメインモデルのリバース仕様を追加
 - **CLAUDE.md**: Claude Code用プロジェクトガイドを追加
 - **開発ワークフロー文書**: `docs/workflow/DEVELOPMENT_WORKFLOW.md`
+- **VersionInfo**: バージョン情報取得ユーティリティ
+  - `getVersionInfo()`: package.jsonからバージョン情報を取得
+  - 要件定義: `docs/specs/requirements/REQ-VERSION-001.md`
+  - 詳細仕様: `docs/specs/domain/VersionInfo.spec.md`
+  - 開発フローサンプル: `docs/workflow/SAMPLE_DEVELOPMENT_FLOW.md`
 
 ### 変更
 - `package.json`: Jest関連依存とiconv-liteを追加
