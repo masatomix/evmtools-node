@@ -1,0 +1,622 @@
+# ============================================
+# ProjectCreator 仕様書（YAML形式）
+# ============================================
+# バージョン: 1.0.0
+# 作成日: 2025-12-16
+# ソースファイル:
+#   - src/domain/ProjectCreator.ts（インターフェース）
+#   - src/infrastructure/ExcelProjectCreator.ts（実装）
+#   - src/infrastructure/ExcelBufferProjectCreator.ts（実装）
+#   - src/infrastructure/MappingProjectCreator.ts（実装）
+# ============================================
+
+# ============================================
+# 1. ProjectCreator インターフェース
+# ============================================
+interface:
+  metadata:
+    id: SPEC-PROJECTCREATOR-001
+    name: ProjectCreator
+    version: 1.0.0
+    source: reverse
+    source_file: src/domain/ProjectCreator.ts
+    created_at: 2025-12-16
+    updated_at: 2025-12-16
+    requirement_ids: []
+
+  classification:
+    type: port
+    package: domain
+    responsibility: Projectオブジェクトを生成するための抽象化。データソースの詳細を隠蔽する
+
+  ubiquitous_language:
+    - term: プロジェクト生成
+      implementation: createProject()
+      definition: データソースからProjectオブジェクトを構築する操作
+
+  invariants:
+    - id: INV-PC-01
+      description: createProject()は常にProjectインスタンスを返す（エラー時は例外）
+      expression: result instanceof Project
+      verification_timing: 全実装
+
+    - id: INV-PC-02
+      description: 戻り値のProjectは有効な状態（baseDate, taskNodes, holidayDatasが設定済み）
+      expression: |
+        result.baseDate !== undefined &&
+        result.taskNodes !== undefined &&
+        result.holidayDatas !== undefined
+      verification_timing: 生成後
+
+  methods:
+    - id: METHOD-PC-001
+      name: createProject
+      signature: "createProject(): Promise<Project>"
+      purpose: データソースからProjectオブジェクトを生成する
+
+      postconditions:
+        - id: POST-PC-01
+          condition: 戻り値のProjectにbaseDateが設定されている
+        - id: POST-PC-02
+          condition: 戻り値のProjectにtaskNodesが設定されている（空配列可）
+        - id: POST-PC-03
+          condition: 戻り値のProjectにholidayDatasが設定されている（空配列可）
+
+# ============================================
+# 2. ExcelProjectCreator 実装
+# ============================================
+implementations:
+  - metadata:
+      id: SPEC-EXCELPROJECTCREATOR-001
+      name: ExcelProjectCreator
+      version: 1.0.0
+      source: reverse
+      source_file: src/infrastructure/ExcelProjectCreator.ts
+      created_at: 2025-12-16
+      updated_at: 2025-12-16
+      requirement_ids: []
+
+    classification:
+      type: adapter
+      package: infrastructure
+      responsibility: Excelファイルパスを受け取り、ファイルを読み込んでProjectを生成する
+
+    implements: ProjectCreator
+
+    ubiquitous_language:
+      - term: ガントチャート
+        implementation: シート名
+        definition: タスク情報が記載されたExcelシート
+      - term: 休日テーブル
+        implementation: シート名
+        definition: 祝日情報が記載されたExcelシート
+
+    constructor:
+      signature: "constructor(private _excelPath: string)"
+      parameters:
+        - name: _excelPath
+          type: string
+          required: true
+          description: Excelファイルの絶対パスまたは相対パス
+
+      preconditions:
+        - id: PRE-EPC-01
+          condition: _excelPathが有効なファイルパス
+          on_violation: ファイルI/Oエラー
+
+        - id: PRE-EPC-02
+          condition: 指定パスにExcelファイルが存在する
+          on_violation: ファイルI/Oエラー
+
+        - id: PRE-EPC-03
+          condition: Excelファイルに「ガントチャート」シートが存在する
+          on_violation: エラー
+
+        - id: PRE-EPC-04
+          condition: Excelファイルに「休日テーブル」シートが存在する
+          on_violation: エラー
+
+    methods:
+      - id: METHOD-EPC-001
+        name: createProject
+        signature: "createProject(): Promise<Project>"
+        purpose: Excelファイルを読み込んでProjectを生成する
+
+        algorithm: |
+          1. excel2json2()で「ガントチャート」シートを読み込み → mappings
+          2. excel2json2()で「休日テーブル」シートを読み込み → holidayRawDatas
+          3. ファイルパスからプロジェクト名を抽出（拡張子除去）
+          4. MappingProjectCreator(mappings, projectName, holidayRawDatas).createProject()に委譲
+          5. Projectを返す
+
+        business_rules:
+          - id: BR-EPC-01
+            rule: プロジェクト名はファイル名（拡張子除去）から自動導出される
+            on_violation: N/A
+
+          - id: BR-EPC-02
+            rule: ガントチャートシートのデータ読み込みはヘッダーなしモード
+            on_violation: N/A
+
+        external_dependencies:
+          - name: excel-csv-read-write
+            type: ライブラリ
+            description: Excelファイルの読み込み
+
+          - name: ファイルシステム
+            type: I/O
+            description: Excelファイルへのアクセス
+
+        equivalence_classes:
+          - id: EQ-EPC-001
+            category: normal
+            description: 有効なExcelファイルパス
+            input:
+              excelPath: valid_project.xlsm
+            expected:
+              result: Projectインスタンスが返される
+
+          - id: EQ-EPC-002
+            category: normal
+            description: タスク0件のExcel
+            input:
+              excelPath: empty_tasks.xlsm
+            expected:
+              taskNodes: "[]"
+
+          - id: EQ-EPC-003
+            category: error
+            description: 存在しないファイルパス
+            input:
+              excelPath: not_exist.xlsm
+            expected:
+              error: ファイルI/Oエラー
+
+          - id: EQ-EPC-004
+            category: error
+            description: ガントチャートシートがないExcel
+            input:
+              excelPath: no_gantt.xlsm
+            expected:
+              error: シート未検出エラー
+
+          - id: EQ-EPC-005
+            category: error
+            description: 休日テーブルシートがないExcel
+            input:
+              excelPath: no_holiday.xlsm
+            expected:
+              error: シート未検出エラー
+
+        test_scenarios:
+          - id: TC-EPC-001
+            description: 有効なExcelファイルからProjectを生成できる
+            given:
+              file: '"ガントチャート"「休日テーブル」シートを含むExcelファイル'
+              tasks: 3件のタスク
+              holidays: 2件の祝日
+            when: ExcelProjectCreator("project.xlsm").createProject()を呼び出す
+            then:
+              - Projectが返される
+              - project.nameが "project" である
+              - project.taskNodesに3件のタスクが含まれる
+              - project.holidayDatasに2件の祝日が含まれる
+
+          - id: TC-EPC-002
+            description: 存在しないファイルパスでエラーが発生する
+            given:
+              file: 存在しないファイルパス "not_exist.xlsm"
+            when: ExcelProjectCreator("not_exist.xlsm").createProject()を呼び出す
+            then:
+              - ファイルI/Oエラーが発生する
+
+          - id: TC-EPC-003
+            description: ガントチャートシートがないExcelでエラーが発生する
+            given:
+              file: '"休日テーブル"シートのみのExcelファイル'
+            when: ExcelProjectCreator(path).createProject()を呼び出す
+            then:
+              - シート未検出エラーが発生する
+
+          - id: TC-EPC-004
+            description: タスクが0件でもProjectを生成できる
+            given:
+              file: ガントチャートシートにヘッダー行のみのExcel
+            when: ExcelProjectCreator(path).createProject()を呼び出す
+            then:
+              - Projectが返される
+              - project.taskNodesが空配列
+
+  # ============================================
+  # 3. ExcelBufferProjectCreator 実装
+  # ============================================
+  - metadata:
+      id: SPEC-EXCELBUFFERPROJECTCREATOR-001
+      name: ExcelBufferProjectCreator
+      version: 1.0.0
+      source: reverse
+      source_file: src/infrastructure/ExcelBufferProjectCreator.ts
+      created_at: 2025-12-16
+      updated_at: 2025-12-16
+      requirement_ids: []
+
+    classification:
+      type: adapter
+      package: infrastructure
+      responsibility: ArrayBuffer（メモリ上のExcelデータ）からProjectを生成する。ブラウザ環境等でのファイルアップロード対応
+
+    implements: ProjectCreator
+
+    constructor:
+      signature: "constructor(private _buffer: ArrayBuffer, private _projectName: string)"
+      parameters:
+        - name: _buffer
+          type: ArrayBuffer
+          required: true
+          description: Excelファイルのバイナリデータ
+
+        - name: _projectName
+          type: string
+          required: true
+          description: プロジェクト名（ファイル名から取得できないため明示的に指定）
+
+      preconditions:
+        - id: PRE-EBPC-01
+          condition: _bufferが有効なExcelファイルのバイナリデータ
+          on_violation: パースエラー
+
+        - id: PRE-EBPC-02
+          condition: バッファ内のExcelに「ガントチャート」シートが存在する
+          on_violation: エラー
+
+        - id: PRE-EBPC-03
+          condition: バッファ内のExcelに「休日テーブル」シートが存在する
+          on_violation: エラー
+
+    methods:
+      - id: METHOD-EBPC-001
+        name: createProject
+        signature: "createProject(): Promise<Project>"
+        purpose: ArrayBufferからExcelをパースしてProjectを生成する
+
+        algorithm: |
+          1. excelBuffer2json()で「ガントチャート」シートを読み込み → mappings
+          2. excelBuffer2json()で「休日テーブル」シートを読み込み → holidayRawDatas
+          3. コンストラクタで受け取ったprojectNameを使用
+          4. MappingProjectCreator(mappings, projectName, holidayRawDatas).createProject()に委譲
+          5. Projectを返す
+
+        business_rules:
+          - id: BR-EBPC-01
+            rule: プロジェクト名はコンストラクタで明示的に指定する必要がある
+            on_violation: N/A
+
+        external_dependencies:
+          - name: excel-csv-read-write
+            type: ライブラリ
+            description: ArrayBufferからのExcelパース
+
+        equivalence_classes:
+          - id: EQ-EBPC-001
+            category: normal
+            description: 有効なArrayBuffer
+            input:
+              buffer: 有効なExcelファイルのArrayBuffer
+              projectName: uploaded_project
+            expected:
+              result: Projectインスタンスが返される
+              name: uploaded_project
+
+          - id: EQ-EBPC-002
+            category: error
+            description: 無効なArrayBuffer
+            input:
+              buffer: 破損したバイナリデータ
+            expected:
+              error: パースエラー
+
+          - id: EQ-EBPC-003
+            category: error
+            description: ガントチャートシートがないバッファ
+            input:
+              buffer: 休日テーブルのみのExcelバッファ
+            expected:
+              error: シート未検出エラー
+
+        test_scenarios:
+          - id: TC-EBPC-001
+            description: ArrayBufferからProjectを生成できる
+            given:
+              buffer: 有効なExcelファイルのArrayBuffer
+              projectName: uploaded_project
+            when: ExcelBufferProjectCreator(buffer, "uploaded_project").createProject()を呼び出す
+            then:
+              - Projectが返される
+              - project.nameが "uploaded_project" である
+
+          - id: TC-EBPC-002
+            description: 無効なバッファでエラーが発生する
+            given:
+              buffer: 破損したバイナリデータ
+            when: ExcelBufferProjectCreator(buffer, "test").createProject()を呼び出す
+            then:
+              - パースエラーが発生する
+
+          - id: TC-EBPC-003
+            description: プロジェクト名がコンストラクタで指定した値になる
+            given:
+              buffer: 有効なExcelバッファ
+              projectName: custom_name
+            when: ExcelBufferProjectCreator(buffer, "custom_name").createProject()を呼び出す
+            then:
+              - project.nameが "custom_name" である
+
+  # ============================================
+  # 4. MappingProjectCreator 実装
+  # ============================================
+  - metadata:
+      id: SPEC-MAPPINGPROJECTCREATOR-001
+      name: MappingProjectCreator
+      version: 1.0.0
+      source: reverse
+      source_file: src/infrastructure/MappingProjectCreator.ts
+      created_at: 2025-12-16
+      updated_at: 2025-12-16
+      requirement_ids: []
+
+    classification:
+      type: adapter
+      package: infrastructure
+      responsibility: Excelから読み取ったマッピングデータをProjectオブジェクトに変換する。実際の変換ロジックを担当
+
+    implements: ProjectCreator
+
+    ubiquitous_language:
+      - term: マッピングデータ
+        implementation: mappings
+        definition: Excelから読み取った行データの配列
+      - term: 基準日
+        implementation: baseDate
+        definition: EVM計算の基準となる日付（Excelの特定セルから取得）
+
+    constructor:
+      signature: "constructor(private _mappings: unknown[], private _projectName: string, private _holidayRawDatas: unknown[])"
+      parameters:
+        - name: _mappings
+          type: unknown[]
+          required: true
+          description: ガントチャートシートの行データ配列
+
+        - name: _projectName
+          type: string
+          required: true
+          description: プロジェクト名
+
+        - name: _holidayRawDatas
+          type: unknown[]
+          required: true
+          description: 休日テーブルシートの行データ配列
+
+    methods:
+      - id: METHOD-MPC-001
+        name: createProject
+        signature: "createProject(): Promise<Project>"
+        purpose: マッピングデータからProjectを生成する（実際の変換ロジック）
+
+        algorithm: |
+          1. mappingsの先頭行を取り出す（基準日が含まれる行）
+          2. 先頭行の26列目から基準日（Excelシリアル値）を取得
+          3. TaskRowCreatorImpl(mappings)でTaskRow[]を生成
+          4. TaskRow[]からstartDate/endDateの最小/最大値を計算 → プロジェクト期間
+          5. TaskService.buildTaskTree()でTaskRow[] → TaskNode[]に変換
+          6. holidayRawDatasからHolidayData[]を生成
+          7. Project(taskNodes, baseDate, holidayDatas, from, to, projectName)を生成して返す
+
+        business_rules:
+          - id: BR-MPC-01
+            rule: 基準日はmappingsの先頭行、26列目（0-indexed）に存在する
+            on_violation: 不正なbaseDate
+
+          - id: BR-MPC-02
+            rule: プロジェクト開始日はリーフタスクのstartDateの最小値
+            on_violation: undefined（タスクがない場合）
+
+          - id: BR-MPC-03
+            rule: プロジェクト終了日はリーフタスクのendDateの最大値
+            on_violation: undefined（タスクがない場合）
+
+          - id: BR-MPC-04
+            rule: '祝日データは「日付」「祝日」「祝日定義ルール」「振替」列から生成される'
+            on_violation: N/A
+
+        external_dependencies:
+          - name: excel-csv-read-write
+            type: ライブラリ
+            description: dateFromSn()でExcelシリアル値を日付に変換
+
+          - name: TaskRowCreatorImpl
+            type: 内部クラス
+            description: マッピングデータからTaskRow[]を生成
+
+          - name: TaskService
+            type: ドメインサービス
+            description: TaskRow[]からTaskNode[]ツリーを構築
+
+        equivalence_classes:
+          - id: EQ-MPC-001
+            category: normal
+            description: 有効なマッピングデータ
+            input:
+              mappings: 基準日行 + タスク行3件
+              projectName: test
+              holidayRawDatas: 祝日データ2件
+            expected:
+              result: Projectインスタンスが返される
+              taskNodes.length: 3
+              holidayDatas.length: 2
+
+          - id: EQ-MPC-002
+            category: normal
+            description: 階層構造のタスク
+            input:
+              mappings: 親タスク + 子タスク2件
+            expected:
+              taskNodes: 階層構造のTaskNode[]
+
+          - id: EQ-MPC-003
+            category: boundary
+            description: タスク行が0件（ヘッダー行のみ）
+            input:
+              mappings: 基準日行のみ
+            expected:
+              taskNodes: "[]"
+              startDate: undefined
+              endDate: undefined
+
+          - id: EQ-MPC-004
+            category: boundary
+            description: 休日データが0件
+            input:
+              holidayRawDatas: "[]"
+            expected:
+              holidayDatas: "[]"
+
+          - id: EQ-MPC-005
+            category: error
+            description: 基準日列が数値でない
+            input:
+              mappings: 26列目が文字列
+            expected:
+              error: 不正なbaseDate
+
+        test_scenarios:
+          - id: TC-MPC-001
+            description: マッピングデータからProjectを生成できる
+            given:
+              mappings: 基準日行を含むマッピングデータ + 3件のタスク行
+              holidayRawDatas: 2件の休日データ
+            when: MappingProjectCreator(mappings, "test", holidays).createProject()を呼び出す
+            then:
+              - Projectが返される
+              - project.baseDateが設定されている
+              - project.startDateがリーフタスクの最小開始日
+              - project.endDateがリーフタスクの最大終了日
+
+          - id: TC-MPC-002
+            description: タスクが0件でもProjectを生成できる
+            given:
+              mappings: 基準日行のみ（タスク行なし）
+              holidayRawDatas: "[]"
+            when: MappingProjectCreator(mappings, "empty", []).createProject()を呼び出す
+            then:
+              - Projectが返される
+              - project.taskNodesが空配列
+              - project.startDateがundefined
+              - project.endDateがundefined
+
+          - id: TC-MPC-003
+            description: 階層構造のタスクが正しくツリー化される
+            given:
+              mappings: 親タスク(level=1) + 子タスク2件(level=2)
+            when: MappingProjectCreator(mappings, "tree", []).createProject()を呼び出す
+            then:
+              - project.taskNodes[0].childrenに2件の子ノードが含まれる
+
+          - id: TC-MPC-004
+            description: プロジェクト期間がリーフタスクから計算される
+            given:
+              mappings: |
+                - タスクA: startDate=2025-01-01, endDate=2025-01-31
+                - タスクB: startDate=2025-02-01, endDate=2025-03-31
+            when: MappingProjectCreator(mappings, "period", []).createProject()を呼び出す
+            then:
+              - project.startDateが2025-01-01
+              - project.endDateが2025-03-31
+
+          - id: TC-MPC-005
+            description: 休日データが正しく設定される
+            given:
+              holidayRawDatas: |
+                - { 日付: 45658, 祝日: "元日", 祝日定義ルール: "法律", 振替: "" }
+                - { 日付: 45659, 祝日: "振替休日", 祝日定義ルール: "", 振替: "元日" }
+            when: MappingProjectCreator(mappings, "test", holidayRawDatas).createProject()を呼び出す
+            then:
+              - project.holidayDatasに2件の祝日が含まれる
+
+# ============================================
+# 5. 関連オブジェクト
+# ============================================
+relationships:
+  - source: ExcelProjectCreator
+    target: ProjectCreator
+    type: implements
+    description: インターフェース実装
+
+  - source: ExcelProjectCreator
+    target: MappingProjectCreator
+    type: uses
+    description: 処理を委譲
+
+  - source: ExcelBufferProjectCreator
+    target: ProjectCreator
+    type: implements
+    description: インターフェース実装
+
+  - source: ExcelBufferProjectCreator
+    target: MappingProjectCreator
+    type: uses
+    description: 処理を委譲
+
+  - source: MappingProjectCreator
+    target: ProjectCreator
+    type: implements
+    description: インターフェース実装
+
+  - source: MappingProjectCreator
+    target: TaskRowCreatorImpl
+    type: uses
+    description: TaskRow[]生成を委譲
+
+  - source: MappingProjectCreator
+    target: TaskService
+    type: uses
+    description: ツリー構築を委譲
+
+  - source: MappingProjectCreator
+    target: Project
+    type: creates
+    description: Projectを生成
+
+# ============================================
+# 6. 設計上の課題
+# ============================================
+design_issues:
+  - id: ISSUE-PC-01
+    description: 外部ライブラリ依存
+    current: MappingProjectCreatorがdateFromSnに直接依存
+    improvement: 日付変換をドメイン層のインターフェースで抽象化
+
+  - id: ISSUE-PC-02
+    description: TaskService直接生成
+    current: new TaskService()
+    improvement: コンストラクタDI
+
+  - id: ISSUE-PC-03
+    description: エラーハンドリング
+    current: 詳細なエラー型が未定義
+    improvement: カスタムエラークラスの導入
+
+  - id: ISSUE-PC-04
+    description: マジックナンバー
+    current: '基準日の列番号26がハードコード'
+    improvement: 定数化または設定ファイル化
+
+# ============================================
+# 7. テストケースサマリ
+# ============================================
+test_summary:
+  ExcelProjectCreator: 4
+  ExcelBufferProjectCreator: 3
+  MappingProjectCreator: 5
+  integration: 3
+  total: 15

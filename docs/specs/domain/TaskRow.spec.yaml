@@ -1,0 +1,493 @@
+# ============================================
+# TaskRow 仕様書（YAML形式）
+# ============================================
+# バージョン: 1.0.0
+# 作成日: 2025-12-16
+# ソースファイル: src/domain/TaskRow.ts
+# ============================================
+
+metadata:
+  id: SPEC-TASKROW-001
+  name: TaskRow
+  version: 1.0.0
+  source: reverse
+  source_file: src/domain/TaskRow.ts
+  created_at: 2025-12-16
+  updated_at: 2025-12-16
+  requirement_ids: []
+
+classification:
+  type: entity
+  package: domain
+  responsibility: タスクの基本情報とEVM計算ロジックを保持する。リーフタスクまたは中間ノードを表現
+
+ubiquitous_language:
+  - term: 計画価値
+    implementation: pv (Planned Value)
+    definition: 基準日までに完了予定だった作業量
+  - term: 出来高
+    implementation: ev (Earned Value)
+    definition: 実際に完了した作業の価値
+  - term: スケジュール効率指標
+    implementation: spi (Schedule Performance Index)
+    definition: EV/PV。1.0以上なら予定通り
+  - term: スケジュール差異
+    implementation: sv (Schedule Variance)
+    definition: EV-PV
+  - term: 進捗率
+    implementation: progressRate
+    definition: タスクの完了度合い（0.0〜1.0）
+  - term: プロットマップ
+    implementation: plotMap
+    definition: Excelシリアル値をキーとした稼働日マップ
+
+invariants:
+  - id: INV-TR-01
+    description: idは一意の識別子として存在する
+    expression: this.id !== undefined
+    verification_timing: 生成時
+
+  - id: INV-TR-02
+    description: levelは1以上の整数
+    expression: this.level >= 1
+    verification_timing: 生成時
+
+  - id: INV-TR-03
+    description: progressRateは0.0〜1.0の範囲、またはundefined
+    expression: this.progressRate === undefined || (0 <= this.progressRate && this.progressRate <= 1)
+    verification_timing: 生成時
+
+properties:
+  - name: sharp
+    type: number
+    required: true
+    visibility: public
+    readonly: true
+    description: 表示順の行番号（#列）
+
+  - name: id
+    type: number
+    required: true
+    visibility: public
+    readonly: true
+    description: タスクの一意なID
+
+  - name: level
+    type: number
+    required: true
+    visibility: public
+    readonly: true
+    description: 階層レベル（1=ルート、2=子など）
+
+  - name: name
+    type: string
+    required: true
+    visibility: public
+    readonly: true
+    description: タスク名
+
+  - name: assignee
+    type: string
+    required: false
+    visibility: public
+    readonly: true
+    description: 担当者名
+
+  - name: workload
+    type: number
+    required: false
+    visibility: public
+    readonly: true
+    description: 予定工数（日単位）
+
+  - name: startDate
+    type: Date
+    required: false
+    visibility: public
+    readonly: true
+    description: 予定開始日
+
+  - name: endDate
+    type: Date
+    required: false
+    visibility: public
+    readonly: true
+    description: 予定終了日
+
+  - name: progressRate
+    type: number
+    required: false
+    visibility: public
+    readonly: true
+    constraints:
+      - 0.0 <= value <= 1.0
+    description: 進捗率
+
+  - name: scheduledWorkDays
+    type: number
+    required: false
+    visibility: public
+    readonly: true
+    description: 稼働予定日数
+
+  - name: ev
+    type: number
+    required: false
+    visibility: public
+    readonly: true
+    description: 出来高（Earned Value）
+
+  - name: isLeaf
+    type: boolean
+    required: false
+    visibility: public
+    readonly: true
+    description: リーフノードかどうか
+
+  - name: plotMap
+    type: Map<number, boolean>
+    required: false
+    visibility: public
+    readonly: true
+    description: Excelシリアル値→稼働日マップ
+
+methods:
+  - id: METHOD-TR-001
+    name: workloadPerDay
+    signature: "get workloadPerDay(): number | undefined"
+    purpose: 1日あたりの工数を計算する
+
+    postconditions:
+      - id: POST-WPD-01
+        condition: workloadとscheduledWorkDaysが有効な数値かつscheduledWorkDays≠0なら、workload/scheduledWorkDaysを返す
+      - id: POST-WPD-02
+        condition: 上記以外の場合はundefinedを返す
+
+    equivalence_classes:
+      - id: EQ-WPD-001
+        category: normal
+        description: 有効な値での計算
+        input:
+          workload: 10
+          scheduledWorkDays: 5
+        expected:
+          result: 2
+
+      - id: EQ-WPD-002
+        category: boundary
+        description: 稼働予定日数が0
+        input:
+          workload: 10
+          scheduledWorkDays: 0
+        expected:
+          result: undefined
+
+      - id: EQ-WPD-003
+        category: error
+        description: workloadがundefined
+        input:
+          scheduledWorkDays: 5
+        expected:
+          result: undefined
+
+      - id: EQ-WPD-004
+        category: error
+        description: scheduledWorkDaysがundefined
+        input:
+          workload: 10
+        expected:
+          result: undefined
+
+  - id: METHOD-TR-002
+    name: finished
+    signature: "get finished(): boolean"
+    purpose: タスクが完了しているか判定する
+
+    postconditions:
+      - id: POST-FIN-01
+        condition: progressRate === 1.0 の場合はtrue
+      - id: POST-FIN-02
+        condition: それ以外（undefined含む）はfalse
+
+    equivalence_classes:
+      - id: EQ-FIN-001
+        category: normal
+        description: 進捗率100%
+        input:
+          progressRate: 1.0
+        expected:
+          result: true
+
+      - id: EQ-FIN-002
+        category: normal
+        description: 進捗率50%
+        input:
+          progressRate: 0.5
+        expected:
+          result: false
+
+      - id: EQ-FIN-003
+        category: boundary
+        description: 進捗率0
+        input:
+          progressRate: 0
+        expected:
+          result: false
+
+      - id: EQ-FIN-004
+        category: boundary
+        description: 進捗率undefined
+        input:
+          progressRate: null
+        expected:
+          result: false
+
+  - id: METHOD-TR-003
+    name: isOverdueAt
+    signature: "isOverdueAt(baseDate: Date): boolean"
+    purpose: 指定した基準日でタスクが期限切れかどうかを判定する
+
+    postconditions:
+      - id: POST-OD-01
+        condition: endDate <= baseDate かつ 未完了（progressRate < 1.0 または undefined）の場合はtrue
+      - id: POST-OD-02
+        condition: endDateがundefinedの場合はfalse
+      - id: POST-OD-03
+        condition: 完了済み（progressRate === 1.0）の場合はfalse
+
+    business_rules:
+      - id: BR-OD-01
+        rule: 期限切れ判定は「基準日の業務終了時点」の状況を算出
+        on_violation: N/A
+
+    equivalence_classes:
+      - id: EQ-OD-001
+        category: normal
+        description: 期限切れ（endDate < baseDate, 未完了）
+        input:
+          endDate: 2025-06-09
+          progressRate: 0.5
+          baseDate: 2025-06-10
+        expected:
+          result: true
+
+      - id: EQ-OD-002
+        category: boundary
+        description: 期限当日（endDate === baseDate, 未完了）
+        input:
+          endDate: 2025-06-10
+          progressRate: 0.5
+          baseDate: 2025-06-10
+        expected:
+          result: true
+
+      - id: EQ-OD-003
+        category: normal
+        description: 期限前
+        input:
+          endDate: 2025-06-15
+          progressRate: 0.5
+          baseDate: 2025-06-10
+        expected:
+          result: false
+
+      - id: EQ-OD-004
+        category: normal
+        description: 完了済み
+        input:
+          endDate: 2025-06-10
+          progressRate: 1.0
+          baseDate: 2025-06-15
+        expected:
+          result: false
+
+  - id: METHOD-TR-004
+    name: calculatePV
+    signature: "calculatePV(baseDate: Date): number | undefined"
+    purpose: 基準日（その日のみ）のPVを計算する
+
+    preconditions:
+      - id: PRE-PV-01
+        condition: checkStartEndDateAndPlotMap()がtrue
+        on_violation: undefined返却
+
+    postconditions:
+      - id: POST-PV-01
+        condition: 基準日がplotMapに存在し、startDate〜endDate範囲内ならworkloadPerDayを返す
+      - id: POST-PV-02
+        condition: 基準日が範囲外またはplotMapにない場合は0を返す
+      - id: POST-PV-03
+        condition: workloadPerDayがundefinedの場合はundefinedを返す
+
+    algorithm: |
+      1. checkStartEndDateAndPlotMapで事前チェック（false→undefined）
+      2. workloadPerDayを取得（undefined→undefined）
+      3. isInRange(baseDate, startDate, endDate, plotMap)でレンジ判定
+      4. レンジ内→workloadPerDay、範囲外→0
+
+    equivalence_classes:
+      - id: EQ-PV-001
+        category: normal
+        description: 稼働日（平日）、範囲内
+        input:
+          baseDate: 2025-06-10
+          startDate: 2025-06-09
+          endDate: 2025-06-13
+          workload: 10
+          scheduledWorkDays: 5
+        expected:
+          result: 2
+
+      - id: EQ-PV-002
+        category: normal
+        description: タスク開始前
+        input:
+          baseDate: 2025-06-06
+        expected:
+          result: 0
+
+      - id: EQ-PV-003
+        category: normal
+        description: タスク終了後
+        input:
+          baseDate: 2025-06-16
+        expected:
+          result: 0
+
+      - id: EQ-PV-004
+        category: boundary
+        description: 土日（plotMapにない）
+        input:
+          baseDate: 2025-06-14
+        expected:
+          result: 0
+
+  - id: METHOD-TR-005
+    name: calculatePVs
+    signature: "calculatePVs(baseDate: Date): number"
+    purpose: 基準日終了時点の累積PVを計算する
+
+    postconditions:
+      - id: POST-PVS-01
+        condition: plotMapの全エントリのうち、シリアル値 <= baseDateシリアル値のPVを合計
+      - id: POST-PVS-02
+        condition: タスク開始前は0
+      - id: POST-PVS-03
+        condition: タスク終了後は全工数（workload）
+
+    equivalence_classes:
+      - id: EQ-PVS-001
+        category: normal
+        description: 3日目までの累積
+        input:
+          baseDate: 2025-06-11
+          workload: 10
+          scheduledWorkDays: 5
+        expected:
+          result: 6
+
+      - id: EQ-PVS-002
+        category: boundary
+        description: タスク開始前
+        input:
+          baseDate: 2025-06-06
+        expected:
+          result: 0
+
+      - id: EQ-PVS-003
+        category: boundary
+        description: タスク終了後
+        input:
+          baseDate: 2025-06-20
+        expected:
+          result: 10
+
+  - id: METHOD-TR-006
+    name: calculateSPI
+    signature: "calculateSPI(baseDate: Date): number | undefined"
+    purpose: 基準日のSPI（Schedule Performance Index）を計算する
+
+    postconditions:
+      - id: POST-SPI-01
+        condition: SPI = EV / 累積PV
+      - id: POST-SPI-02
+        condition: 累積PVが0の場合はundefined
+      - id: POST-SPI-03
+        condition: EVがundefinedの場合はundefined
+
+    equivalence_classes:
+      - id: EQ-SPI-001
+        category: normal
+        description: EV=4, 累積PV=6
+        input:
+          ev: 4
+          pvs: 6
+        expected:
+          result: 0.6667
+
+      - id: EQ-SPI-002
+        category: boundary
+        description: 累積PV=0
+        input:
+          pvs: 0
+        expected:
+          result: undefined
+
+  - id: METHOD-TR-007
+    name: calculateSV
+    signature: "calculateSV(baseDate: Date): number | undefined"
+    purpose: 基準日のSV（Schedule Variance）を計算する
+
+    postconditions:
+      - id: POST-SV-01
+        condition: SV = EV - 累積PV
+      - id: POST-SV-02
+        condition: EVがundefinedの場合はundefined
+
+    equivalence_classes:
+      - id: EQ-SV-001
+        category: normal
+        description: 遅延（EV=4, 累積PV=6）
+        input:
+          ev: 4
+          pvs: 6
+        expected:
+          result: -2
+
+      - id: EQ-SV-002
+        category: normal
+        description: 前倒し（EV=8, 累積PV=6）
+        input:
+          ev: 8
+          pvs: 6
+        expected:
+          result: 2
+
+external_dependencies:
+  - name: excel-csv-read-write
+    type: ライブラリ
+    description: date2Sn(), dateFromSn() - Excelシリアル値変換
+
+  - name: pino
+    type: ライブラリ
+    description: ロギング
+
+relationships:
+  - target: TaskNode
+    type: inheritance
+    description: TaskNodeがTaskRowを継承
+
+  - target: Project
+    type: aggregation
+    description: Projectが複数のTaskRowを保持
+
+test_summary:
+  workloadPerDay: 4
+  finished: 4
+  isOverdueAt: 5
+  validStatus: 6
+  calculatePV: 5
+  calculatePVs: 4
+  calculateSPI: 4
+  calculateSV: 4
+  total: 40

@@ -1,0 +1,163 @@
+# ============================================
+# HolidayData 仕様書（YAML形式）
+# ============================================
+# バージョン: 1.0.0
+# 作成日: 2025-12-16
+# ソースファイル: src/domain/HolidayData.ts
+# ============================================
+
+metadata:
+  id: SPEC-HOLIDAYDATA-001
+  name: HolidayData
+  version: 1.0.0
+  source: reverse
+  source_file: src/domain/HolidayData.ts
+  created_at: 2025-12-16
+  updated_at: 2025-12-16
+  requirement_ids: []
+
+classification:
+  type: value_object
+  package: domain
+  responsibility: プロジェクトに定義された祝日情報を保持する。イミュータブルなデータ構造
+
+ubiquitous_language:
+  - term: 祝日
+    implementation: HolidayData
+    definition: プロジェクトで非稼働日として定義された日
+  - term: 祝日説明
+    implementation: _desc
+    definition: 祝日の名称（例：元日）
+  - term: 祝日ルール
+    implementation: _rule
+    definition: 祝日の定義ルール（例：法律）
+  - term: 振替
+    implementation: _hurikae
+    definition: 振替元の祝日名
+
+invariants:
+  - id: INV-HD-01
+    description: _dateは常に存在する
+    expression: this._date !== undefined
+    verification_timing: 生成時
+
+  - id: INV-HD-02
+    description: 全プロパティはreadonly（イミュータブル）
+    expression: 全プロパティがprivate readonly
+    verification_timing: 常時
+
+properties:
+  - name: _date
+    type: Date
+    required: true
+    visibility: private
+    readonly: true
+    description: 祝日の日付
+
+  - name: _desc
+    type: string
+    required: false
+    visibility: private
+    readonly: true
+    description: 祝日の説明（例：元日）
+
+  - name: _rule
+    type: string
+    required: false
+    visibility: private
+    readonly: true
+    description: 祝日定義ルール
+
+  - name: _hurikae
+    type: string
+    required: false
+    visibility: private
+    readonly: true
+    description: 振替元の祝日
+
+constructor:
+  signature: |
+    constructor(
+      private readonly _date: Date,
+      private readonly _desc?: string,
+      private readonly _rule?: string,
+      private readonly _hurikae?: string
+    )
+
+  preconditions:
+    - id: PRE-CON-01
+      condition: _dateがDateオブジェクトである
+      on_violation: 不正なHolidayDataが生成される
+
+  postconditions:
+    - id: POST-CON-01
+      condition: 全プロパティがreadonlyで設定される
+    - id: POST-CON-02
+      condition: date getterで日付が取得可能
+
+methods:
+  - id: METHOD-HD-001
+    name: date
+    signature: "get date(): Date"
+    purpose: 祝日の日付を取得する
+
+    postconditions:
+      - id: POST-DATE-01
+        condition: コンストラクタで設定された_dateを返す
+
+    test_scenarios:
+      - id: TC-HD-001
+        description: 祝日データを生成する
+        given:
+          date: 2025-01-01
+          desc: 元日
+          rule: 法律
+        when: new HolidayData(date, "元日", "法律")を呼び出す
+        then:
+          - HolidayDataが生成される
+          - date getterで2025-01-01が取得できる
+
+      - id: TC-HD-002
+        description: 振替休日を生成する
+        given:
+          date: 2025-01-02
+          desc: 振替休日
+          hurikae: 元日
+        when: new HolidayData(date, "振替休日", "", "元日")を呼び出す
+        then:
+          - HolidayDataが生成される
+
+      - id: TC-HD-003
+        description: 最小限の情報で生成する
+        given:
+          date: 2025-01-01
+        when: new HolidayData(date)を呼び出す
+        then:
+          - HolidayDataが生成される
+          - _desc, _rule, _hurikaeはundefined
+
+relationships:
+  - target: Project
+    type: aggregation
+    description: ProjectがHolidayData[]を保持
+
+  - target: MappingProjectCreator
+    type: dependency
+    description: Excelから読み込んだデータから生成
+
+design_notes:
+  - title: 値オブジェクトとしての特性
+    content: |
+      - イミュータブル：全プロパティがreadonly
+      - 同一性は値で判断（日付が同じなら同じ祝日）
+      - ライフサイクルはProjectに依存
+
+  - title: 拡張検討事項
+    content: |
+      現状、_desc, _rule, _hurikaeのgetterが未実装。
+      必要に応じて追加を検討。
+
+test_summary:
+  constructor: 3
+  date_getter: 1
+  total: 4

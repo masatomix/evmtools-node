@@ -1,0 +1,249 @@
+# ============================================
+# ドメイン層インターフェース仕様書（YAML形式）
+# ============================================
+# バージョン: 1.0.0
+# 作成日: 2025-12-16
+# ============================================
+
+interfaces:
+  # ============================================
+  # 1. TaskRowCreator
+  # ============================================
+  - metadata:
+      id: SPEC-TASKROWCREATOR-001
+      name: TaskRowCreator
+      version: 1.0.0
+      source: reverse
+      source_file: src/domain/TaskRowCreator.ts
+      created_at: 2025-12-16
+      updated_at: 2025-12-16
+      requirement_ids: []
+
+    classification:
+      type: port
+      package: domain
+      responsibility: TaskRowを何らかの方法で生成する。データソースの抽象化
+
+    definition: |
+      export interface TaskRowCreator {
+          createRowData(): Promise<TaskRow[]>
+      }
+
+    methods:
+      - id: METHOD-TRC-001
+        name: createRowData
+        signature: "createRowData(): Promise<TaskRow[]>"
+        purpose: データソースからTaskRow配列を生成する
+
+        postconditions:
+          - id: POST-TRC-01
+            condition: TaskRow[]を返す（空配列可）
+          - id: POST-TRC-02
+            condition: 各TaskRowのparentId, isLeafが設定されている
+
+        test_scenarios:
+          - id: TC-TRC-001
+            description: TaskRow配列を生成する
+            given: 有効なデータソース
+            when: createRowData()を呼び出す
+            then:
+              - TaskRow[]が返される
+              - 各TaskRowにparentId, isLeafが設定されている
+
+    implementations:
+      - name: TaskRowCreatorImpl
+        package: infrastructure
+        description: Excelマッピングデータから生成
+
+  # ============================================
+  # 2. ProjectRepository
+  # ============================================
+  - metadata:
+      id: SPEC-PROJECTREPOSITORY-001
+      name: ProjectRepository
+      version: 1.0.0
+      source: reverse
+      source_file: src/domain/ProjectRepository.ts
+      created_at: 2025-12-16
+      updated_at: 2025-12-16
+      requirement_ids: []
+
+    classification:
+      type: repository
+      package: domain
+      responsibility: Projectの永続化を抽象化する
+
+    definition: |
+      export interface ProjectRepository {
+          save(project: Project): Promise<void>
+      }
+
+    methods:
+      - id: METHOD-PR-001
+        name: save
+        signature: "save(project: Project): Promise<void>"
+        purpose: Projectを永続化する
+
+        preconditions:
+          - id: PRE-PR-01
+            condition: projectが有効なProjectインスタンス
+            on_violation: 例外
+
+        postconditions:
+          - id: POST-PR-01
+            condition: Projectが永続化される（実装依存）
+
+        test_scenarios:
+          - id: TC-PR-001
+            description: Projectを保存する
+            given: 有効なProjectインスタンス
+            when: save(project)を呼び出す
+            then:
+              - Projectが永続化される（エラーなし）
+
+    implementations:
+      - name: ProjectRepositoryImpl
+        package: infrastructure
+        description: Excelファイルへの出力
+
+  # ============================================
+  # 3. ProjectProgressCreator
+  # ============================================
+  - metadata:
+      id: SPEC-PROJECTPROGRESSCREATOR-001
+      name: ProjectProgressCreator
+      version: 1.0.0
+      source: reverse
+      source_file: src/domain/ProjectProgressCreator.ts
+      created_at: 2025-12-16
+      updated_at: 2025-12-16
+      requirement_ids: []
+
+    classification:
+      type: port
+      package: domain
+      responsibility: ProjectProgress（時系列の進捗データ）を生成する
+
+    definition: |
+      export interface ProjectProgressCreator {
+          createProjectProgress(): Promise<ProjectProgress[]>
+      }
+
+    methods:
+      - id: METHOD-PPC-001
+        name: createProjectProgress
+        signature: "createProjectProgress(): Promise<ProjectProgress[]>"
+        purpose: 時系列のプロジェクト進捗データを生成する
+
+        postconditions:
+          - id: POST-PPC-01
+            condition: ProjectProgress[]を返す（date, pv, ev, spiを含む）
+
+        test_scenarios:
+          - id: TC-PPC-001
+            description: ProjectProgressを生成する
+            given: 有効なデータソース
+            when: createProjectProgress()を呼び出す
+            then:
+              - ProjectProgress[]が返される
+
+    design_issues:
+      - id: ISSUE-PPC-01
+        description: ドメイン層がプレゼンテーション層に依存
+        current: ProjectProgress型がpresentation/project-test2.tsで定義
+        improvement: 型定義をドメイン層に移動
+
+  # ============================================
+  # 4. ProjectStatisticsCreator
+  # ============================================
+  - metadata:
+      id: SPEC-PROJECTSTATISTICSCREATOR-001
+      name: ProjectStatisticsCreator
+      version: 1.0.0
+      source: reverse
+      source_file: src/domain/ProjectStatisticsCreator.ts
+      created_at: 2025-12-16
+      updated_at: 2025-12-16
+      requirement_ids: []
+
+    classification:
+      type: port
+      package: domain
+      responsibility: ProjectStatistics（プロジェクト統計）を生成する
+
+    definition: |
+      export interface ProjectStatisticsCreator {
+          createProjectStatistics(): Promise<ProjectStatistics[]>
+      }
+
+    methods:
+      - id: METHOD-PSC-001
+        name: createProjectStatistics
+        signature: "createProjectStatistics(): Promise<ProjectStatistics[]>"
+        purpose: プロジェクト統計データを生成する
+
+        postconditions:
+          - id: POST-PSC-01
+            condition: ProjectStatistics[]を返す
+
+        test_scenarios:
+          - id: TC-PSC-001
+            description: ProjectStatisticsを生成する
+            given: 有効なデータソース（Excelファイル or ArrayBuffer）
+            when: createProjectStatistics()を呼び出す
+            then:
+              - ProjectStatistics[]が返される
+
+    implementations:
+      - name: ExcelProjectStatisticsCreator
+        package: domain (同一ファイル)
+        description: Excelファイルパスから読み込み
+
+      - name: ExcelBufferProjectStatisticsCreator
+        package: domain (同一ファイル)
+        description: ArrayBufferから読み込み
+
+    design_issues:
+      - id: ISSUE-PSC-01
+        description: インターフェースと実装が同一ファイル
+        current: 同じファイルに実装クラスが定義されている
+        improvement: 実装クラスをinfrastructure層に移動
+
+      - id: ISSUE-PSC-02
+        description: ドメイン層がExcelライブラリに依存
+        current: excel-csv-read-writeをimport
+        improvement: 実装クラス移動で解消
+
+# ============================================
+# 関連オブジェクト
+# ============================================
+relationships:
+  - source: TaskRowCreator
+    target: TaskRow
+    type: creates
+    description: TaskRow[]を生成
+
+  - source: ProjectRepository
+    target: Project
+    type: persists
+    description: Projectを永続化
+
+  - source: ProjectProgressCreator
+    target: ProjectProgress
+    type: creates
+    description: ProjectProgress[]を生成
+
+  - source: ProjectStatisticsCreator
+    target: ProjectStatistics
+    type: creates
+    description: ProjectStatistics[]を生成
+
+# ============================================
+# テストケースサマリ
+# ============================================
+test_summary:
+  TaskRowCreator: 3
+  ProjectRepository: 2
+  ProjectProgressCreator: 2
+  ProjectStatisticsCreator: 4
+  total: 11
