@@ -1,0 +1,6 @@
+{
+    "evmtools-node-logger": {
+        "level": "error",
+        "moduleLogLevels": {}
+    }
+}
