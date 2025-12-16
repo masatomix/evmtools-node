@@ -2,7 +2,8 @@
 
 **要件ID**: REQ-VERSION-001
 **作成日**: 2025-12-16
-**ステータス**: Draft
+**更新日**: 2025-12-16
+**ステータス**: Approved
 **優先度**: Low
 
 ---
@@ -71,9 +72,12 @@ function getVersionInfo(): VersionInfo;
 
 | ID | 基準 | 結果 | テスト証跡 |
 |----|------|------|-----------|
-| AC-01 | getVersionInfo()でバージョン情報を取得できる | - | - |
-| AC-02 | 取得したversionがpackage.jsonと一致する | - | - |
-| AC-03 | 取得したnameがpackage.jsonと一致する | - | - |
+| AC-01 | getVersionInfo()でバージョン情報を取得できる | ✅ PASS | TC-01 |
+| AC-02 | 取得したversionがpackage.jsonと一致する | ✅ PASS | TC-02 |
+| AC-03 | 取得したnameがpackage.jsonと一致する | ✅ PASS | TC-03 |
+
+**確認日**: 2025-12-16
+**テスト実行結果**: 5件全てPASS
 
 ---
 
@@ -81,9 +85,10 @@ function getVersionInfo(): VersionInfo;
 
 | ドキュメント | パス | 説明 |
 |-------------|------|------|
-| 設計書 | （未作成） | 詳細仕様 |
-| 単体テスト | （未作成） | テストコード |
-| 実装 | （未作成） | 本体実装 |
+| 設計書 | `docs/specs/domain/VersionInfo.spec.md` | 詳細仕様 |
+| 単体テスト | `src/common/__tests__/VersionInfo.test.ts` | 5件 |
+| 実装 | `src/common/VersionInfo.ts` | 本体実装 |
+| 実装 | `src/common/index.ts` | エクスポート追加 |
 
 ---
 
