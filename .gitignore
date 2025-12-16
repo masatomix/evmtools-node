@@ -5,6 +5,11 @@ pnpm-lock.yaml
 
 dist/
 
-
 *.tgz
 output
+
+# Test
+coverage/
+
+# Excel test files
+*.xlsm

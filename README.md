@@ -211,7 +211,28 @@ Contributions, issues and feature requests are welcome!<br />Feel free to check 
 Give a ⭐️ if this project helped you!
 
 
+## 開発者向け
+
+### テスト実行
+
+```bash
+npm test              # 全テストを実行
+npm test -- --watch   # ウォッチモードで実行
+npm run test:coverage # カバレッジレポート付きで実行
+```
+
+### ビルド
+
+```bash
+npm run build         # クリーン、TypeScriptコンパイル、.hbsテンプレートのコピー
+npm run lint          # ESLintチェック
+npm run format        # Prettierチェック
+```
+
+詳細な開発フローは [DEVELOPMENT_WORKFLOW.md](docs/workflow/DEVELOPMENT_WORKFLOW.md) を参照してください。
+
 ## 改訂履歴
+- 0.0.18 (予定) CsvProjectCreator追加、VersionInfo追加、Jest環境導入、仕様駆動開発導入
 - 0.0.17 正しいデータかを表す「validStatus」プロパティを追加
 - 0.0.15 微調整
 - 0.0.14 もろもろリファクタリング。要員計画を読み込むコードのβ版リリース
