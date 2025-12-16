@@ -1,0 +1,404 @@
+# ============================================
+# CsvProjectCreator 仕様書（YAML形式）
+# ============================================
+# バージョン: 1.0.0
+# 作成日: 2025-12-16
+# 要件ID: REQ-CSV-001
+# ソースファイル: src/infrastructure/CsvProjectCreator.ts（新規作成）
+# ============================================
+
+metadata:
+  id: SPEC-CSVPROJECTCREATOR-001
+  name: CsvProjectCreator
+  version: 1.0.0
+  source: forward
+  source_file: src/infrastructure/CsvProjectCreator.ts
+  created_at: 2025-12-16
+  updated_at: 2025-12-16
+  requirement_ids:
+    - REQ-CSV-001
+
+classification:
+  type: adapter
+  package: infrastructure
+  responsibility: CSVファイルパスを受け取り、ファイルを読み込んでProjectを生成する
+
+implements: ProjectCreator
+
+ubiquitous_language:
+  - term: CSVプロジェクト生成
+    implementation: CsvProjectCreator
+    definition: CSVファイルからProjectを構築するクラス
+  - term: 基準日
+    implementation: baseDate
+    definition: ファイル名から抽出するEVM計算の基準日
+  - term: エンコーディング
+    implementation: encoding
+    definition: CSVファイルの文字コード（UTF-8/Shift-JIS）
+
+invariants:
+  - id: INV-CSV-01
+    description: createProject()は常にProjectインスタンスを返す（エラー時は例外）
+    expression: result instanceof Project
+    verification_timing: 全操作
+
+  - id: INV-CSV-02
+    description: 戻り値のProjectは有効な状態（baseDate, taskNodes, holidayDatasが設定済み）
+    expression: |
+      result.baseDate !== undefined &&
+      result.taskNodes !== undefined &&
+      result.holidayDatas !== undefined
+    verification_timing: 生成後
+
+  - id: INV-CSV-03
+    description: 生成されるtaskNodesは全てisLeaf=true
+    expression: result.toTaskRows().every(t => t.isLeaf === true)
+    verification_timing: 生成後
+
+constructor:
+  signature: |
+    constructor(
+      csvPath: string,
+      options?: CsvProjectCreatorOptions
+    )
+  parameters:
+    - name: csvPath
+      type: string
+      required: true
+      description: CSVファイルの絶対パスまたは相対パス
+
+    - name: options.encoding
+      type: "'utf-8' | 'shift-jis' | 'auto'"
+      required: false
+      default: "'auto'"
+      description: 文字エンコーディング
+
+  preconditions:
+    - id: PRE-CSV-01
+      condition: csvPathが有効なファイルパス
+      on_violation: ファイルI/Oエラー
+
+    - id: PRE-CSV-02
+      condition: 指定パスにCSVファイルが存在する
+      on_violation: ファイルI/Oエラー
+
+    - id: PRE-CSV-03
+      condition: ファイル名が規則に従う（{name}_{yyyyMMdd}.csv）
+      on_violation: パースエラー
+
+methods:
+  - id: METHOD-CSV-001
+    name: createProject
+    signature: "createProject(): Promise<Project>"
+    purpose: CSVファイルを読み込んでProjectオブジェクトを生成する
+
+    postconditions:
+      - id: POST-CSV-01
+        condition: 戻り値のProjectにbaseDateが設定されている（ファイル名から抽出）
+      - id: POST-CSV-02
+        condition: 戻り値のProjectにtaskNodesが設定されている（空配列可）
+      - id: POST-CSV-03
+        condition: 戻り値のProjectのholidayDatasは空配列
+      - id: POST-CSV-04
+        condition: 全てのTaskNodeはisLeaf=true
+      - id: POST-CSV-05
+        condition: 全てのTaskNodeはparentId=undefined
+      - id: POST-CSV-06
+        condition: startDateはタスクの最小開始日、endDateは最大終了日
+
+    algorithm: |
+      1. ファイル名からプロジェクト名と基準日を抽出
+         - パターン: {projectName}_{yyyyMMdd}.csv
+      2. エンコーディング判定（auto時）
+      3. CSVファイルを読み込み、行ごとにパース
+         - 1行目はヘッダー行としてスキップ
+         - 空行はスキップ
+      4. 各行をTaskRowに変換
+      5. TaskRow[] → TaskNode[] に変換
+      6. Project生成して返す
+
+    business_rules:
+      - id: BR-CSV-01
+        rule: 進捗率が1より大きい場合（例:50）、100で割って0-1に正規化
+        on_violation: 自動変換
+
+      - id: BR-CSV-02
+        rule: タスクIDが空または数値でない行はスキップ
+        on_violation: 警告ログ出力、処理継続
+
+      - id: BR-CSV-03
+        rule: 日付形式はyyyy/MM/ddまたはyyyy-MM-ddを許容
+        on_violation: 自動パース
+
+    external_dependencies:
+      - name: fs (Node.js)
+        type: 標準ライブラリ
+        description: ファイル読み込み
+
+      - name: iconv-lite
+        type: ライブラリ
+        description: Shift-JIS対応
+
+    exceptions:
+      - condition: ファイルが存在しない
+        error: "File not found: {path}"
+      - condition: ファイル名パターン不一致
+        error: "Invalid filename format. Expected: {name}_{yyyyMMdd}.csv"
+      - condition: CSV解析エラー
+        error: "Failed to parse CSV: {details}"
+
+    equivalence_classes:
+      # ファイル読み込み
+      - id: EQ-CSV-001
+        category: normal
+        description: 有効なUTF-8 CSVファイル
+        input:
+          csvPath: valid_utf8.csv
+          encoding: utf-8
+        expected:
+          result: Projectインスタンス
+
+      - id: EQ-CSV-002
+        category: normal
+        description: 有効なShift-JIS CSVファイル
+        input:
+          csvPath: valid_sjis.csv
+          encoding: shift-jis
+        expected:
+          result: Projectインスタンス
+
+      - id: EQ-CSV-003
+        category: boundary
+        description: タスク0件のCSV（ヘッダーのみ）
+        input:
+          csvPath: empty.csv
+        expected:
+          taskNodes: "[]"
+
+      - id: EQ-CSV-004
+        category: error
+        description: 存在しないファイルパス
+        input:
+          csvPath: not_exist.csv
+        expected:
+          error: ファイルI/Oエラー
+
+      - id: EQ-CSV-005
+        category: error
+        description: ファイル名パターン不一致
+        input:
+          csvPath: invalid.csv
+        expected:
+          error: パースエラー
+
+      # データ変換
+      - id: EQ-CSV-010
+        category: normal
+        description: 進捗率=0.5（小数表記）
+        input:
+          progressRate: "0.5"
+        expected:
+          progressRate: 0.5
+
+      - id: EQ-CSV-011
+        category: normal
+        description: 進捗率=50（%表記）
+        input:
+          progressRate: "50"
+        expected:
+          progressRate: 0.5
+
+      - id: EQ-CSV-012
+        category: boundary
+        description: 進捗率=0
+        input:
+          progressRate: "0"
+        expected:
+          progressRate: 0
+
+      - id: EQ-CSV-013
+        category: boundary
+        description: 進捗率=1
+        input:
+          progressRate: "1"
+        expected:
+          progressRate: 1
+
+      - id: EQ-CSV-014
+        category: boundary
+        description: 進捗率=100
+        input:
+          progressRate: "100"
+        expected:
+          progressRate: 1
+
+      - id: EQ-CSV-015
+        category: error
+        description: タスクID空の行
+        input:
+          taskId: ""
+        expected:
+          result: スキップ、警告ログ
+
+      # 日付パース
+      - id: EQ-CSV-020
+        category: normal
+        description: 日付形式 yyyy/MM/dd
+        input:
+          date: "2025/01/15"
+        expected:
+          date: "2025-01-15"
+
+      - id: EQ-CSV-021
+        category: normal
+        description: 日付形式 yyyy-MM-dd
+        input:
+          date: "2025-01-15"
+        expected:
+          date: "2025-01-15"
+
+      - id: EQ-CSV-022
+        category: boundary
+        description: 空文字の日付
+        input:
+          date: ""
+        expected:
+          date: undefined
+
+      - id: EQ-CSV-023
+        category: error
+        description: 無効な日付文字列
+        input:
+          date: "invalid"
+        expected:
+          date: undefined
+          log: 警告
+
+    test_scenarios:
+      - id: TC-CSV-001
+        description: UTF-8のCSVファイルからProjectを生成できる
+        given:
+          file: UTF-8エンコードのCSVファイル "TestProject_20251216.csv"
+          tasks: 3件のタスク
+        when: CsvProjectCreator("TestProject_20251216.csv").createProject()を呼び出す
+        then:
+          - Projectが返される
+          - project.nameが "TestProject" である
+          - project.baseDateが 2025-12-16 である
+          - project.taskNodesに3件のタスクが含まれる
+          - project.holidayDatasが空配列である
+
+      - id: TC-CSV-002
+        description: Shift-JISのCSVファイルからProjectを生成できる
+        given:
+          file: Shift-JISエンコードのCSVファイル（日本語を含む）
+        when: CsvProjectCreator(path, { encoding:'shift-jis' }).createProject()を呼び出す
+        then:
+          - Projectが返される
+          - 日本語のタスク名が正しく読み込まれている
+
+      - id: TC-CSV-003
+        description: 進捗率のパーセント表記を正規化する
+        given:
+          file: 進捗率が "50" と記載されたCSV
+        when: createProject()を呼び出す
+        then:
+          - TaskRowのprogressRateが 0.5 になる
+
+      - id: TC-CSV-004
+        description: 存在しないファイルパスでエラーが発生する
+        given:
+          file: 存在しないファイルパス "not_exist.csv"
+        when: CsvProjectCreator("not_exist.csv").createProject()を呼び出す
+        then:
+          - ファイルI/Oエラーが発生する
+
+      - id: TC-CSV-005
+        description: ファイル名パターン不一致でエラーが発生する
+        given:
+          file: ファイル名が "invalid.csv"（日付部分なし）
+        when: CsvProjectCreator("invalid.csv").createProject()を呼び出す
+        then:
+          - パースエラーが発生する
+
+      - id: TC-CSV-006
+        description: 不正な行があっても処理を継続する
+        given:
+          file: タスクIDが空の行を含むCSV
+        when: createProject()を呼び出す
+        then:
+          - Projectが返される
+          - 不正な行はスキップされる
+          - 警告ログが出力される
+
+relationships:
+  - target: ProjectCreator
+    type: implements
+    description: インターフェース実装
+
+  - target: TaskRow
+    type: creates
+    description: CSVからTaskRowを生成
+
+  - target: TaskNode
+    type: creates
+    description: TaskRowからTaskNodeを生成
+
+  - target: TaskService
+    type: uses
+    description: buildTaskTreeでツリー構築
+
+  - target: Project
+    type: creates
+    description: 最終的にProjectを生成
+
+traceability:
+  - requirement_id: REQ-CSV-001
+    acceptance_criteria: AC-01
+    description: UTF-8 CSVから読み込み
+    test_cases: [TC-CSV-001, EQ-CSV-001]
+    result: PASS
+
+  - requirement_id: REQ-CSV-001
+    acceptance_criteria: AC-02
+    description: Shift-JIS CSVから読み込み
+    test_cases: [TC-CSV-002, EQ-CSV-002]
+    result: PASS
+
+  - requirement_id: REQ-CSV-001
+    acceptance_criteria: AC-03
+    description: ファイル名から抽出
+    test_cases: [TC-CSV-001]
+    result: PASS
+
+  - requirement_id: REQ-CSV-001
+    acceptance_criteria: AC-04
+    description: EVM計算動作
+    test_cases: [統合テスト10件]
+    result: PASS
+
+  - requirement_id: REQ-CSV-001
+    acceptance_criteria: AC-05
+    description: 不正行で継続
+    test_cases: [TC-CSV-006, EQ-CSV-015]
+    result: PASS
+
+test_summary:
+  file_loading: 5
+  data_conversion: 6
+  date_parsing: 4
+  scenario_tests: 7
+  integration_tests: 10
+  total: 32
+
+test_implementation:
+  unit_test_file: src/infrastructure/__tests__/CsvProjectCreator.test.ts
+  integration_test_file: src/infrastructure/__tests__/CsvProjectCreator.integration.test.ts
+  fixtures_directory: src/infrastructure/__tests__/fixtures/
+
+test_execution:
+  date: 2025-12-16
+  result: PASS
+  total_tests: 32
+  passed: 32
+  failed: 0
