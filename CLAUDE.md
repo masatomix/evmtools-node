@@ -222,6 +222,44 @@ npm test -- --watch   # ウォッチモードで実行
   - Excel「EVM記録」シートから時系列のPV/EVデータを読み込み
   - ProjectProgress（date, pv, ev, spi）として表示
 
+## Git Flow ブランチ戦略（重要）
+
+本プロジェクトはGit Flowに準拠している。**新機能開発時は必ず`develop`ブランチから分岐すること。**
+
+### ブランチ構成
+
+| ブランチ | 目的 | 分岐元 |
+|---------|------|-------|
+| `main` | 本番リリース用 | - |
+| `develop` | 開発統合 | - |
+| `feature/*` | 新機能開発 | **develop** |
+| `release/*` | リリース準備 | develop |
+| `hotfix/*` | 緊急修正 | main |
+
+### 新機能開発の手順
+
+```bash
+# 1. developから feature ブランチを作成
+git checkout develop
+git pull origin develop
+git checkout -b feature/機能名
+
+# 2. 開発作業・コミット
+
+# 3. プッシュ
+git push -u origin feature/機能名
+
+# 4. PRを作成（ベース: develop）
+```
+
+### 禁止事項
+
+- `main`ブランチへの直接コミット
+- `main`ブランチからのfeatureブランチ作成
+- developを経由しないマージ
+
+詳細は `docs/workflow/DEVELOPMENT_WORKFLOW.md` を参照。
+
 ## 注意事項
 
 - 要員計画モジュール（`src/resource/`）はベータ版
