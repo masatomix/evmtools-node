@@ -358,16 +358,9 @@ MAJOR.MINOR.PATCH
 
 **2025-12-16時点:**
 
-現在、`main`ブランチ上で`CsvProjectCreator`機能の開発が完了しています。
-本来のGit Flowに従う場合は、以下の手順が推奨されます:
+`feature/claude-code-setup`ブランチで以下の作業を実施中:
+- Claude Code導入（CLAUDE.md）
+- 仕様駆動開発の導入（Jest環境、仕様書）
+- CsvProjectCreator機能の開発（仕様駆動開発フローで実装）
 
-```bash
-# 1. 現在の変更を feature ブランチに移動
-git stash
-git checkout -b feature/csv-reader
-git stash pop
-
-# 2. コミット・PRの流れへ
-```
-
-または、小規模チーム/個人開発の場合は`develop`への直接コミットも許容されます。
+Git Flowに従い、`develop`から分岐 → PR → `develop`へマージ の流れで進行。
