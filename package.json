@@ -80,6 +80,7 @@
         "config": "^4.0.0",
         "excel-csv-read-write": "^0.2.6",
         "handlebars": "^4.7.8",
+        "iconv-lite": "^0.7.1",
         "pino": "^9.7.0",
         "ts-node": "^10.9.2",
         "yargs": "^17.7.2"
@@ -87,6 +88,7 @@
     "devDependencies": {
         "@eslint/js": "^9.28.0",
         "@types/config": "^3.3.5",
+        "@types/iconv-lite": "^0.0.1",
         "@types/jest": "^30.0.0",
         "@types/node": "^22.15.21",
         "@types/xlsx-populate": "github:JanLoebel/types-xlsx-populate",
