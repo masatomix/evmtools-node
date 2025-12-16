@@ -1,0 +1,243 @@
+# ============================================
+# TaskService 仕様書（YAML形式）
+# ============================================
+# バージョン: 1.0.0
+# 作成日: 2025-12-16
+# ソースファイル: src/domain/TaskService.ts
+# ============================================
+
+metadata:
+  id: SPEC-TASKSERVICE-001
+  name: TaskService
+  version: 1.0.0
+  source: reverse
+  source_file: src/domain/TaskService.ts
+  created_at: 2025-12-16
+  updated_at: 2025-12-16
+  requirement_ids: []
+
+classification:
+  type: domain_service
+  package: domain
+  responsibility: TaskRowとTaskNode間の変換処理を担当。フラットな配列⇔ツリー構造の相互変換
+
+ubiquitous_language:
+  - term: タスクツリー
+    implementation: TaskNode[]
+    definition: 階層構造を持つタスクのルートノード配列
+  - term: フラット化
+    implementation: convertToTaskRows
+    definition: ツリー構造を一次元配列に展開
+  - term: ツリー構築
+    implementation: buildTaskTree
+    definition: フラットな配列から階層構造を構築
+
+invariants:
+  - id: INV-TS-01
+    description: TaskServiceはステートレスである
+    expression: "true"
+    verification_timing: 常時
+
+  - id: INV-TS-02
+    description: buildTaskTree後のツリーはparentIdに従った親子関係を持つ
+    expression: 各node.children内のnodeはnode.idをparentIdとして持つ
+    verification_timing: 変換後
+
+  - id: INV-TS-03
+    description: convertToTaskRows後の配列はツリーの深さ優先順になる
+    expression: 配列順序が深さ優先走査順と一致
+    verification_timing: 変換後
+
+methods:
+  - id: METHOD-TS-001
+    name: buildTaskTree
+    signature: "buildTaskTree(rows: TaskRow[]): TaskNode[]"
+    purpose: TaskRowの配列からparentIdに従ってツリー構造のTaskNode[]を構築する
+
+    preconditions:
+      - id: PRE-BT-01
+        condition: rowsが配列である
+        on_violation: 例外
+
+    postconditions:
+      - id: POST-BT-01
+        condition: parentIdがundefinedのノードがルートノードとして返される
+      - id: POST-BT-02
+        condition: parentIdが設定されたノードは対応する親ノードのchildrenに追加される
+      - id: POST-BT-03
+        condition: 元のTaskRowのプロパティは全て保持される
+      - id: POST-BT-04
+        condition: 入力配列の順序に従って処理される
+
+    algorithm: |
+      1. nodeMap = new Map<number, TaskNode>()
+      2. roots = []
+      3. 各rowに対して:
+         a. node = TaskNode.fromRow(row)
+         b. nodeMap.set(row.id, node)
+         c. if (row.parentId !== undefined):
+              parentNode = nodeMap.get(row.parentId)
+              parentNode?.children.push(node)
+            else:
+              roots.push(node)
+      4. return roots
+
+    business_rules:
+      - id: BR-BT-01
+        rule: 親ノードは子ノードより先に配列に存在する必要がある
+        on_violation: 孤児ノードが生成される
+      - id: BR-BT-02
+        rule: 存在しないparentIdを持つノードは孤児となる
+        on_violation: childrenに追加されない
+
+    equivalence_classes:
+      - id: EQ-BT-001
+        category: normal
+        description: 親1件、子2件
+        input:
+          rows:
+            - {id: 1, parentId: null}
+            - {id: 2, parentId: 1}
+            - {id: 3, parentId: 1}
+        expected:
+          roots.length: 1
+          roots[0].children.length: 2
+
+      - id: EQ-BT-002
+        category: normal
+        description: ルートのみ3件
+        input:
+          rows:
+            - {id: 1, parentId: null}
+            - {id: 2, parentId: null}
+            - {id: 3, parentId: null}
+        expected:
+          roots.length: 3
+
+      - id: EQ-BT-003
+        category: normal
+        description: 3階層構造
+        input:
+          rows:
+            - {id: 1, parentId: null}
+            - {id: 2, parentId: 1}
+            - {id: 3, parentId: 2}
+        expected:
+          structure: 正しい入れ子構造
+
+      - id: EQ-BT-004
+        category: boundary
+        description: 空配列
+        input:
+          rows: []
+        expected:
+          roots.length: 0
+
+      - id: EQ-BT-005
+        category: error
+        description: 存在しないparentId
+        input:
+          rows:
+            - {id: 2, parentId: 999}
+        expected:
+          result: 孤児ノード
+
+    test_scenarios:
+      - id: TC-BT-001
+        description: フラットなTaskRow配列からツリーを構築する
+        given:
+          rows: [{id:1, parentId:null}, {id:2, parentId:1}, {id:3, parentId:1}]
+        when: buildTaskTree(rows)を呼び出す
+        then:
+          - ルートノードが1件返される
+          - ルートノードのchildrenが2件
+
+      - id: TC-BT-002
+        description: 空配列の場合は空のルートを返す
+        given:
+          rows: []
+        when: buildTaskTree([])を呼び出す
+        then:
+          - 空配列が返される
+
+  - id: METHOD-TS-002
+    name: convertToTaskRows
+    signature: "convertToTaskRows(nodes: TaskNode[]): TaskRow[]"
+    purpose: TaskNodeツリーを深さ優先でフラット化したTaskRow[]を返す
+
+    preconditions:
+      - id: PRE-CT-01
+        condition: nodesが配列である
+        on_violation: 例外
+
+    postconditions:
+      - id: POST-CT-01
+        condition: 深さ優先順で全ノードが配列に展開される
+      - id: POST-CT-02
+        condition: parentIdはツリー構造に基づいて再計算される
+      - id: POST-CT-03
+        condition: levelはツリー構造に基づいて再計算される（ルート=1）
+
+    algorithm: |
+      1. result = []
+      2. dfs(node, parentId, level):
+         a. result.push(TaskRow.fromNode(node, level, parentId))
+         b. node.children.forEach(child => dfs(child, node.id, level + 1))
+      3. nodes.forEach(root => dfs(root, undefined, 1))
+      4. return result
+
+    equivalence_classes:
+      - id: EQ-CT-001
+        category: normal
+        description: 親1件、子2件
+        input:
+          nodes: [{id:1, children:[{id:2}, {id:3}]}]
+        expected:
+          length: 3
+          "[0].level": 1
+          "[1].level": 2
+
+      - id: EQ-CT-002
+        category: normal
+        description: 3階層構造
+        input:
+          nodes: 親 -> 子 -> 孫
+        expected:
+          levels: [1, 2, 3]
+
+      - id: EQ-CT-003
+        category: boundary
+        description: 空配列
+        input:
+          nodes: []
+        expected:
+          length: 0
+
+    test_scenarios:
+      - id: TC-CT-001
+        description: ツリー構造をフラット化する
+        given:
+          nodes: 親ノード(id=1)に子ノード(id=2,3)がある構造
+        when: convertToTaskRows(nodes)を呼び出す
+        then:
+          - 3件のTaskRowが返される
+          - id=1はlevel=1, parentId=undefined
+          - id=2,3はlevel=2, parentId=1
+
+relationships:
+  - target: TaskRow
+    type: dependency
+    description: 入出力として使用
+
+  - target: TaskNode
+    type: dependency
+    description: 入出力として使用
+
+  - target: MappingProjectCreator
+    type: association
+    description: ツリー構築時に使用される
+
+test_summary:
+  buildTaskTree: 5
+  convertToTaskRows: 4
+  total: 9

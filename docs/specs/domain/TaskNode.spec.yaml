@@ -1,0 +1,201 @@
+# ============================================
+# TaskNode 仕様書（YAML形式）
+# ============================================
+# バージョン: 1.0.0
+# 作成日: 2025-12-16
+# ソースファイル: src/domain/TaskNode.ts
+# ============================================
+
+metadata:
+  id: SPEC-TASKNODE-001
+  name: TaskNode
+  version: 1.0.0
+  source: reverse
+  source_file: src/domain/TaskNode.ts
+  created_at: 2025-12-16
+  updated_at: 2025-12-16
+  requirement_ids: []
+
+classification:
+  type: entity
+  package: domain
+  responsibility: TaskRowをラップし、階層構造（ツリー）を表現する。Iterableによりツリー走査をサポート
+
+ubiquitous_language:
+  - term: タスクノード
+    implementation: TaskNode
+    definition: 階層構造を持つタスク表現
+  - term: 子ノード
+    implementation: children
+    definition: このノードの直下にある子タスクの配列
+  - term: ルートノード
+    implementation: "-"
+    definition: parentIdがundefinedのノード
+
+invariants:
+  - id: INV-TN-01
+    description: childrenは常に配列（空配列可）である
+    expression: Array.isArray(this.children)
+    verification_timing: 生成時・全操作
+
+  - id: INV-TN-02
+    description: TaskRowの全不変条件を継承する
+    expression: super.invariants
+    verification_timing: 生成時・全操作
+
+  - id: INV-TN-03
+    description: Iterableプロトコルを実装している
+    expression: typeof this[Symbol.iterator] === 'function'
+    verification_timing: 常時
+
+properties:
+  - name: children
+    type: TaskNode[]
+    required: false
+    visibility: public
+    readonly: false
+    default: "[]"
+    description: 子ノードの配列
+
+constructor:
+  signature: |
+    constructor(
+      sharp: number, id: number, level: number, name: string,
+      assignee?: string, workload?: number, startDate?: Date, endDate?: Date,
+      actualStartDate?: Date, actualEndDate?: Date, progressRate?: number,
+      scheduledWorkDays?: number, pv?: number, ev?: number, spi?: number,
+      expectedProgressDate?: Date, delayDays?: number, remarks?: string,
+      parentId?: number, isLeaf?: boolean, plotMap?: Map<number, boolean>,
+      children: TaskNode[] = []
+    )
+
+  postconditions:
+    - id: POST-CON-01
+      condition: 親クラスTaskRowが適切に初期化される
+    - id: POST-CON-02
+      condition: childrenが指定値またはデフォルト空配列で初期化される
+
+methods:
+  - id: METHOD-TN-001
+    name: "[Symbol.iterator]"
+    signature: "*[Symbol.iterator](): IterableIterator<TaskNode>"
+    purpose: ツリー構造を深さ優先で走査可能にする
+
+    algorithm: |
+      1. 自身(this)をyield
+      2. 各childに対して再帰的にyield*
+
+    postconditions:
+      - id: POST-ITER-01
+        condition: 自身を最初に返す
+      - id: POST-ITER-02
+        condition: 子ノードを深さ優先順で返す
+      - id: POST-ITER-03
+        condition: 全ての子孫ノードを走査する
+
+    equivalence_classes:
+      - id: EQ-ITER-001
+        category: normal
+        description: 子ノード2件
+        input:
+          children: [{id: 2}, {id: 3}]
+        expected:
+          count: 3
+          order: [self, child1, child2]
+
+      - id: EQ-ITER-002
+        category: normal
+        description: 3階層構造
+        input:
+          structure: parent -> child -> grandchild
+        expected:
+          order: [parent, child, grandchild]
+
+      - id: EQ-ITER-003
+        category: boundary
+        description: 子ノード0件
+        input:
+          children: []
+        expected:
+          count: 1
+          order: [self]
+
+    test_scenarios:
+      - id: TC-ITER-001
+        description: ツリー構造を深さ優先で走査する
+        given:
+          node: id=1, children=[{id:2}, {id:3}]
+        when: for...of でイテレート
+        then:
+          - id=1, id=2, id=3 の順で取得できる
+
+      - id: TC-ITER-002
+        description: 子がないノードは自身のみ返す
+        given:
+          node: children=[]
+        when: for...of でイテレート
+        then:
+          - 自身のみ取得できる
+
+  - id: METHOD-TN-002
+    name: fromRow
+    signature: "static fromRow(row: TaskRow, children: TaskNode[] = []): TaskNode"
+    purpose: TaskRowからTaskNodeを生成するファクトリメソッド
+
+    preconditions:
+      - id: PRE-FR-01
+        condition: rowがnullでない
+        on_violation: 例外
+
+    postconditions:
+      - id: POST-FR-01
+        condition: rowの全プロパティを引き継いだTaskNodeを返す
+      - id: POST-FR-02
+        condition: childrenが指定されていれば設定、未指定なら空配列
+
+    equivalence_classes:
+      - id: EQ-FR-001
+        category: normal
+        description: 有効なTaskRow, 子ノード2件
+        input:
+          row: TaskRow(id=1)
+          children: [node1, node2]
+        expected:
+          result: TaskNode(children.length=2)
+
+      - id: EQ-FR-002
+        category: normal
+        description: 有効なTaskRow, children省略
+        input:
+          row: TaskRow(id=1)
+        expected:
+          result: TaskNode(children.length=0)
+
+    test_scenarios:
+      - id: TC-FR-001
+        description: TaskRowからTaskNodeを生成する
+        given:
+          row: TaskRow(id=1, name="テスト")
+          children: [child1, child2]
+        when: TaskNode.fromRow(row, children)を呼び出す
+        then:
+          - id=1, name="テスト", children.length=2のTaskNodeが返される
+
+relationships:
+  - target: TaskRow
+    type: inheritance
+    description: TaskRowを継承
+
+  - target: Project
+    type: association
+    description: ProjectがTaskNode[]を保持
+
+  - target: TaskService
+    type: dependency
+    description: TaskServiceがTaskRow[]からTaskNode[]を構築
+
+test_summary:
+  constructor: 2
+  iterator: 3
+  fromRow: 2
+  total: 7

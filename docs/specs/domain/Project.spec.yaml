@@ -1,0 +1,941 @@
+# ============================================
+# Project クラス仕様書 (YAML形式)
+# ============================================
+
+metadata:
+  id: SPEC-PROJECT-001
+  name: Project
+  version: 1.0.0
+  source: reverse
+  source_file: src/domain/Project.ts
+  created_at: 2025-12-16
+  updated_at: 2025-12-16
+  requirement_ids: []  # リバースのため未紐付け（要補足）
+
+# ============================================
+# 基本情報
+# ============================================
+classification:
+  type: aggregate_root
+  package: domain
+  responsibility: |
+    プロジェクト全体のタスク情報を保持し、
+    EVM分析に必要な統計データ・PVデータを提供する
+
+# ============================================
+# ユビキタス言語（ドメイン用語）
+# ============================================
+ubiquitous_language:
+  - term: プロジェクト
+    implementation: Project
+    definition: タスクツリーと基準日・期間を持つEVM分析の対象単位
+
+  - term: 基準日
+    implementation: baseDate
+    definition: EVM計算の基準となる日付。「この日の業務終了時点」で評価
+
+  - term: タスクノード
+    implementation: TaskNode
+    definition: 階層構造を持つタスク。親子関係を表現
+
+  - term: タスク行
+    implementation: TaskRow
+    definition: フラット化されたタスク。EVM計算メソッドを持つ
+
+  - term: リーフタスク
+    implementation: isLeaf=true
+    definition: 子を持たない末端タスク。実作業を表す
+
+  - term: 計画価値（PV）
+    implementation: pv / calculatePV()
+    definition: 基準日までに完了予定だった作業量
+
+  - term: 出来高（EV）
+    implementation: ev
+    definition: 実際に完了した作業の価値
+
+  - term: スケジュール効率（SPI）
+    implementation: spi
+    definition: EV/PV。1.0以上なら予定通り
+
+  - term: 祝日データ
+    implementation: HolidayData
+    definition: プロジェクト固有の休日定義
+
+# ============================================
+# 不変条件
+# ============================================
+invariants:
+  - id: INV-01
+    description: baseDateは必ず存在する（non-null）
+    expression: this.baseDate !== undefined
+    verification_timing: 生成時・全操作
+
+  - id: INV-02
+    description: taskNodesは必ず存在する（空配列可）
+    expression: Array.isArray(this.taskNodes)
+    verification_timing: 生成時・全操作
+
+  - id: INV-03
+    description: holidayDatasは必ず存在する（空配列可）
+    expression: Array.isArray(this.holidayDatas)
+    verification_timing: 生成時・全操作
+
+  - id: INV-04
+    description: startDateが存在する場合、endDateも存在し、startDate <= endDate
+    expression: |
+      !this.startDate || !this.endDate || this.startDate <= this.endDate
+    verification_timing: 生成時
+
+  - id: INV-05
+    description: toTaskRows()の結果は冪等（同一インスタンスで複数回呼んでも同じ結果）
+    expression: this.toTaskRows() === this.toTaskRows()
+    verification_timing: キャッシュ機構
+
+  - id: INV-06
+    description: getTask(id)で取得したTaskRowはtoTaskRows()の要素と同一参照
+    expression: |
+      const rows = this.toTaskRows();
+      rows.every(r => this.getTask(r.id) === r)
+    verification_timing: ID検索
+
+  - id: INV-07
+    description: リーフタスクのみが統計計算の対象
+    expression: 統計計算時にisLeaf===trueでフィルタ
+    verification_timing: 統計計算時
+
+# ============================================
+# プロパティ
+# ============================================
+properties:
+  # コンストラクタ引数（プライベート）
+  - name: _taskNodes
+    type: TaskNode[]
+    required: true
+    visibility: private
+    readonly: true
+    constraints: []
+    description: タスクのツリー構造
+
+  - name: _baseDate
+    type: Date
+    required: true
+    visibility: private
+    readonly: true
+    constraints:
+      - 有効な日付オブジェクト
+    description: EVM計算の基準日
+
+  - name: _holidayDatas
+    type: HolidayData[]
+    required: true
+    visibility: private
+    readonly: true
+    constraints: []
+    description: プロジェクト固有の祝日
+
+  - name: _startDate
+    type: Date
+    required: false
+    visibility: private
+    readonly: true
+    constraints:
+      - _endDateが存在する場合 <= _endDate
+    default: undefined
+    description: プロジェクト開始日
+
+  - name: _endDate
+    type: Date
+    required: false
+    visibility: private
+    readonly: true
+    constraints:
+      - _startDateが存在する場合 >= _startDate
+    default: undefined
+    description: プロジェクト終了日
+
+  - name: _name
+    type: string
+    required: false
+    visibility: private
+    readonly: true
+    constraints: []
+    default: undefined
+    description: プロジェクト名
+
+  # 内部キャッシュ
+  - name: _cachedTaskRows
+    type: TaskRow[] | undefined
+    required: false
+    visibility: private
+    readonly: false
+    description: toTaskRows()の結果キャッシュ
+
+  - name: _cachedTaskMap
+    type: Map<number, TaskRow> | undefined
+    required: false
+    visibility: private
+    readonly: false
+    description: ID→TaskRowのマップキャッシュ
+
+# ============================================
+# コンストラクタ
+# ============================================
+constructor:
+  signature: |
+    constructor(
+      taskNodes: TaskNode[],
+      baseDate: Date,
+      holidayDatas: HolidayData[],
+      startDate?: Date,
+      endDate?: Date,
+      name?: string
+    )
+
+  preconditions:
+    - id: PRE-C01
+      condition: taskNodesが配列である
+      on_violation: TypeError
+
+    - id: PRE-C02
+      condition: baseDateが有効なDateオブジェクト
+      on_violation: 不正な計算結果
+
+    - id: PRE-C03
+      condition: holidayDatasが配列である
+      on_violation: TypeError
+
+    - id: PRE-C04
+      condition: startDateとendDateが両方指定される場合、startDate <= endDate
+      on_violation: 現状検証なし（要検討）
+
+  postconditions:
+    - id: POST-C01
+      condition: this.baseDate === baseDate
+
+    - id: POST-C02
+      condition: this.taskNodes === taskNodes（同一参照）
+
+    - id: POST-C03
+      condition: this._cachedTaskRows === undefined（キャッシュ未生成）
+
+    - id: POST-C04
+      condition: this._cachedTaskMap === undefined（キャッシュ未生成）
+
+# ============================================
+# メソッド
+# ============================================
+methods:
+  # ------------------------------------------
+  # toTaskRows
+  # ------------------------------------------
+  - id: METHOD-001
+    name: toTaskRows
+    signature: "toTaskRows(): TaskRow[]"
+    purpose: TaskNodeツリーをフラット化したTaskRow配列を返す
+
+    preconditions: []
+
+    postconditions:
+      - id: POST-TR01
+        condition: 戻り値はTaskRow[]型
+
+      - id: POST-TR02
+        condition: 同一インスタンスで再呼び出し時、同一配列参照を返す（キャッシュ）
+
+      - id: POST-TR03
+        condition: 各TaskRowのlevelは深さに応じて1から順に設定される
+
+      - id: POST-TR04
+        condition: 各TaskRowのparentIdは親ノードのIDが設定される（ルートはundefined）
+
+    algorithm: |
+      1. キャッシュ(_cachedTaskRows)が存在すればそれを返す
+      2. TaskService.convertToTaskRows()でツリーをフラット化
+      3. 結果をキャッシュに保存して返す
+
+    exceptions: []
+
+    equivalence_classes:
+      - id: EQ-TR-001
+        category: normal
+        description: 1件のルートノード（リーフ）
+        input:
+          taskNodes:
+            - { id: 1, name: "タスク1", isLeaf: true, children: [] }
+        expected:
+          length: 1
+          "[0].level": 1
+
+      - id: EQ-TR-002
+        category: normal
+        description: 親1+子2の階層構造
+        input:
+          taskNodes:
+            - id: 1
+              name: "親"
+              isLeaf: false
+              children:
+                - { id: 2, name: "子1", isLeaf: true }
+                - { id: 3, name: "子2", isLeaf: true }
+        expected:
+          length: 3
+          "[0].level": 1
+          "[1].level": 2
+          "[2].level": 2
+
+      - id: EQ-TR-003
+        category: normal
+        description: 3階層ネスト
+        input:
+          taskNodes:
+            - id: 1
+              children:
+                - id: 2
+                  children:
+                    - { id: 3 }
+        expected:
+          "[0].level": 1
+          "[1].level": 2
+          "[2].level": 3
+
+      - id: EQ-TR-004
+        category: boundary
+        description: 空配列
+        input:
+          taskNodes: []
+        expected:
+          length: 0
+
+      - id: EQ-TR-005
+        category: boundary
+        description: 子なしルート1件
+        input:
+          taskNodes:
+            - { id: 1, children: [] }
+        expected:
+          length: 1
+
+    test_scenarios:
+      - id: TC-TR-001
+        description: 階層構造のTaskNodeがフラット化される
+        given:
+          親タスク（id=1, name="親"）と子タスク2件（id=2,3）
+        when: toTaskRows()を呼び出す
+        then:
+          - 3件のTaskRowが返される
+          - id=1のTaskRowのlevelは1
+          - id=2のTaskRowのlevelは2
+          - id=2のTaskRowのparentIdは1
+
+      - id: TC-TR-002
+        description: toTaskRows()は同一参照をキャッシュして返す
+        given: 任意のTaskNode配列でProjectを生成
+        when: toTaskRows()を2回呼び出す
+        then: 1回目と2回目の戻り値が同一参照（===）
+
+      - id: TC-TR-003
+        description: 空のtaskNodesで空配列を返す
+        given: taskNodes=[]
+        when: toTaskRows()を呼び出す
+        then: 空配列が返される
+
+  # ------------------------------------------
+  # getTask
+  # ------------------------------------------
+  - id: METHOD-002
+    name: getTask
+    signature: "getTask(id: number): TaskRow | undefined"
+    purpose: IDを指定してTaskRowを取得する
+
+    preconditions:
+      - id: PRE-GT01
+        condition: idは数値型
+
+    postconditions:
+      - id: POST-GT01
+        condition: 該当IDが存在すれば、そのTaskRowを返す
+
+      - id: POST-GT02
+        condition: 該当IDが存在しなければundefinedを返す
+
+      - id: POST-GT03
+        condition: 内部マップが未生成なら、初回呼び出し時に生成・キャッシュ
+
+    algorithm: |
+      1. _cachedTaskMapが未生成なら、toTaskRows()からMapを生成してキャッシュ
+      2. Map.get(id)で該当TaskRowを返す
+
+    exceptions: []
+
+    equivalence_classes:
+      - id: EQ-GT-001
+        category: normal
+        description: 存在するID
+        input:
+          id: 100
+          taskNodes:
+            - { id: 100, name: "タスク100" }
+        expected:
+          result: TaskRow(id=100)
+
+      - id: EQ-GT-002
+        category: error
+        description: 存在しないID
+        input:
+          id: 999
+          taskNodes:
+            - { id: 100 }
+        expected:
+          result: undefined
+
+      - id: EQ-GT-003
+        category: boundary
+        description: id=0（存在する場合）
+        input:
+          id: 0
+          taskNodes:
+            - { id: 0 }
+        expected:
+          result: TaskRow(id=0)
+
+      - id: EQ-GT-004
+        category: boundary
+        description: 空のtaskNodesでid指定
+        input:
+          id: 1
+          taskNodes: []
+        expected:
+          result: undefined
+
+    test_scenarios:
+      - id: TC-GT-001
+        description: 存在するIDでTaskRowを取得できる
+        given: id=100のタスクを含むProject
+        when: getTask(100)を呼び出す
+        then: id=100のTaskRowが返される
+
+      - id: TC-GT-002
+        description: 存在しないIDでundefinedが返る
+        given: id=100のタスクを含むProject
+        when: getTask(999)を呼び出す
+        then: undefinedが返される
+
+  # ------------------------------------------
+  # getFullTaskName
+  # ------------------------------------------
+  - id: METHOD-003
+    name: getFullTaskName
+    signature: "getFullTaskName(task?: TaskRow): string"
+    purpose: タスクの親を遡り、"/"区切りのフルパス名を生成する
+
+    preconditions: []
+
+    postconditions:
+      - id: POST-FN01
+        condition: 戻り値はstring型
+
+      - id: POST-FN02
+        condition: 親子関係に従って"/"で連結された名前を返す
+
+    algorithm: |
+      1. 現在のタスクから開始
+      2. parentIdが存在する限り、getTask(parentId)で親を取得
+      3. 各タスクのnameを配列の先頭に追加
+      4. "/"でjoinして返す
+
+    exceptions: []
+
+    equivalence_classes:
+      - id: EQ-FN-001
+        category: normal
+        description: ルートタスク
+        input:
+          task: { id: 1, name: "タスク1", parentId: undefined }
+        expected:
+          result: "タスク1"
+
+      - id: EQ-FN-002
+        category: normal
+        description: 2階層目のタスク
+        input:
+          task: { id: 2, name: "子", parentId: 1 }
+          parent: { id: 1, name: "親" }
+        expected:
+          result: "親/子"
+
+      - id: EQ-FN-003
+        category: normal
+        description: 3階層目のタスク
+        input:
+          task: { id: 3, name: "孫", parentId: 2 }
+          ancestors:
+            - { id: 2, name: "子", parentId: 1 }
+            - { id: 1, name: "親" }
+        expected:
+          result: "親/子/孫"
+
+      - id: EQ-FN-004
+        category: boundary
+        description: task=undefined
+        input:
+          task: undefined
+        expected:
+          result: ""
+
+    test_scenarios:
+      - id: TC-FN-001
+        description: 3階層のタスクのフルパス名を取得する
+        given: |
+          階層構造:
+          id=1 "プロジェクトA" (parentId=undefined)
+          id=2 "フェーズ1" (parentId=1)
+          id=3 "タスク001" (parentId=2)
+        when: id=3のタスクでgetFullTaskName()を呼び出す
+        then: '"プロジェクトA/フェーズ1/タスク001"が返される'
+
+      - id: TC-FN-002
+        description: undefinedを渡すと空文字列が返る
+        given: 任意のProject
+        when: getFullTaskName(undefined)を呼び出す
+        then: '""(空文字列)が返される'
+
+  # ------------------------------------------
+  # getTaskRows
+  # ------------------------------------------
+  - id: METHOD-004
+    name: getTaskRows
+    signature: "getTaskRows(fromDate: Date, toDate?: Date, assignee?: string): TaskRow[]"
+    purpose: 指定期間・担当者でフィルタしたリーフタスクを取得する
+
+    preconditions:
+      - id: PRE-GTR01
+        condition: fromDateは有効なDate
+
+      - id: PRE-GTR02
+        condition: toDate指定時はfromDate <= toDate
+
+    postconditions:
+      - id: POST-GTR01
+        condition: 戻り値はTaskRow[]型
+
+      - id: POST-GTR02
+        condition: isLeaf===trueのタスクのみ含まれる
+
+      - id: POST-GTR03
+        condition: 指定期間内にPVがあるタスクのみ含まれる
+
+    algorithm: |
+      1. generateBaseDates(fromDate, toDate ?? fromDate)で日付配列生成
+      2. toTaskRows()でフラット化し、isLeaf===trueのみ抽出
+      3. 各タスクについて:
+         - baseDatesのいずれかでcalculatePV(baseDate) !== 0 ならhasPV=true
+         - assignee未指定 または taskRow.assignee===assignee ならassigneeMatch=true
+      4. hasPV && assigneeMatch のタスクを返す
+
+    exceptions: []
+
+    equivalence_classes:
+      - id: EQ-GTR-001
+        category: normal
+        description: 期間内にPVがあるタスク
+        input:
+          fromDate: "2025-06-01"
+          toDate: "2025-06-10"
+          tasks:
+            - { id: 1, startDate: "2025-06-01", endDate: "2025-06-10" }
+            - { id: 2, startDate: "2025-06-15", endDate: "2025-06-20" }
+        expected:
+          result: [TaskRow(id=1)]
+
+      - id: EQ-GTR-002
+        category: normal
+        description: 担当者フィルタ
+        input:
+          fromDate: "2025-06-01"
+          toDate: "2025-06-10"
+          assignee: "田中"
+          tasks:
+            - { id: 1, assignee: "田中" }
+            - { id: 2, assignee: "鈴木" }
+        expected:
+          result: [TaskRow(id=1)]
+
+      - id: EQ-GTR-003
+        category: boundary
+        description: 期間外のみ
+        input:
+          fromDate: "2025-07-01"
+          toDate: "2025-07-10"
+          tasks:
+            - { id: 1, startDate: "2025-06-01", endDate: "2025-06-10" }
+        expected:
+          result: []
+
+      - id: EQ-GTR-004
+        category: boundary
+        description: toDate省略
+        input:
+          fromDate: "2025-06-05"
+          tasks:
+            - { id: 1, startDate: "2025-06-01", endDate: "2025-06-10" }
+        expected:
+          result: "[fromDateのみで判定]"
+
+    test_scenarios:
+      - id: TC-GTR-001
+        description: 指定期間内にPVがあるリーフタスクを取得する
+        given: |
+          タスク1: 2025-06-01〜2025-06-10
+          タスク2: 2025-06-15〜2025-06-20
+        when: getTaskRows(2025-06-01, 2025-06-10)を呼び出す
+        then: id=1のタスクのみが返される
+
+      - id: TC-GTR-002
+        description: 担当者でフィルタできる
+        given: |
+          タスク1: 担当者=田中
+          タスク2: 担当者=鈴木
+          両方とも期間内
+        when: getTaskRows(fromDate, toDate, "田中")を呼び出す
+        then: id=1のタスクのみが返される
+
+  # ------------------------------------------
+  # statisticsByProject
+  # ------------------------------------------
+  - id: METHOD-005
+    name: statisticsByProject
+    signature: "get statisticsByProject: ProjectStatistics[]"
+    purpose: プロジェクト全体のEVM統計情報を返す
+
+    preconditions: []
+
+    postconditions:
+      - id: POST-SP01
+        condition: 戻り値はProjectStatistics[]型
+
+      - id: POST-SP02
+        condition: isLeaf===trueのタスクのみが集計対象
+
+    business_rules:
+      - id: BR-SP-01
+        rule: リーフタスク（isLeaf===true）のみが統計計算の対象となる
+        on_violation: 親タスクは集計から除外される
+
+      - id: BR-SP-02
+        rule: PVが0の場合、SPIは算出不可（0除算回避）
+        on_violation: spi=undefined
+
+    algorithm: |
+      1. toTaskRows()でフラット化
+      2. isLeaf===trueのみフィルタ
+      3. summarize()で以下を集計:
+         - totalTasksCount: リーフタスク数
+         - totalWorkloadExcel: workloadの合計
+         - totalWorkloadCalculated: endDate時点のcalculatePVs()合計
+         - averageWorkload: workloadの平均
+         - totalPvExcel: pvの合計
+         - totalPvCalculated: baseDate時点のcalculatePVs()合計
+         - totalEv: evの合計
+         - spi: totalEv / totalPvCalculated
+
+    exceptions: []
+
+    equivalence_classes:
+      - id: EQ-SP-001
+        category: normal
+        description: リーフタスク複数
+        input:
+          tasks:
+            - { id: 1, isLeaf: true, workload: 5.0, pv: 3.0, ev: 2.5 }
+            - { id: 2, isLeaf: true, workload: 3.0, pv: 2.0, ev: 2.0 }
+        expected:
+          totalTasksCount: 2
+          totalWorkloadExcel: 8.0
+          totalPvExcel: 5.0
+          totalEv: 4.5
+
+      - id: EQ-SP-002
+        category: boundary
+        description: リーフタスク0件
+        input:
+          tasks: []
+        expected:
+          totalTasksCount: 0
+
+      - id: EQ-SP-003
+        category: boundary
+        description: PV=0でSPIはundefined
+        input:
+          tasks:
+            - { id: 1, isLeaf: true, pv: 0, ev: 0 }
+        expected:
+          spi: undefined
+
+    test_scenarios:
+      - id: TC-SP-001
+        description: プロジェクト統計が正しく計算される
+        given: |
+          タスク1: workload=5.0, pv=3.0, ev=2.5
+          タスク2: workload=3.0, pv=2.0, ev=2.0
+        when: statisticsByProjectを取得する
+        then:
+          - totalTasksCount=2
+          - totalWorkloadExcel=8.0
+          - totalPvExcel=5.0
+          - totalEv=4.5
+
+      - id: TC-SP-002
+        description: PVが0の場合SPIはundefined
+        given: 全リーフタスクのcalculatePVs(baseDate)が0
+        when: statisticsByProjectを取得する
+        then: spi=undefined
+
+  # ------------------------------------------
+  # statisticsByName
+  # ------------------------------------------
+  - id: METHOD-006
+    name: statisticsByName
+    signature: "get statisticsByName: AssigneeStatistics[]"
+    purpose: 担当者別のEVM統計情報を返す
+
+    preconditions: []
+
+    postconditions:
+      - id: POST-SN01
+        condition: 戻り値はAssigneeStatistics[]型
+
+      - id: POST-SN02
+        condition: 担当者ごとにグループ化されている
+
+    business_rules:
+      - id: BR-SN-01
+        rule: リーフタスク（isLeaf===true）のみが統計計算の対象となる
+        on_violation: 親タスクは集計から除外される
+
+      - id: BR-SN-02
+        rule: 担当者未設定（assignee=undefined）のタスクも1グループとして集計される
+        on_violation: N/A
+
+    algorithm: |
+      1. toTaskRows()でフラット化
+      2. isLeaf===trueのみフィルタ
+      3. groupBy('assignee')で担当者別にグループ化
+      4. 各グループでstatisticsByProjectと同様の集計
+
+    exceptions: []
+
+    equivalence_classes:
+      - id: EQ-SN-001
+        category: normal
+        description: 複数担当者
+        input:
+          tasks:
+            - { assignee: "田中", workload: 5.0 }
+            - { assignee: "田中", workload: 3.0 }
+            - { assignee: "鈴木", workload: 4.0 }
+        expected:
+          length: 2
+          田中.totalWorkloadExcel: 8.0
+          鈴木.totalWorkloadExcel: 4.0
+
+      - id: EQ-SN-002
+        category: boundary
+        description: assignee=undefined含む
+        input:
+          tasks:
+            - { assignee: undefined }
+        expected:
+          "[0].assignee": undefined
+
+    test_scenarios:
+      - id: TC-SN-001
+        description: 担当者別に統計が集計される
+        given: 田中2件、鈴木1件のタスク
+        when: statisticsByNameを取得する
+        then: 2件のAssigneeStatisticsが返される
+
+  # ------------------------------------------
+  # pvByName / pvsByName
+  # ------------------------------------------
+  - id: METHOD-007
+    name: pvByName
+    signature: "get pvByName: Record<string, unknown>[]"
+    purpose: 担当者別のPVデータをWide形式で返す
+
+    preconditions:
+      - id: PRE-PV01
+        condition: startDateとendDateが両方存在する
+
+    postconditions:
+      - id: POST-PV01
+        condition: 戻り値はRecord<string, unknown>[]型
+
+      - id: POST-PV02
+        condition: 各レコードにassigneeと日付キーが含まれる
+
+    business_rules:
+      - id: BR-PV-01
+        rule: プロジェクト期間（startDate〜endDate）が設定されている必要がある
+        on_violation: "Error: 'fromかtoが取得できませんでした'"
+
+      - id: BR-PV-02
+        rule: リーフタスク（isLeaf===true）のみがPV計算の対象となる
+        on_violation: 親タスクは計算から除外される
+
+    algorithm: |
+      1. startDateからendDateまでの日付配列を生成
+      2. 担当者ごとにグループ化
+      3. 各日付のPVを計算
+      4. Wide形式（横持ち）に変換
+
+    exceptions:
+      - condition: startDateまたはendDateがundefined
+        error: "Error: 'fromかtoが取得できませんでした'"
+
+    equivalence_classes:
+      - id: EQ-PV-001
+        category: normal
+        description: 担当者別PV
+        input:
+          startDate: "2025-06-01"
+          endDate: "2025-06-03"
+          tasks:
+            - { assignee: "田中" }
+        expected:
+          "[0].assignee": "田中"
+          "[0].'2025/06/01'": number
+          "[0].'2025/06/02'": number
+
+      - id: EQ-PV-002
+        category: error
+        description: startDate未設定
+        input:
+          startDate: undefined
+        expected:
+          throws: "fromかtoが取得できませんでした"
+
+    test_scenarios:
+      - id: TC-PV-001
+        description: startDate/endDateが未設定の場合エラー
+        given: startDate=undefinedのProject
+        when: pvByNameを取得しようとする
+        then: '"fromかtoが取得できませんでした"エラーがスローされる'
+
+      - id: TC-PV-002
+        description: 担当者別PVがWide形式で返される
+        given: startDate=2025-06-01, endDate=2025-06-03、担当者"田中"
+        when: pvByNameを取得する
+        then:
+          - 'assignee="田中"のレコードが含まれる'
+          - '"2025/06/01", "2025/06/02", "2025/06/03"のキーが存在する'
+
+  # ------------------------------------------
+  # isHoliday
+  # ------------------------------------------
+  - id: METHOD-008
+    name: isHoliday
+    signature: "isHoliday(date: Date): boolean"
+    purpose: 指定日が祝日（土日またはholidayDatasに含まれる）かを判定する
+
+    preconditions:
+      - id: PRE-IH01
+        condition: dateは有効なDateオブジェクト
+
+    postconditions:
+      - id: POST-IH01
+        condition: 戻り値はboolean型
+
+    algorithm: |
+      1. date.getDay()で曜日取得（0:日, 6:土）
+      2. 土日ならtrue
+      3. holidayDatas内に同じ日付があればtrue
+      4. それ以外はfalse
+
+    exceptions: []
+
+    equivalence_classes:
+      - id: EQ-IH-001
+        category: normal
+        description: 土曜日
+        input:
+          date: "2025-06-14"  # 土曜日
+          holidayDatas: []
+        expected:
+          result: true
+
+      - id: EQ-IH-002
+        category: normal
+        description: 日曜日
+        input:
+          date: "2025-06-15"  # 日曜日
+          holidayDatas: []
+        expected:
+          result: true
+
+      - id: EQ-IH-003
+        category: normal
+        description: 平日
+        input:
+          date: "2025-06-16"  # 月曜日
+          holidayDatas: []
+        expected:
+          result: false
+
+      - id: EQ-IH-004
+        category: normal
+        description: holidayDatasに登録された平日
+        input:
+          date: "2025-06-16"  # 月曜日
+          holidayDatas:
+            - { date: "2025-06-16" }
+        expected:
+          result: true
+
+      - id: EQ-IH-005
+        category: boundary
+        description: holidayDatas空で平日
+        input:
+          date: "2025-06-16"
+          holidayDatas: []
+        expected:
+          result: false
+
+    test_scenarios:
+      - id: TC-IH-001
+        description: 土曜日は祝日と判定される
+        given: 任意のProject（holidayDatas空）
+        when: isHoliday(2025-06-14)を呼び出す（土曜日）
+        then: trueが返される
+
+      - id: TC-IH-002
+        description: 平日は祝日ではないと判定される
+        given: 任意のProject（holidayDatas空）
+        when: isHoliday(2025-06-16)を呼び出す（月曜日）
+        then: falseが返される
+
+      - id: TC-IH-003
+        description: holidayDatasに登録された日は祝日と判定される
+        given: holidayDatasに2025-06-16が登録されたProject
+        when: isHoliday(2025-06-16)を呼び出す（月曜日）
+        then: trueが返される
+
+# ============================================
+# 関連オブジェクト
+# ============================================
+relationships:
+  - target: TaskNode
+    type: composition
+    description: タスクのツリー構造を保持
+
+  - target: HolidayData
+    type: composition
+    description: プロジェクト固有の祝日を保持
+
+  - target: TaskRow
+    type: association
+    description: TaskNodeから導出されるフラット化されたタスク
+
+  - target: TaskService
+    type: dependency
+    description: ツリー変換処理を委譲（現状：直接生成、要DI化）

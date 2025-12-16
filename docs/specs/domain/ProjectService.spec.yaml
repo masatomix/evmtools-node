@@ -1,0 +1,316 @@
+# ============================================
+# ProjectService 仕様書（YAML形式）
+# ============================================
+# バージョン: 1.0.0
+# 作成日: 2025-12-16
+# ソースファイル: src/domain/ProjectService.ts
+# ============================================
+
+metadata:
+  id: SPEC-PROJECTSERVICE-001
+  name: ProjectService
+  version: 1.0.0
+  source: reverse
+  source_file: src/domain/ProjectService.ts
+  created_at: 2025-12-16
+  updated_at: 2025-12-16
+  requirement_ids: []
+
+classification:
+  type: domain_service
+  package: domain
+  responsibility: プロジェクト間の差分計算、統計データのマージ・補間処理を担当
+
+ubiquitous_language:
+  - term: タスク差分
+    implementation: TaskDiff
+    definition: 2つのProject間のタスク単位の変化
+  - term: プロジェクト差分
+    implementation: ProjectDiff
+    definition: タスク差分をプロジェクト全体で集約した結果
+  - term: 担当者差分
+    implementation: AssigneeDiff
+    definition: タスク差分を担当者別に集約した結果
+  - term: 差分タイプ
+    implementation: DiffType
+    definition: "'modified' / 'added' / 'removed' / 'none'"
+
+invariants:
+  - id: INV-PS-01
+    description: ProjectServiceはステートレスである
+    expression: "true"
+    verification_timing: 常時
+
+  - id: INV-PS-02
+    description: calculateTaskDiffsはリーフノードのみを対象とする
+    expression: 結果にはisLeaf=trueのタスクのみ含まれる
+    verification_timing: 実行時
+
+  - id: INV-PS-03
+    description: mergeProjectStatisticsの結果は基準日降順でソートされる
+    expression: result[0].baseDate > result[1].baseDate
+    verification_timing: 実行後
+
+methods:
+  - id: METHOD-PS-001
+    name: calculateTaskDiffs
+    signature: "calculateTaskDiffs(now: Project, prev: Project): TaskDiff[]"
+    purpose: 2つのProjectを比較し、タスク単位の差分を計算する
+
+    preconditions:
+      - id: PRE-TD-01
+        condition: now, prevが有効なProjectである
+        on_violation: 例外
+
+    postconditions:
+      - id: POST-TD-01
+        condition: isLeaf=trueのタスクのみが対象
+      - id: POST-TD-02
+        condition: nowに存在しprevにないタスクはdiffType='added'
+      - id: POST-TD-03
+        condition: prevに存在しnowにないタスクはdiffType='removed'
+      - id: POST-TD-04
+        condition: 両方に存在し変化ありはdiffType='modified'
+      - id: POST-TD-05
+        condition: 両方に存在し変化なしはdiffType='none'
+      - id: POST-TD-06
+        condition: delta値はnow - prevで計算される
+
+    algorithm: |
+      1. prevTasks = prev.toTaskRows()
+      2. prevTasksMap = Map(id → TaskRow)
+      3. nowTasks = now.toTaskRows()
+      4. nowTasksMap = Map(id → TaskRow)
+      5. nowTasksの各isLeafタスクに対して差分計算
+      6. prevTasksのnowに存在しないisLeafタスクをremoved判定
+      7. return diffs
+
+    business_rules:
+      - id: BR-TD-01
+        rule: リーフノードのみ差分計算対象
+        on_violation: 親タスクは除外される
+      - id: BR-TD-02
+        rule: delta計算（aのみ存在→a、bのみ存在→-b、両方undefined→undefined）
+        on_violation: N/A
+
+    equivalence_classes:
+      - id: EQ-TD-001
+        category: normal
+        description: タスクの進捗率が変化
+        input:
+          prev: task(id=1, progressRate=0.3)
+          now: task(id=1, progressRate=0.5)
+        expected:
+          diffType: modified
+          deltaProgressRate: 0.2
+
+      - id: EQ-TD-002
+        category: normal
+        description: 新規タスク追加
+        input:
+          prev: task(id=1)
+          now: task(id=1), task(id=2)
+        expected:
+          id=2のdiffType: added
+
+      - id: EQ-TD-003
+        category: normal
+        description: タスク削除
+        input:
+          prev: task(id=1), task(id=2)
+          now: task(id=1)
+        expected:
+          id=2のdiffType: removed
+
+      - id: EQ-TD-004
+        category: normal
+        description: 変化なし
+        input:
+          prev: task(id=1, progressRate=0.5)
+          now: task(id=1, progressRate=0.5)
+        expected:
+          diffType: none
+
+      - id: EQ-TD-005
+        category: boundary
+        description: isLeaf=false
+        input:
+          prev: task(id=1, isLeaf=false)
+          now: task(id=1, isLeaf=false)
+        expected:
+          result: 対象外
+
+    test_scenarios:
+      - id: TC-TD-001
+        description: 変更されたタスクをmodifiedとして検出する
+        given:
+          prev: タスク(id=1, progressRate=0.3)
+          now: タスク(id=1, progressRate=0.5)
+        when: calculateTaskDiffs(now, prev)を呼び出す
+        then:
+          - diffType='modified', deltaProgressRate=0.2
+
+      - id: TC-TD-002
+        description: 追加されたタスクをaddedとして検出する
+        given:
+          prev: タスク(id=1)
+          now: タスク(id=1, id=2)
+        when: calculateTaskDiffs(now, prev)を呼び出す
+        then:
+          - id=2のdiffType='added'
+
+  - id: METHOD-PS-002
+    name: calculateProjectDiffs
+    signature: "calculateProjectDiffs(taskDiffs: TaskDiff[]): ProjectDiff[]"
+    purpose: タスク差分をプロジェクト全体で集約する
+
+    postconditions:
+      - id: POST-PD-01
+        condition: hasDiff=trueのタスクのみ集計対象
+      - id: POST-PD-02
+        condition: modifiedCount, addedCount, removedCountが正しくカウントされる
+      - id: POST-PD-03
+        condition: deltaPV, deltaEVは合計値
+
+    equivalence_classes:
+      - id: EQ-PD-001
+        category: normal
+        description: modified=1, added=1, removed=1
+        input:
+          taskDiffs: 各1件ずつ
+        expected:
+          counts: 各1
+
+  - id: METHOD-PS-003
+    name: calculateAssigneeDiffs
+    signature: "calculateAssigneeDiffs(taskDiffs: TaskDiff[]): AssigneeDiff[]"
+    purpose: タスク差分を担当者別に集約する
+
+    postconditions:
+      - id: POST-AD-01
+        condition: assigneeごとにグループ化される
+      - id: POST-AD-02
+        condition: 各グループでdeltaPV, deltaEVが合計される
+
+    equivalence_classes:
+      - id: EQ-AD-001
+        category: normal
+        description: 担当者A=2件, 担当者B=1件
+        input:
+          taskDiffs: A2件, B1件
+        expected:
+          result: 2件のAssigneeDiff
+
+  - id: METHOD-PS-004
+    name: mergeProjectStatistics
+    signature: "mergeProjectStatistics(existing: ProjectStatistics[], incoming: ProjectStatistics[]): ProjectStatistics[]"
+    purpose: 統計データをマージする（同一基準日は上書き）
+
+    postconditions:
+      - id: POST-MS-01
+        condition: 同じbaseDateはincomingで上書き
+      - id: POST-MS-02
+        condition: 結果は基準日降順（新しい順）でソート
+
+    equivalence_classes:
+      - id: EQ-MS-001
+        category: normal
+        description: 重複する基準日あり
+        input:
+          existing: [{baseDate: '2025/06/10', pv: 10}]
+          incoming: [{baseDate: '2025/06/10', pv: 12}]
+        expected:
+          result: pv=12（上書き）
+
+      - id: EQ-MS-002
+        category: normal
+        description: 重複なし
+        input:
+          existing: [{baseDate: '2025/06/10'}]
+          incoming: [{baseDate: '2025/06/12'}]
+        expected:
+          result: 2件
+
+    test_scenarios:
+      - id: TC-MS-001
+        description: 同じ基準日のデータは上書きされる
+        given:
+          existing: [{baseDate:'2025/06/10', totalPvExcel:10}]
+          incoming: [{baseDate:'2025/06/10', totalPvExcel:12}]
+        when: mergeProjectStatistics(existing, incoming)を呼び出す
+        then:
+          - baseDate='2025/06/10'のtotalPvExcel=12
+
+  - id: METHOD-PS-005
+    name: fillMissingDates
+    signature: "fillMissingDates(projectStatisticsArray: ProjectStatistics[]): ProjectStatistics[]"
+    purpose: 欠落している日付を前日データで補間する
+
+    postconditions:
+      - id: POST-FD-01
+        condition: 欠落日は直前の日のデータで補間される
+      - id: POST-FD-02
+        condition: 結果は基準日降順でソート
+      - id: POST-FD-03
+        condition: 空配列の場合は空配列を返す
+
+    algorithm: |
+      1. 空配列→空配列を返す
+      2. baseDate昇順でソート
+      3. prev = sorted[0]
+      4. 各日付間のギャップを前日データで埋める
+      5. 基準日降順でソートして返す
+
+    equivalence_classes:
+      - id: EQ-FD-001
+        category: normal
+        description: 06/09, 06/12のデータ
+        input:
+          stats: [{baseDate:'2025/06/09'}, {baseDate:'2025/06/12'}]
+        expected:
+          length: 4
+          dates: [06/09, 06/10, 06/11, 06/12]
+
+      - id: EQ-FD-002
+        category: boundary
+        description: 空配列
+        input:
+          stats: []
+        expected:
+          length: 0
+
+    test_scenarios:
+      - id: TC-FD-001
+        description: 欠落している日付を前日データで補間する
+        given:
+          stats: [{baseDate:'2025/06/09', pv:10}, {baseDate:'2025/06/12', pv:20}]
+        when: fillMissingDates()を呼び出す
+        then:
+          - 06/09, 06/10, 06/11, 06/12の4件
+          - 06/10, 06/11のpvは10
+
+external_dependencies:
+  - name: "@tidyjs/tidy"
+    type: ライブラリ
+    description: groupBy, summarize等のデータ集計
+
+relationships:
+  - target: Project
+    type: dependency
+    description: 差分計算の入力
+
+  - target: TaskRow
+    type: dependency
+    description: TaskDiffの構成要素
+
+  - target: ProjectStatistics
+    type: dependency
+    description: マージ・補間の対象
+
+test_summary:
+  calculateTaskDiffs: 5
+  calculateProjectDiffs: 2
+  calculateAssigneeDiffs: 2
+  mergeProjectStatistics: 3
+  fillMissingDates: 3
+  total: 15
