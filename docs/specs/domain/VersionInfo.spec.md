@@ -84,9 +84,9 @@ function getVersionInfo(): VersionInfo;
 
 ## 5. 実装上の注意
 
-- package.jsonの読み込みは `require()` または `fs.readFileSync()` を使用
+- package.jsonの読み込みはESモジュール形式の `import` を使用（TypeScriptの`resolveJsonModule`オプション利用）
 - キャッシュはモジュールスコープの変数に保持
-- パスは `path.resolve(__dirname, '../../package.json')` で解決
+- パスは相対パス `'../../package.json'` で指定（TypeScriptのモジュール解決に委ねる）
 
 ---
 
