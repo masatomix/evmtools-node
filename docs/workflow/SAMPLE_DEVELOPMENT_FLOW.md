@@ -18,11 +18,11 @@
 
 | # | コミット | フェーズ | 説明 | ファイル |
 |---|---------|---------|------|---------|
-| 1 | `7a76ef4` | 要件定義 | 要件定義書作成（Draft） | `REQ-VERSION-001.md` (新規) |
-| 2 | `9f59fc3` | 仕様書 | 詳細仕様作成 | `VersionInfo.spec.md` (新規) |
-| 3 | `b0d2b71` | テスト | テストコード作成（実装前） | `VersionInfo.test.ts` (新規) |
-| 4 | `4ecd7ce` | 実装 | 本体実装＋エクスポート追加 | `VersionInfo.ts` (新規), `index.ts` (修正) |
-| 5 | `3bb96e4` | トレーサビリティ | 要件定義書を更新（Approved） | `REQ-VERSION-001.md` (修正) |
+| 1 | `a7665ef` | 要件定義 | 要件定義書作成（Draft） | [`REQ-VERSION-001.md`](../specs/requirements/REQ-VERSION-001.md) (新規) |
+| 2 | `0a346f2` | 仕様書 | 詳細仕様作成 | [`VersionInfo.spec.md`](../specs/domain/VersionInfo.spec.md) (新規) |
+| 3 | `80e56e4` | テスト | テストコード作成（実装前） | [`VersionInfo.test.ts`](../../src/common/__tests__/VersionInfo.test.ts) (新規) |
+| 4 | `38326a6` | 実装 | 本体実装＋エクスポート追加 | [`VersionInfo.ts`](../../src/common/VersionInfo.ts) (新規), [`index.ts`](../../src/common/index.ts) (修正) |
+| 5 | `7df3e45` | トレーサビリティ | 要件定義書を更新（Approved） | [`REQ-VERSION-001.md`](../specs/requirements/REQ-VERSION-001.md) (修正) |
 
 ---
 
@@ -68,23 +68,23 @@
 ## 成果物一覧
 
 ### 要件定義書
-- パス: `docs/specs/requirements/REQ-VERSION-001.md`
+- パス: [`docs/specs/requirements/REQ-VERSION-001.md`](../specs/requirements/REQ-VERSION-001.md)
 - 最終ステータス: Approved
 
 ### 仕様書
-- パス: `docs/specs/domain/VersionInfo.spec.md`
+- パス: [`docs/specs/domain/VersionInfo.spec.md`](../specs/domain/VersionInfo.spec.md)
 - バージョン: 1.0.0
 
 ### テスト
-- パス: `src/common/__tests__/VersionInfo.test.ts`
+- パス: [`src/common/__tests__/VersionInfo.test.ts`](../../src/common/__tests__/VersionInfo.test.ts)
 - テストケース: 5件
 - 結果: 全てPASS
 
 ### 実装
 | ファイル | 操作 | 説明 |
 |---------|------|------|
-| `src/common/VersionInfo.ts` | 新規 | 本体実装 |
-| `src/common/index.ts` | 修正 | エクスポート追加 |
+| [`src/common/VersionInfo.ts`](../../src/common/VersionInfo.ts) | 新規 | 本体実装 |
+| [`src/common/index.ts`](../../src/common/index.ts) | 修正 | エクスポート追加 |
 
 ---
 
