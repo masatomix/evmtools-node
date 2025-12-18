@@ -1,9 +1,10 @@
 # VersionInfo 詳細仕様
 
-**バージョン**: 1.0.0
+**バージョン**: 1.1.0
 **作成日**: 2025-12-16
-**要件ID**: REQ-VERSION-001
-**ソースファイル**: src/common/VersionInfo.ts（新規作成）
+**更新日**: 2025-12-18
+**要件ID**: REQ-VERSION-001, REQ-VERSION-002
+**ソースファイル**: src/common/VersionInfo.ts
 
 ---
 
@@ -25,6 +26,8 @@ interface VersionInfo {
     name: string;
     /** パッケージの説明文 */
     description: string;
+    /** パッケージの作者名 */
+    author: string;
 }
 ```
 
@@ -54,7 +57,8 @@ function getVersionInfo(): VersionInfo;
 
 1. キャッシュが存在する場合、キャッシュを返す
 2. package.jsonを読み込む
-3. version, name, description を抽出
+3. version, name, description, author を抽出
+   - authorがオブジェクト形式の場合はnameプロパティを使用
 4. キャッシュに保存
 5. VersionInfo オブジェクトを返す
 
@@ -67,6 +71,7 @@ function getVersionInfo(): VersionInfo;
 | version フィールドがない | 空文字を返す |
 | name フィールドがない | 空文字を返す |
 | description フィールドがない | 空文字を返す |
+| author フィールドがない | 空文字を返す |
 
 ---
 
@@ -79,6 +84,7 @@ function getVersionInfo(): VersionInfo;
 | TC-03 | nameがpackage.jsonと一致する | 一致する |
 | TC-04 | descriptionがpackage.jsonと一致する | 一致する |
 | TC-05 | 2回呼び出しても同じ結果が返る（キャッシュ） | 同一オブジェクト |
+| TC-06 | authorがpackage.jsonと一致する | 一致する |
 
 ---
 
