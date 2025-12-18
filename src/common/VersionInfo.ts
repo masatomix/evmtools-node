@@ -2,6 +2,7 @@
  * VersionInfo - バージョン情報ユーティリティ
  * @see docs/specs/domain/VersionInfo.spec.md
  * @see docs/specs/requirements/REQ-VERSION-001.md
+ * @see docs/specs/requirements/REQ-VERSION-002.md
  */
 
 import * as packageJson from '../../package.json';
@@ -16,6 +17,8 @@ export interface VersionInfo {
     name: string;
     /** パッケージの説明文 */
     description: string;
+    /** パッケージの作者名 */
+    author: string;
 }
 
 /** キャッシュされたバージョン情報 */
@@ -30,10 +33,16 @@ export function getVersionInfo(): VersionInfo {
         return cachedVersionInfo;
     }
 
+    // authorがオブジェクト形式の場合はnameプロパティを使用
+    const author = typeof packageJson.author === 'object' && packageJson.author !== null
+        ? (packageJson.author as { name?: string }).name || ''
+        : packageJson.author || '';
+
     cachedVersionInfo = {
         version: packageJson.version || '',
         name: packageJson.name || '',
         description: packageJson.description || '',
+        author,
     };
 
     return cachedVersionInfo;
