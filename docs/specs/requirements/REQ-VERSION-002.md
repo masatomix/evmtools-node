@@ -2,7 +2,8 @@
 
 **要件ID**: REQ-VERSION-002
 **作成日**: 2025-12-18
-**ステータス**: Draft
+**更新日**: 2025-12-18
+**ステータス**: Approved
 **優先度**: Low
 **関連要件**: REQ-VERSION-001
 
@@ -66,8 +67,11 @@ interface VersionInfo {
 
 | ID | 基準 | 結果 | テスト証跡 |
 |----|------|------|-----------|
-| AC-01 | getVersionInfo()でauthorを取得できる | - | TC-06 |
-| AC-02 | 取得したauthorがpackage.jsonと一致する | - | TC-06 |
+| AC-01 | getVersionInfo()でauthorを取得できる | ✅ PASS | TC-01, TC-06 |
+| AC-02 | 取得したauthorがpackage.jsonと一致する | ✅ PASS | TC-06 |
+
+**確認日**: 2025-12-18
+**テスト実行結果**: 6件全てPASS
 
 ---
 
