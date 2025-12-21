@@ -480,9 +480,9 @@ MAJOR.MINOR.PATCH
   └────────────── 破壊的変更（後方互換なし）
 ```
 
-### 6.2 開発中バージョン（SMAPSHOT）
+### 6.2 開発中バージョン（SNAPSHOT）
 
-開発中のバージョンには `-SMAPSHOT` サフィックスを付与し、リリース済みバージョンと区別する。
+開発中のバージョンには `-SNAPSHOT` サフィックスを付与し、リリース済みバージョンと区別する。
 
 #### 6.2.1 バージョン命名規則
 
@@ -497,26 +497,26 @@ MAJOR.MINOR.PATCH
 ```
 main (0.0.17)                          ← リリース済み
   │
-  └── develop (0.0.18-SMAPSHOT)        ← 次版開発中
+  └── develop (0.0.18-SNAPSHOT)        ← 次版開発中
         │
-        ├── feature/cli-npx (0.0.18-SMAPSHOT.cli-npx)
+        ├── feature/cli-npx (0.0.18-SNAPSHOT.cli-npx)
         │                              ↑ 並行開発時は機能名を付与
-        └── feature/csv (0.0.18-SMAPSHOT.csv)
+        └── feature/csv (0.0.18-SNAPSHOT.csv)
 ```
 
-1. **リリース後**: developのバージョンを `X.Y.Z-SMAPSHOT` に更新
+1. **リリース後**: developのバージョンを `X.Y.Z-SNAPSHOT` に更新
 2. **feature開発時**:
-   - 単独開発: `X.Y.Z-SMAPSHOT` のまま
-   - 並行開発: `X.Y.Z-SMAPSHOT.機能名` に変更（任意）
-3. **developマージ時**: `X.Y.Z-SMAPSHOT` に統一
-4. **リリース時**: `-SMAPSHOT` を削除して `X.Y.Z` に
+   - 単独開発: `X.Y.Z-SNAPSHOT` のまま
+   - 並行開発: `X.Y.Z-SNAPSHOT.機能名` に変更（任意）
+3. **developマージ時**: `X.Y.Z-SNAPSHOT` に統一
+4. **リリース時**: `-SNAPSHOT` を削除して `X.Y.Z` に
 
 #### 6.2.3 semver準拠
 
-`-SMAPSHOT` はsemverの有効なプレリリース識別子。バージョン比較:
+`-SNAPSHOT` はsemverの有効なプレリリース識別子。バージョン比較:
 
 ```
-0.0.17 < 0.0.18-SMAPSHOT < 0.0.18-SMAPSHOT.cli-npx < 0.0.18
+0.0.17 < 0.0.18-SNAPSHOT < 0.0.18-SNAPSHOT.cli-npx < 0.0.18
 ```
 
 #### 6.2.4 npm pack時の区別
@@ -525,9 +525,9 @@ main (0.0.17)                          ← リリース済み
 
 ```bash
 # feature/cli-npx ブランチ
-npm version 0.0.18-SMAPSHOT.cli-npx --no-git-tag-version
+npm version 0.0.18-SNAPSHOT.cli-npx --no-git-tag-version
 npm pack
-# → evmtools-node-0.0.18-SMAPSHOT.cli-npx.tgz
+# → evmtools-node-0.0.18-SNAPSHOT.cli-npx.tgz
 ```
 
 ### 6.3 本プロジェクトのバージョン履歴
@@ -576,26 +576,26 @@ npm pack
 ### 8.1 Feature開発時
 
 - [ ] `develop`から`feature/*`ブランチを作成
-- [ ] （並行開発時）バージョンを `X.Y.Z-SMAPSHOT.機能名` に変更
+- [ ] （並行開発時）バージョンを `X.Y.Z-SNAPSHOT.機能名` に変更
 - [ ] 要件定義書を作成（Forward時）
 - [ ] 仕様書を作成
 - [ ] テストコードを作成
 - [ ] 実装
 - [ ] 全テストPASS確認
 - [ ] トレーサビリティ更新
-- [ ] （並行開発時）バージョンを `X.Y.Z-SMAPSHOT` に戻す
+- [ ] （並行開発時）バージョンを `X.Y.Z-SNAPSHOT` に戻す
 - [ ] PRを作成
 - [ ] レビュー・マージ
 
 ### 8.2 リリース時
 
 - [ ] `develop`から`release/*`ブランチを作成
-- [ ] バージョン番号更新（`-SMAPSHOT` を削除）
+- [ ] バージョン番号更新（`-SNAPSHOT` を削除）
 - [ ] CHANGELOG更新
 - [ ] `main`にマージ
 - [ ] タグ作成
 - [ ] `develop`にタグをマージ
-- [ ] **developのバージョンを次版SMAPSHOTに更新**（例: `0.0.19-SMAPSHOT`）
+- [ ] **developのバージョンを次版SNAPSHOTに更新**（例: `0.0.19-SNAPSHOT`）
 - [ ] npm publish（必要に応じて）
 
 ---
