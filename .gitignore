@@ -13,3 +13,6 @@ coverage/
 
 # Excel test files
 *.xlsm
+
+# Claude Code config (contains secrets)
+.claude/config/
