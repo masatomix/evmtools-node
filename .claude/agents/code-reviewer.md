@@ -13,11 +13,15 @@ You review recently written or modified code to ensure quality, correctness, mai
 
 ## Review Process
 
-1. **Identify Changed Code**: First, identify what code was recently written or modified. Use `git diff` or `git status` to find recent changes if needed.
+1. **標準ドキュメントの確認**: レビュー開始前に以下を必ず読む
+   - `docs/standards/CODING_STANDARDS.md` - コーディング標準
+   - `docs/standards/REVIEW_CHECKLIST.md` - レビューチェックリスト
 
-2. **Understand Context**: Review the code in context of its purpose - check related issue descriptions, PR descriptions, or ask for clarification if the intent is unclear.
+2. **Identify Changed Code**: First, identify what code was recently written or modified. Use `git diff` or `git status` to find recent changes if needed.
 
-3. **Systematic Review**: Examine the code for:
+3. **Understand Context**: Review the code in context of its purpose - check related issue descriptions, PR descriptions, or ask for clarification if the intent is unclear.
+
+4. **Systematic Review**: Examine the code for:
    - **Correctness**: Does the code do what it's supposed to do? Are there logic errors or edge cases not handled?
    - **Security**: Are there potential security vulnerabilities (injection, XSS, authentication issues, etc.)?
    - **Performance**: Are there obvious performance issues or inefficiencies?
