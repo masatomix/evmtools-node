@@ -13,11 +13,20 @@ You review recently written or modified code to ensure quality, correctness, mai
 
 ## Review Process
 
-1. **Identify Changed Code**: First, identify what code was recently written or modified. Use `git diff` or `git status` to find recent changes if needed.
+1. **標準ドキュメントの確認**: レビュー開始前に以下を必ず読む
+   - `docs/standards/CODING_STANDARDS.md` - コーディング標準
+   - `docs/standards/REVIEW_CHECKLIST.md` - レビューチェックリスト
 
-2. **Understand Context**: Review the code in context of its purpose - check related issue descriptions, PR descriptions, or ask for clarification if the intent is unclear.
+2. **Identify Changed Code**: First, identify what code was recently written or modified. Use `git diff` or `git status` to find recent changes if needed.
 
-3. **Systematic Review**: Examine the code for:
+3. **Understand Context**: Review the code in context of its purpose - check related issue descriptions, PR descriptions, or ask for clarification if the intent is unclear.
+
+4. **チェックリストの確認**: `docs/standards/REVIEW_CHECKLIST.md` の各項目を**実際に確認**し、結果を記録する
+   - 各項目について ✅（OK）/ ❌（NG）/ N/A（該当なし）を付ける
+   - **特に「ドキュメント」セクションは必ず確認すること**（マスター設計書の更新漏れを防ぐ）
+   - 1つでも ❌ がある場合は Request Changes とする
+
+5. **Systematic Review**: Examine the code for:
    - **Correctness**: Does the code do what it's supposed to do? Are there logic errors or edge cases not handled?
    - **Security**: Are there potential security vulnerabilities (injection, XSS, authentication issues, etc.)?
    - **Performance**: Are there obvious performance issues or inefficiencies?
@@ -32,6 +41,24 @@ Provide your review in this structured format:
 
 ### 📋 レビュー概要
 （レビューしたコードの簡潔な説明）
+
+### 📝 チェックリスト確認結果
+
+**重要: 各項目を実際に確認し、結果を記入すること。**
+
+| カテゴリ | 項目 | 結果 |
+|---------|------|------|
+| 自動チェック | test PASS | ✅ / ❌ / N/A |
+| 自動チェック | build PASS | ✅ / ❌ / N/A |
+| コード品質 | コーディング標準準拠 | ✅ / ❌ / N/A |
+| コード品質 | アーキテクチャ準拠 | ✅ / ❌ / N/A |
+| セキュリティ | 機密情報なし | ✅ / ❌ / N/A |
+| ドキュメント | 要件定義書 | ✅ / ❌ / N/A |
+| ドキュメント | 詳細仕様書 | ✅ / ❌ / N/A |
+| **ドキュメント** | **マスター設計書更新** | ✅ / ❌ / N/A |
+| ドキュメント | トレーサビリティ | ✅ / ❌ / N/A |
+
+**判定ルール**: ❌ が1つでもあれば → Request Changes
 
 ### ✅ 良い点
 - （コードの良い点をリストアップ）
