@@ -40,8 +40,6 @@ Task tool パラメータ:
 - prompt: |
     PR #$ARGUMENTS のコードレビューを実施してください。
 
-    レビュー観点は prompts/review-instructions.md を参照してください。
-
     ## 出力形式
     以下の形式で結果を返してください：
 
@@ -130,9 +128,7 @@ chmod +x /tmp/gh-app-review.sh
 ```bash
 /tmp/gh-app-review.sh $ARGUMENTS approve "## 🤖 AI Code Review (by code-reviewer)
 
-{サブエージェントから受け取ったレビューサマリー}
-
-{サブエージェントから受け取った総評}
+{サブエージェントから受け取ったレビュー内容（Review Criteria含む）}
 
 ---
 🤖 Reviewed by [Claude Code](https://claude.com/claude-code) code-reviewer subagent via GitHub App"
@@ -143,9 +139,7 @@ chmod +x /tmp/gh-app-review.sh
 ```bash
 /tmp/gh-app-review.sh $ARGUMENTS request-changes "## 🤖 AI Code Review (by code-reviewer)
 
-{サブエージェントから受け取ったレビューサマリー}
-
-{サブエージェントから受け取った総評}
+{サブエージェントから受け取ったレビュー内容（Review Criteria含む）}
 
 ---
 🤖 Reviewed by [Claude Code](https://claude.com/claude-code) code-reviewer subagent via GitHub App"
