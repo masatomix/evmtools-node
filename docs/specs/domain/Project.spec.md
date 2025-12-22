@@ -1,7 +1,8 @@
 # Project クラス詳細仕様書
 
-**バージョン**: 1.0.0
+**バージョン**: 1.1.0
 **作成日**: 2025-12-16
+**更新日**: 2025-12-22
 **ソースファイル**: `src/domain/Project.ts`
 
 ---
@@ -92,6 +93,7 @@
 | `name` | `string \| undefined` | プロジェクト名 |
 | `holidayDatas` | `HolidayData[]` | 祝日データ |
 | `length` | `number` | タスク総数（`toTaskRows().length`） |
+| `excludedTasks` | `ExcludedTask[]` | 計算から除外されたタスク一覧（詳細は5.9参照） |
 
 ---
 
@@ -430,6 +432,67 @@ type AssigneeStatistics = {
 
 ---
 
+### 5.9 `get excludedTasks: ExcludedTask[]`
+
+#### 目的
+PV/EV計算から除外されたタスク（無効なタスク）の一覧を取得する。
+
+#### 関連型定義
+```typescript
+/**
+ * 計算から除外されたタスクの情報
+ */
+export interface ExcludedTask {
+  /** 除外されたタスク */
+  task: TaskRow
+  /** 除外理由（validStatus.invalidReason） */
+  reason: string
+}
+```
+
+#### シグネチャ
+```typescript
+get excludedTasks(): ExcludedTask[]
+```
+
+#### 計算ロジック
+```
+1. toTaskRows()でフラット化
+2. isLeaf===trueのみフィルタ（リーフタスクのみ対象）
+3. validStatus.isValid===falseのタスクを収集
+4. ExcludedTask[]として返却（task + reason）
+```
+
+#### 事前条件
+なし
+
+#### 事後条件
+| ID | 条件 |
+|----|------|
+| POST-ET01 | 戻り値は`ExcludedTask[]`型 |
+| POST-ET02 | 含まれるタスクは全て`isLeaf===true`かつ`validStatus.isValid===false` |
+| POST-ET03 | `reason`は`validStatus.invalidReason`の値（nullの場合は'理由不明'） |
+
+#### ビジネスルール
+
+| ID | ルール | 違反時の動作 |
+|----|--------|-------------|
+| BR-ET-01 | リーフタスク（isLeaf===true）のみが対象となる | 親タスクは除外されない |
+| BR-ET-02 | validStatus.isValidがtrueのタスクは含まれない | 有効タスクは除外リストに含まれない |
+
+#### 同値クラス・境界値
+
+| 分類 | 入力条件 | 期待結果 |
+|------|----------|----------|
+| **正常系** | 全タスクが有効（isValid=true） | 空配列`[]` |
+| **正常系** | 日付未設定のリーフタスクあり | 該当タスクがExcludedTask[]に含まれる |
+| **正常系** | 稼働日数0のリーフタスクあり | 該当タスクがExcludedTask[]に含まれる |
+| **正常系** | 複数の無効タスクあり | 全無効タスクがExcludedTask[]に含まれる |
+| **境界値** | taskNodes空配列 | 空配列`[]` |
+| **境界値** | 親タスクのみ無効（isLeaf=false） | 空配列（親は対象外） |
+
+---
+
 ## 6. 関連オブジェクト
 
 ### 6.1 依存関係図
@@ -632,6 +695,46 @@ Scenario: holidayDatasに登録された日は祝日と判定される
   Then  true が返される
 ```
 
+### 7.9 excludedTasks テスト
+
+```gherkin
+Scenario: 全タスクが有効な場合、除外タスクは空
+  Given 全リーフタスクのvalidStatus.isValidがtrue
+  When  excludedTasks を取得する
+  Then  空配列が返される
+```
+
+```gherkin
+Scenario: 日付未設定のタスクが除外リストに含まれる
+  Given 開始日が未設定のリーフタスク（id=1）
+  When  excludedTasks を取得する
+  Then  id=1のタスクがExcludedTask[]に含まれる
+  And   reasonに「日付エラー」が含まれる
+```
+
+```gherkin
+Scenario: 稼働日数0のタスクが除外リストに含まれる
+  Given 稼働予定日数が0のリーフタスク（id=2）
+  When  excludedTasks を取得する
+  Then  id=2のタスクがExcludedTask[]に含まれる
+  And   reasonに「日数エラー」が含まれる
+```
+
+```gherkin
+Scenario: 複数の無効タスクが全て除外リストに含まれる
+  Given 無効なリーフタスク3件（id=1,2,3）
+  When  excludedTasks を取得する
+  Then  3件のExcludedTaskが返される
+```
+
+```gherkin
+Scenario: 親タスクは除外対象外
+  Given 無効な親タスク（isLeaf=false, id=1）
+  And   有効な子タスク（isLeaf=true, id=2）
+  When  excludedTasks を取得する
+  Then  空配列が返される（親タスクは対象外）
+```
+
 ---
 
 ## 8. 設計上の課題・改善提案
@@ -658,4 +761,14 @@ Scenario: holidayDatasに登録された日は祝日と判定される
 | statisticsByName | 4件 |
 | pvByName系 | 4件 |
 | isHoliday() | 4件 |
-| **合計** | **約40件** |
+| excludedTasks | 5件 |
+| **合計** | **約45件** |
+
+---
+
+## 10. 変更履歴
+
+| バージョン | 日付 | 変更内容 | 要件ID |
+|-----------|------|---------|--------|
+| 1.0.0 | 2025-12-16 | 初版作成 | - |
+| 1.1.0 | 2025-12-22 | excludedTasksプロパティ追加（セクション3.3, 5.9, 7.9） | REQ-TASK-001 |
