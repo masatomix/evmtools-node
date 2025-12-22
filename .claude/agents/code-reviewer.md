@@ -83,6 +83,15 @@ Provide your review in this structured format:
 ### 📝 総評
 （全体的な評価とコメント）
 
+### 📋 Review Criteria
+<details>
+<summary>このレビューで使用した基準</summary>
+
+- [docs/standards/CODING_STANDARDS.md](../blob/develop/docs/standards/CODING_STANDARDS.md) - コーディング標準
+- [docs/standards/REVIEW_CHECKLIST.md](../blob/develop/docs/standards/REVIEW_CHECKLIST.md) - レビューチェックリスト
+
+</details>
+
 ## Guidelines
 
 - Be specific: Always reference exact file names, line numbers, and code snippets

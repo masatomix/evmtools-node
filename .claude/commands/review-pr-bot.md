@@ -128,22 +128,9 @@ chmod +x /tmp/gh-app-review.sh
 ```bash
 /tmp/gh-app-review.sh $ARGUMENTS approve "## 🤖 AI Code Review (by code-reviewer)
 
-{サブエージェントから受け取ったレビューサマリー}
-
-{サブエージェントから受け取った総評}
+{サブエージェントから受け取ったレビュー内容（Review Criteria含む）}
 
 ---
-
-<details>
-<summary>📋 Review Criteria (レビュー基準)</summary>
-
-このレビューは以下の基準に基づいて実施されました：
-
-- [docs/standards/CODING_STANDARDS.md](../blob/develop/docs/standards/CODING_STANDARDS.md) - コーディング標準
-- [docs/standards/REVIEW_CHECKLIST.md](../blob/develop/docs/standards/REVIEW_CHECKLIST.md) - レビューチェックリスト
-
-</details>
-
 🤖 Reviewed by [Claude Code](https://claude.com/claude-code) code-reviewer subagent via GitHub App"
 ```
 
@@ -152,22 +139,9 @@ chmod +x /tmp/gh-app-review.sh
 ```bash
 /tmp/gh-app-review.sh $ARGUMENTS request-changes "## 🤖 AI Code Review (by code-reviewer)
 
-{サブエージェントから受け取ったレビューサマリー}
-
-{サブエージェントから受け取った総評}
+{サブエージェントから受け取ったレビュー内容（Review Criteria含む）}
 
 ---
-
-<details>
-<summary>📋 Review Criteria (レビュー基準)</summary>
-
-このレビューは以下の基準に基づいて実施されました：
-
-- [docs/standards/CODING_STANDARDS.md](../blob/develop/docs/standards/CODING_STANDARDS.md) - コーディング標準
-- [docs/standards/REVIEW_CHECKLIST.md](../blob/develop/docs/standards/REVIEW_CHECKLIST.md) - レビューチェックリスト
-
-</details>
-
 🤖 Reviewed by [Claude Code](https://claude.com/claude-code) code-reviewer subagent via GitHub App"
 ```
 
