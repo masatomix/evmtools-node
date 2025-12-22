@@ -3,7 +3,7 @@
 **要件ID**: REQ-TASK-001
 **GitHub Issue**: #42
 **作成日**: 2025-12-22
-**ステータス**: Draft
+**ステータス**: Approved
 **優先度**: High
 
 ---
@@ -113,10 +113,13 @@ const validTasks = project.toTaskRows().filter(t => t.validStatus.isValid)
 
 | ID | 基準 | 結果 | テスト証跡 |
 |----|------|------|-----------|
-| AC-01 | Project.excludedTasksで除外タスク一覧を取得できる | | |
-| AC-02 | 除外理由（reason）が正しく設定されている | | |
-| AC-03 | 有効なタスクのみのプロジェクトではexcludedTasksが空配列 | | |
-| AC-04 | 既存のPV/EV計算に影響がない | | |
+| AC-01 | Project.excludedTasksで除外タスク一覧を取得できる | ✅ PASS | TC-02〜TC-06 |
+| AC-02 | 除外理由（reason）が正しく設定されている | ✅ PASS | TC-09, TC-10 |
+| AC-03 | 有効なタスクのみのプロジェクトではexcludedTasksが空配列 | ✅ PASS | TC-01, TC-07 |
+| AC-04 | 既存のPV/EV計算に影響がない | ✅ PASS | 既存テスト95件全てPASS |
+
+**確認日**: 2025-12-22
+**テスト実行結果**: 10件全てPASS（新規追加分）、95件全てPASS（全体）
 
 ---
 
@@ -124,9 +127,9 @@ const validTasks = project.toTaskRows().filter(t => t.validStatus.isValid)
 
 | ドキュメント | パス | 説明 |
 |-------------|------|------|
-| 設計書 | `docs/specs/domain/Project.excludedTasks.spec.md` | 詳細仕様（予定） |
-| 実装 | `src/domain/Project.ts` | 追加予定 |
-| テスト | `src/domain/__tests__/Project.test.ts` | 追加予定 |
+| 設計書 | `docs/specs/domain/Project.excludedTasks.spec.md` | 詳細仕様 |
+| 実装 | `src/domain/Project.ts` | excludedTasksプロパティ、ExcludedTask型 |
+| テスト | `src/domain/__tests__/Project.excludedTasks.test.ts` | 10件 |
 
 ---
 
