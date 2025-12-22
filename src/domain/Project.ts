@@ -364,6 +364,25 @@ export class Project {
     isHoliday(date: Date): boolean {
         return isHoliday(date, this)
     }
+
+    /**
+     * 計算から除外されたタスクの一覧を取得
+     *
+     * @returns 除外されたタスクとその理由の配列
+     *
+     * @remarks
+     * - isLeaf === true のタスクのみを対象とする
+     * - validStatus.isValid === false のタスクを返す
+     */
+    get excludedTasks(): ExcludedTask[] {
+        return this.toTaskRows()
+            .filter((task) => task.isLeaf)
+            .filter((task) => !task.validStatus.isValid)
+            .map((task) => ({
+                task,
+                reason: task.validStatus.invalidReason ?? '理由不明',
+            }))
+    }
 }
 
 const sumWorkload = (group: TaskRow[]) => sum(group.map((d) => d.workload))
@@ -440,6 +459,16 @@ export type LongData = {
     assignee: string
     baseDate: string
     value?: number
+}
+
+/**
+ * 計算から除外されたタスクの情報
+ */
+export type ExcludedTask = {
+    /** 除外されたタスク */
+    task: TaskRow
+    /** 除外理由（validStatus.invalidReason） */
+    reason: string
 }
 
 // /**
