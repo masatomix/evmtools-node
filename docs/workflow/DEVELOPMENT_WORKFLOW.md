@@ -526,9 +526,14 @@ Closes #nn
 |---------|---------|------|---------------|
 | `main` | - | 本番リリース用。常に安定版 | 永続 |
 | `develop` | - | 開発統合。次リリースの準備 | 永続 |
-| `feature/*` | `feature/{機能名}` | 新機能開発 | 一時的（PR後削除） |
+| `feature/*` | `feature/{issue番号}-{機能名}` | 新機能開発 | 一時的（PR後削除） |
 | `release/*` | `release/{バージョン}` | リリース準備 | 一時的（マージ後削除） |
 | `hotfix/*` | `hotfix/{修正名}` | 緊急バグ修正 | 一時的（マージ後削除） |
+
+**featureブランチ命名規則:**
+- 形式: `feature/{issue番号}-{機能名}`
+- 例: `feature/42-excluded-tasks`, `feature/41-workload-summary`
+- 理由: Issue Firstワークフローと整合性があり、GitHub連携（`#42`）が活きる
 
 #### 2.3.3 実際のブランチ例（本リポジトリより）
 
@@ -542,10 +547,10 @@ remotes/origin/feature/invalid             # validStatus機能
 ### 2.4 Feature開発フロー（Git操作）
 
 ```bash
-# 1. developから feature ブランチを作成
+# 1. developから feature ブランチを作成（Issue番号をプレフィックスに）
 git checkout develop
 git pull origin develop
-git checkout -b feature/csv-reader
+git checkout -b feature/42-csv-reader  # Issue #42 の場合
 
 # 2. 開発作業（仕様駆動開発サイクル）
 #    - 要件定義書作成
@@ -559,7 +564,7 @@ git add .
 git commit -m "feat: CSVファイルからProjectを生成する機能を追加"
 
 # 4. リモートにプッシュ
-git push -u origin feature/csv-reader
+git push -u origin feature/42-csv-reader
 
 # 5. Pull Request作成（GitHub）
 gh pr create --base develop --title "feat: CSV読み込み機能"
@@ -567,7 +572,7 @@ gh pr create --base develop --title "feat: CSV読み込み機能"
 # 6. レビュー・マージ後、ローカルブランチ削除
 git checkout develop
 git pull origin develop
-git branch -d feature/csv-reader
+git branch -d feature/42-csv-reader
 ```
 
 ### 2.5 リリースフロー
@@ -739,7 +744,7 @@ npm pack
 ### 6.1 Feature開発時
 
 - [ ] **GitHub Issueを作成（または既存Issueを確認）**
-- [ ] `develop`から`feature/*`ブランチを作成
+- [ ] `develop`から`feature/{issue番号}-{機能名}`ブランチを作成
 - [ ] （並行開発時）バージョンを `X.Y.Z-SNAPSHOT.機能名` に変更
 - [ ] 要件定義書を作成（**GitHub Issue欄に#nnを記載**）
 - [ ] 仕様書を作成
