@@ -2,6 +2,7 @@
  * VersionInfo テスト
  * @see docs/specs/domain/VersionInfo.spec.md
  * @see docs/specs/requirements/REQ-VERSION-001.md
+ * @see docs/specs/requirements/REQ-VERSION-002.md
  */
 
 import { getVersionInfo, VersionInfo } from '../VersionInfo';
@@ -17,6 +18,7 @@ describe('VersionInfo', () => {
             expect(typeof info.version).toBe('string');
             expect(typeof info.name).toBe('string');
             expect(typeof info.description).toBe('string');
+            expect(typeof info.author).toBe('string');
         });
 
         // TC-02: versionがpackage.jsonと一致する
@@ -46,6 +48,13 @@ describe('VersionInfo', () => {
             const info2 = getVersionInfo();
 
             expect(info1).toBe(info2); // 同一参照
+        });
+
+        // TC-06: authorがpackage.jsonと一致する
+        it('TC-06: authorがpackage.jsonと一致する', () => {
+            const info = getVersionInfo();
+
+            expect(info.author).toBe(packageJson.author);
         });
     });
 });
