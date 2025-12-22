@@ -653,7 +653,7 @@ MAJOR.MINOR.PATCH
 |---------|------------|------|
 | リリース済み | `0.0.17` | npm publishされた安定版 |
 | 開発中（develop） | `0.0.18-SNAPSHOT` | 次リリースに向けた開発版 |
-| 開発中（feature） | `0.0.18-SNAPSHOT.cli-npx` | 特定機能の開発版（並行開発時） |
+| 開発中（feature） | `0.0.18-SNAPSHOT.cli-npx` | 機能開発版（**必須**） |
 
 #### 4.2.2 運用フロー
 
@@ -663,15 +663,14 @@ main (0.0.17)                          ← リリース済み
   └── develop (0.0.18-SNAPSHOT)        ← 次版開発中
         │
         ├── feature/cli-npx (0.0.18-SNAPSHOT.cli-npx)
-        │                              ↑ 並行開発時は機能名を付与
+        │                              ↑ featureブランチでは必ず機能名を付与
         └── feature/csv (0.0.18-SNAPSHOT.csv)
 ```
 
 1. **リリース後**: developのバージョンを `X.Y.Z-SNAPSHOT` に更新
-2. **feature開発時**:
-   - 単独開発: `X.Y.Z-SNAPSHOT` のまま
-   - 並行開発: `X.Y.Z-SNAPSHOT.機能名` に変更（任意）
-3. **developマージ時**: `X.Y.Z-SNAPSHOT` に統一
+2. **feature開発時**: `X.Y.Z-SNAPSHOT.機能名` に変更（**必須**）
+   - 理由: 他の開発者が同時にブランチを切っている可能性があり、push前は検知できないため
+3. **developマージ時**: `X.Y.Z-SNAPSHOT` に戻す
 4. **リリース時**: `-SNAPSHOT` を削除して `X.Y.Z` に
 
 #### 4.2.3 semver準拠
@@ -684,7 +683,7 @@ main (0.0.17)                          ← リリース済み
 
 #### 4.2.4 npm pack時の区別
 
-並行開発時、各featureのビルドを区別するために機能名サフィックスを使用:
+featureブランチでは機能名サフィックスを付けるため、ビルド成果物を区別可能:
 
 ```bash
 # feature/cli-npx ブランチ
@@ -740,14 +739,14 @@ npm pack
 
 - [ ] **GitHub Issueを作成（または既存Issueを確認）**
 - [ ] `develop`から`feature/*`ブランチを作成
-- [ ] （並行開発時）バージョンを `X.Y.Z-SNAPSHOT.機能名` に変更
+- [ ] **バージョンを `X.Y.Z-SNAPSHOT.機能名` に変更**
 - [ ] 要件定義書を作成（**GitHub Issue欄に#nnを記載**）
 - [ ] 仕様書を作成
 - [ ] テストコードを作成
 - [ ] 実装
 - [ ] 全テストPASS確認
 - [ ] トレーサビリティ更新
-- [ ] （並行開発時）バージョンを `X.Y.Z-SNAPSHOT` に戻す
+- [ ] **バージョンを `X.Y.Z-SNAPSHOT` に戻す**
 - [ ] PRを作成（**`Closes #nn`を記載**）
 - [ ] レビュー・マージ
 
