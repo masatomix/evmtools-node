@@ -40,8 +40,6 @@ Task tool パラメータ:
 - prompt: |
     PR #$ARGUMENTS のコードレビューを実施してください。
 
-    レビュー観点は prompts/review-instructions.md を参照してください。
-
     ## 出力形式
     以下の形式で結果を返してください：
 
@@ -141,7 +139,6 @@ chmod +x /tmp/gh-app-review.sh
 
 このレビューは以下の基準に基づいて実施されました：
 
-- [prompts/review-instructions.md](../blob/develop/prompts/review-instructions.md) - レビュー観点（High/Medium/Low）
 - [docs/standards/CODING_STANDARDS.md](../blob/develop/docs/standards/CODING_STANDARDS.md) - コーディング標準
 - [docs/standards/REVIEW_CHECKLIST.md](../blob/develop/docs/standards/REVIEW_CHECKLIST.md) - レビューチェックリスト
 
@@ -166,7 +163,6 @@ chmod +x /tmp/gh-app-review.sh
 
 このレビューは以下の基準に基づいて実施されました：
 
-- [prompts/review-instructions.md](../blob/develop/prompts/review-instructions.md) - レビュー観点（High/Medium/Low）
 - [docs/standards/CODING_STANDARDS.md](../blob/develop/docs/standards/CODING_STANDARDS.md) - コーディング標準
 - [docs/standards/REVIEW_CHECKLIST.md](../blob/develop/docs/standards/REVIEW_CHECKLIST.md) - レビューチェックリスト
 
