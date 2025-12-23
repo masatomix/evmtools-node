@@ -20,3 +20,11 @@ now-pv.xlsx
 now.xlsm
 prev.xlsm
 要員計画*.xlsx
+
+# Claude Code関連（開発ツール設定）
+.claude/
+CLAUDE.md
+ai_instructions.md
+
+# 開発ドキュメント
+docs/

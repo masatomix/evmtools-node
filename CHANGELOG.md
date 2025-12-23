@@ -5,7 +5,7 @@
 フォーマットは [Keep a Changelog](https://keepachangelog.com/ja/1.0.0/) に基づき、
 [セマンティックバージョニング](https://semver.org/lang/ja/) に準拠しています。
 
-## [Unreleased]
+## [0.0.18]
 
 ### 追加
 - **CsvProjectCreator**: CSVファイルからProjectを生成する機能
@@ -29,6 +29,12 @@
 
 ### 変更
 - `package.json`: Jest関連依存とiconv-liteを追加
+
+### 修正
+- **CLIコマンド**: shebang追加でUnix環境での実行を修正
+  - `pbevm-show-project`, `pbevm-diff`, `pbevm-show-pv`
+  - 要件定義: `docs/specs/requirements/REQ-CLI-001.md`
+- **README.md**: インストール手順と`-p`オプションの説明を追加
 
 ## [0.0.17]
 
