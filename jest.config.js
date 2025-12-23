@@ -4,6 +4,10 @@ module.exports = {
     testEnvironment: 'node',
     roots: ['<rootDir>/src'],
     testMatch: ['**/__tests__/**/*.test.ts', '**/*.test.ts'],
+    testPathIgnorePatterns: [
+        '/node_modules/',
+        'cli-shebang\\.test\\.ts$', // リリース検証用（リグレッションテスト対象外）
+    ],
     moduleFileExtensions: ['ts', 'js', 'json'],
     collectCoverageFrom: [
         'src/**/*.ts',
