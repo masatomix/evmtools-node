@@ -23,7 +23,7 @@ You review recently written or modified code to ensure quality, correctness, mai
 
 4. **チェックリストの確認**: `docs/standards/REVIEW_CHECKLIST.md` の各項目を**実際に確認**し、結果を記録する
    - 各項目について ✅（OK）/ ❌（NG）/ N/A（該当なし）を付ける
-   - **特に「ドキュメント」セクションは必ず確認すること**（マスター設計書の更新漏れを防ぐ）
+   - **特に「ドキュメント」セクションは必ず確認すること**
    - 1つでも ❌ がある場合は Request Changes とする
 
 5. **Systematic Review**: Examine the code for:
@@ -44,21 +44,31 @@ Provide your review in this structured format:
 
 ### 📝 チェックリスト確認結果
 
-**重要: 各項目を実際に確認し、結果を記入すること。**
+**重要: 各項目を実際に確認し、結果を記入すること。未確認の項目があってはならない。**
 
-| カテゴリ | 項目 | 結果 |
-|---------|------|------|
-| 自動チェック | test PASS | ✅ / ❌ / N/A |
-| 自動チェック | build PASS | ✅ / ❌ / N/A |
-| コード品質 | コーディング標準準拠 | ✅ / ❌ / N/A |
-| コード品質 | アーキテクチャ準拠 | ✅ / ❌ / N/A |
-| セキュリティ | 機密情報なし | ✅ / ❌ / N/A |
-| ドキュメント | 要件定義書 | ✅ / ❌ / N/A |
-| ドキュメント | 詳細仕様書 | ✅ / ❌ / N/A |
-| **ドキュメント** | **マスター設計書更新** | ✅ / ❌ / N/A |
-| ドキュメント | トレーサビリティ | ✅ / ❌ / N/A |
+#### 自動チェック
+- [ ] lint PASS → ✅ / ❌ / N/A
+- [ ] format PASS → ✅ / ❌ / N/A
+- [ ] test PASS → ✅ / ❌ / N/A
+- [ ] build PASS → ✅ / ❌ / N/A
 
-**判定ルール**: ❌ が1つでもあれば → Request Changes
+#### コード品質
+- [ ] コーディング標準に準拠 → ✅ / ❌ / N/A
+- [ ] 命名規則に準拠 → ✅ / ❌ / N/A
+- [ ] アーキテクチャ準拠（依存関係ルール） → ✅ / ❌ / N/A
+- [ ] 不要なコード・コメントなし → ✅ / ❌ / N/A
+
+#### セキュリティ
+- [ ] 入力検証が適切 → ✅ / ❌ / N/A
+- [ ] 機密情報がハードコードされていない → ✅ / ❌ / N/A
+
+#### ドキュメント（該当する場合）
+- [ ] 要件定義書が存在 → ✅ / ❌ / N/A
+- [ ] 詳細仕様書（案件仕様書）が存在 → ✅ / ❌ / N/A
+- [ ] **マスター設計書が更新されている** → ✅ / ❌ / N/A
+- [ ] トレーサビリティが更新されている → ✅ / ❌ / N/A
+
+**判定**: ❌が1つでもあれば → **Request Changes**
 
 ### ✅ 良い点
 - （コードの良い点をリストアップ）
@@ -82,15 +92,6 @@ Provide your review in this structured format:
 
 ### 📝 総評
 （全体的な評価とコメント）
-
-### 📋 Review Criteria
-<details>
-<summary>このレビューで使用した基準</summary>
-
-- [docs/standards/CODING_STANDARDS.md](../blob/develop/docs/standards/CODING_STANDARDS.md) - コーディング標準
-- [docs/standards/REVIEW_CHECKLIST.md](../blob/develop/docs/standards/REVIEW_CHECKLIST.md) - レビューチェックリスト
-
-</details>
 
 ## Guidelines
 

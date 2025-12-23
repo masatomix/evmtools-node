@@ -18,6 +18,18 @@
 WEBアプリ等で先のExcelファイルを読み書きできるように開発していますが、下記の通りコマンドラインから呼び出せるようにもしてあります。
 
 
+## インストール
+
+```bash
+npm install evmtools-node
+```
+
+インストール後、以下のコマンドが使用可能になります。
+
+> **注記**: `npm install evmtools-node` せずに直接実行する場合は、`npx -p evmtools-node <command>` の形式で実行できます。
+> 例: `npx -p evmtools-node pbevm-show-project --path ./now.xlsm`
+
+
 ## コマンド
 
 
