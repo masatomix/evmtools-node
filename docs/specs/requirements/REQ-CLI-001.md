@@ -3,7 +3,7 @@
 **要件ID**: REQ-CLI-001
 **GitHub Issue**: #67
 **作成日**: 2025-12-23
-**ステータス**: Draft
+**ステータス**: Completed
 **優先度**: High
 
 ---
@@ -114,10 +114,10 @@ pbevm-show-project --path ./now.xlsm
 
 | ID | 基準 | 結果 | テスト証跡 |
 |----|------|------|-----------|
-| AC-01 | distファイルにshebangが含まれる | - | 自動テスト |
-| AC-02 | `pbevm-show-project --help` が動作する | - | 自動テスト |
-| AC-03 | `pbevm-diff --help` が動作する | - | 自動テスト |
-| AC-04 | `pbevm-show-pv --help` が動作する | - | 自動テスト |
+| AC-01 | distファイルにshebangが含まれる | OK | `cli-shebang.test.ts` TC-01 |
+| AC-02 | `pbevm-show-project --help` が動作する | OK | `cli-shebang.test.ts` TC-02 |
+| AC-03 | `pbevm-diff --help` が動作する | OK | `cli-shebang.test.ts` TC-03 |
+| AC-04 | `pbevm-show-pv --help` が動作する | OK | `cli-shebang.test.ts` TC-04 |
 | AC-05 | README.mdにインストール手順が記載されている | OK | 目視確認済み |
 | AC-06 | README.mdに `-p` オプションの注記がある | OK | 目視確認済み |
 
