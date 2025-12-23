@@ -70,6 +70,17 @@ npm install evmtools-node
 |----|------|
 | NF-01 | 既存の機能に影響を与えないこと |
 | NF-02 | Unix系（Linux, macOS）およびWindowsで動作すること |
+| NF-03 | 分離環境での自動テストにより動作を検証すること |
+
+### 3.1 テスト要件
+
+| ID | 要件 |
+|----|------|
+| TEST-01 | 分離された一時ディレクトリでテストを実行すること |
+| TEST-02 | ローカルビルド版をnpm packでインストールして検証すること |
+| TEST-03 | 3つのCLIコマンドすべてで `--help` が動作することを確認 |
+| TEST-04 | distファイルにshebangが含まれることを確認 |
+| TEST-05 | リリース検証用のワンショットテストとし、リグレッションテストには含めない |
 
 ---
 
@@ -103,10 +114,12 @@ pbevm-show-project --path ./now.xlsm
 
 | ID | 基準 | 結果 | テスト証跡 |
 |----|------|------|-----------|
-| AC-01 | `npm i evmtools-node` 後に `npx pbevm-show-project` が動作する | - | 手動テスト |
-| AC-02 | `npx -p evmtools-node pbevm-show-project` が動作する | - | 手動テスト |
-| AC-03 | README.mdにインストール手順が記載されている | - | 目視確認 |
-| AC-04 | README.mdに `-p` オプションの注記がある | - | 目視確認 |
+| AC-01 | distファイルにshebangが含まれる | - | 自動テスト |
+| AC-02 | `pbevm-show-project --help` が動作する | - | 自動テスト |
+| AC-03 | `pbevm-diff --help` が動作する | - | 自動テスト |
+| AC-04 | `pbevm-show-pv --help` が動作する | - | 自動テスト |
+| AC-05 | README.mdにインストール手順が記載されている | OK | 目視確認済み |
+| AC-06 | README.mdに `-p` オプションの注記がある | OK | 目視確認済み |
 
 ---
 
@@ -115,7 +128,9 @@ pbevm-show-project --path ./now.xlsm
 | ドキュメント | パス | 説明 |
 |-------------|------|------|
 | GitHub Issue | #67 | CLIコマンドのshebang設定・bin登録の整備 |
+| 詳細仕様書 | `docs/specs/domain/features/CLI.shebang.spec.md` | shebang追加の詳細仕様 |
 | 実装 | `src/presentation/cli-pbevm-*.ts` | CLIファイル |
+| 自動テスト | `src/presentation/__tests__/cli-shebang.test.ts` | CLI shebang検証テスト |
 | README | `README.md` | 使用方法の説明 |
 
 ---
