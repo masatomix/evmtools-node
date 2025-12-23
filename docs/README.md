@@ -23,13 +23,13 @@ evmtools-node の開発者向けドキュメント一覧です。
 
 | ドキュメント | 内容 |
 |-------------|------|
-| [Project.spec.md](specs/domain/Project.spec.md) | Project クラス（マスター設計書） |
-| [TaskRow.spec.md](specs/domain/TaskRow.spec.md) | TaskRow クラス |
-| [TaskNode.spec.md](specs/domain/TaskNode.spec.md) | TaskNode クラス |
-| [TaskService.spec.md](specs/domain/TaskService.spec.md) | TaskService |
-| [ProjectService.spec.md](specs/domain/ProjectService.spec.md) | ProjectService |
-| [CsvProjectCreator.spec.md](specs/domain/CsvProjectCreator.spec.md) | CsvProjectCreator |
-| [VersionInfo.spec.md](specs/domain/VersionInfo.spec.md) | VersionInfo |
+| [Project.spec.md](specs/domain/master/Project.spec.md) | Project クラス（マスター設計書） |
+| [TaskRow.spec.md](specs/domain/master/TaskRow.spec.md) | TaskRow クラス |
+| [TaskNode.spec.md](specs/domain/master/TaskNode.spec.md) | TaskNode クラス |
+| [TaskService.spec.md](specs/domain/master/TaskService.spec.md) | TaskService |
+| [ProjectService.spec.md](specs/domain/master/ProjectService.spec.md) | ProjectService |
+| [CsvProjectCreator.spec.md](specs/domain/master/CsvProjectCreator.spec.md) | CsvProjectCreator |
+| [VersionInfo.spec.md](specs/domain/master/VersionInfo.spec.md) | VersionInfo |
 
 ## 開発標準
 

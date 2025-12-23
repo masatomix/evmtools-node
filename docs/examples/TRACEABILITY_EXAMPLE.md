@@ -447,6 +447,6 @@ REQ-TASK-001 + 既存仕様                 ビジネス要件として正しい
 ## 関連ドキュメント
 
 - [REQ-TASK-001.md](../specs/requirements/REQ-TASK-001.md) - 要件定義書
-- [Project.excludedTasks.spec.md](../specs/domain/Project.excludedTasks.spec.md) - 詳細仕様書
-- [Project.spec.md](../specs/domain/Project.spec.md) - マスター設計書
+- [Project.excludedTasks.spec.md](../specs/domain/features/Project.excludedTasks.spec.md) - 詳細仕様書
+- [Project.spec.md](../specs/domain/master/Project.spec.md) - マスター設計書
 - [DEVELOPMENT_WORKFLOW.md](../workflow/DEVELOPMENT_WORKFLOW.md) - 開発ワークフロー
