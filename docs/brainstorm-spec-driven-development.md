@@ -428,10 +428,12 @@ docs/specs/domain/
 
 ## 12. 参考
 
-- 本ブレストで作成したProjectクラス詳細仕様書: `docs/specs/domain/Project.spec.md`
+- 本ブレストで作成したProjectクラス詳細仕様書: `docs/specs/domain/master/Project.spec.md`
 - YAMLスキーマ定義: `docs/specs/spec-schema.md`
-- YAML形式仕様書: `docs/specs/domain/Project.spec.yaml`
-- domain層全体の仕様書: `docs/specs/domain/` 配下の全ファイル
+- YAML形式仕様書: `docs/specs/domain/master/Project.spec.yaml`
+- domain層全体の仕様書:
+  - マスター設計書: `docs/specs/domain/master/` 配下
+  - 案件設計書: `docs/specs/domain/features/` 配下
 
 ---
 
@@ -617,7 +619,7 @@ REQ-TASK-001（計算除外レコード可視化）の実装を通じて、仕�
 
 | ドキュメント | パス |
 |-------------|------|
-| 設計書 | `docs/specs/domain/Project.excludedTasks.spec.md` |
+| 設計書 | `docs/specs/domain/features/Project.excludedTasks.spec.md` |
 ```
 
 #### 詳細仕様書 → テスト
@@ -626,7 +628,7 @@ REQ-TASK-001（計算除外レコード可視化）の実装を通じて、仕�
 
 **解決策1: 命名規則で予測可能にする**
 ```
-docs/specs/domain/Project.excludedTasks.spec.md
+docs/specs/domain/features/Project.excludedTasks.spec.md
                    ↓ 命名規則
 src/domain/__tests__/Project.excludedTasks.test.ts
 ```
@@ -735,7 +737,7 @@ cat docs/specs/requirements/REQ-TASK-001.md | grep "AC-01"
 ```bash
 # 要件定義書の「関連ドキュメント」から
 cat docs/specs/requirements/REQ-TASK-001.md | grep "spec.md"
-# → docs/specs/domain/Project.excludedTasks.spec.md
+# → docs/specs/domain/features/Project.excludedTasks.spec.md
 ```
 
 **Step 3: テストファイルを見つける**
@@ -781,3 +783,83 @@ REQ-TASK-001 AC-01 「excludedTasksで一覧取得」
 ```
 
 **ポイント**: 1つの受け入れ基準（AC-01）に対して、5つのテストケースが検証し、1つのgetterが実装している
+
+---
+
+## 17. 仕様書フォルダの再編成（2025-12-23 追加）
+
+### 17.1 背景・課題
+
+`docs/specs/domain/` フォルダ内で、以下の問題が発生していた：
+
+> 「いまdocs/specs/ フォルダの中で、どれがマスター設計書、どれが案件設計書って分かるようになっているかな」
+
+ドメイン仕様書が単一フォルダに混在しており、初見の開発者にとって：
+- **マスター設計書**（恒久的な設計文書）
+- **案件設計書**（特定Issue/機能向けの設計文書）
+
+の区別が困難だった。
+
+### 17.2 検討した選択肢
+
+| 案 | 方法 | メリット | デメリット |
+|----|------|---------|-----------|
+| **案1** | フォルダ分離（`master/`, `features/`） | 明確に分離、一覧性が高い | ファイル移動が必要 |
+| 案2 | ファイル名プレフィックス（`master-`, `feat-`） | 移動不要 | 名前が長くなる |
+| 案3 | INDEX.mdで一覧管理 | 構造変更不要 | 更新漏れの可能性 |
+
+### 17.3 採用した方法
+
+**案1: フォルダ分離** を採用。
+
+```
+docs/specs/domain/
+├── master/                    # マスター設計書（恒久的）
+│   ├── Project.spec.md
+│   ├── TaskRow.spec.md
+│   └── ... （19ファイル）
+└── features/                  # 案件設計書（機能別）
+    └── Project.excludedTasks.spec.md
+```
+
+### 17.4 分類基準
+
+| 種類 | 配置先 | 説明 | 例 |
+|------|--------|------|-----|
+| **マスター設計書** | `master/` | ドメインモデルの恒久的な仕様 | `TaskRow.spec.md`, `Project.spec.md` |
+| **案件設計書** | `features/` | 特定Issue/機能向けの仕様 | `Project.excludedTasks.spec.md` |
+
+### 17.5 移動したファイル
+
+**master/ へ移動（19ファイル）**:
+- Project.spec.md / Project.spec.yaml
+- TaskRow.spec.md / TaskRow.spec.yaml
+- TaskNode.spec.md / TaskNode.spec.yaml
+- TaskService.spec.md / TaskService.spec.yaml
+- ProjectService.spec.md / ProjectService.spec.yaml
+- ProjectCreator.spec.md / ProjectCreator.spec.yaml
+- HolidayData.spec.md / HolidayData.spec.yaml
+- Interfaces.spec.md / Interfaces.spec.yaml
+- CsvProjectCreator.spec.md
+- VersionInfo.spec.md
+- spec-schema.md
+
+**features/ へ移動（1ファイル）**:
+- Project.excludedTasks.spec.md
+
+### 17.6 参照更新
+
+以下のドキュメントのリンクを更新：
+- `CHANGELOG.md`
+- `docs/workflow/DEVELOPMENT_WORKFLOW.md`
+- `docs/workflow/SAMPLE_DEVELOPMENT_FLOW.md`
+- `docs/specs/requirements/REQ-TASK-001.md`
+- `docs/specs/requirements/REQ-CSV-001.md`
+- `docs/specs/requirements/REQ-VERSION-001.md`
+- `docs/brainstorm-spec-driven-development.md`（本ファイル）
+
+### 17.7 今後の運用
+
+- **新しいドメインモデル追加時**: `master/` に設計書を作成
+- **既存機能の拡張時**: `features/` に案件設計書を作成し、完了後に `master/` へ統合を検討
+- **フォルダの追加**: 必要に応じて `infrastructure/`, `usecase/` 等のフォルダを追加可能

@@ -74,8 +74,8 @@
         │
         ▼
 ┌────────────────┐
-│   詳細仕様     │  docs/specs/domain/Xxx.spec.md
-│  (どう作るか)   │  docs/specs/domain/Xxx.spec.yaml
+│   詳細仕様     │  docs/specs/domain/master/Xxx.spec.md
+│  (どう作るか)   │  docs/specs/domain/features/Xxx.{feature}.spec.md
 └───────┬────────┘
         │
         ▼
@@ -135,7 +135,7 @@
         │
         ▼
 ┌────────────────┐
-│   仕様書       │  docs/specs/domain/Xxx.spec.md
+│   仕様書       │  docs/specs/domain/master/Xxx.spec.md
 │   作成        │  （コードから逆算）
 └───────┬────────┘
         │
@@ -152,7 +152,7 @@
 docs/specs/requirements/
 ├── REQ-CSV-001.md          ─────┐
                                  │ トレーサビリティ
-docs/specs/domain/               │
+docs/specs/domain/master/        │
 ├── CsvProjectCreator.spec.md ◀──┤
 ├── CsvProjectCreator.spec.yaml  │
                                  │
@@ -167,20 +167,22 @@ src/infrastructure/              │
 
 仕様書には2種類ある：
 
-| 種類 | 命名規則 | 役割 | 例 |
+| 種類 | 配置場所 | 役割 | 例 |
 |------|---------|------|-----|
-| **マスター設計書** | `{Class}.spec.md` | クラス全体の仕様 | `Project.spec.md` |
-| **案件仕様書** | `{Class}.{feature}.spec.md` | 案件で追加した機能の仕様 | `Project.excludedTasks.spec.md` |
+| **マスター設計書** | `domain/master/` | クラス全体の仕様 | `master/Project.spec.md` |
+| **案件仕様書** | `domain/features/` | 案件で追加した機能の仕様 | `features/Project.excludedTasks.spec.md` |
 
 **ファイル構成:**
 
 ```
 docs/specs/domain/
-├── Project.spec.md                    # マスター設計書（クラス全体）
-├── Project.spec.yaml
-├── Project.excludedTasks.spec.md      # 案件仕様書（REQ-TASK-001）
-├── TaskRow.spec.md                    # マスター設計書
-└── ...
+├── master/                            # マスター設計書
+│   ├── Project.spec.md
+│   ├── Project.spec.yaml
+│   ├── TaskRow.spec.md
+│   └── ...
+└── features/                          # 案件仕様書
+    └── Project.excludedTasks.spec.md  # REQ-TASK-001
 ```
 
 **featureブランチ内でのマスター設計書への反映:**
@@ -464,7 +466,7 @@ Closes #nn
 本機能の詳細は以下を参照してください：
 
 - **要件定義書**: `REQ-XXX-001` (`docs/specs/requirements/` 配下)
-- **詳細仕様**: `Xxx.spec.md` (`docs/specs/domain/` 配下)
+- **詳細仕様**: `Xxx.spec.md` (`docs/specs/domain/master/` または `features/` 配下)
 - **開発ブランチ**: `feature/xxx`
 
 ### ドキュメントリンク（mainマージ後に有効）
@@ -472,7 +474,7 @@ Closes #nn
 > **注意**: 以下のリンクは main ブランチへのマージ後に有効になります。それまでは 404 Not Found となります。
 
 - [REQ-XXX-001.md](docs/specs/requirements/REQ-XXX-001.md)
-- [Xxx.spec.md](docs/specs/domain/Xxx.spec.md)
+- [Xxx.spec.md](docs/specs/domain/master/Xxx.spec.md)
 ```
 
 **ポイント:**
@@ -775,7 +777,7 @@ npm pack
 | CLAUDE.md | `/CLAUDE.md` | プロジェクト技術ガイド |
 | CHANGELOG.md | `/CHANGELOG.md` | 変更履歴 |
 | 要件定義書 | `docs/specs/requirements/` | 機能要件 |
-| 仕様書 | `docs/specs/domain/` | 詳細設計 |
+| 仕様書 | `docs/specs/domain/master/`, `features/` | 詳細設計 |
 
 ---
 

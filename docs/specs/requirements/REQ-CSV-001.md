@@ -160,8 +160,8 @@ class CsvProjectCreator implements ProjectCreator {
 
 | ドキュメント | パス | 説明 |
 |-------------|------|------|
-| 設計書 | `docs/specs/domain/CsvProjectCreator.spec.md` | 詳細仕様 |
-| 設計書(YAML) | `docs/specs/domain/CsvProjectCreator.spec.yaml` | 機械可読形式 |
+| 設計書 | `docs/specs/domain/master/CsvProjectCreator.spec.md` | 詳細仕様 |
+| 設計書(YAML) | `docs/specs/domain/master/CsvProjectCreator.spec.yaml` | 機械可読形式 |
 | 単体テスト | `src/infrastructure/__tests__/CsvProjectCreator.test.ts` | 22件 |
 | 統合テスト | `src/infrastructure/__tests__/CsvProjectCreator.integration.test.ts` | 10件 |
 | 実装 | `src/infrastructure/CsvProjectCreator.ts` | 本体実装 |
