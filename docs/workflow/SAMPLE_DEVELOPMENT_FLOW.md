@@ -19,7 +19,7 @@
 | # | コミット | フェーズ | 説明 | ファイル |
 |---|---------|---------|------|---------|
 | 1 | `a7665ef` | 要件定義 | 要件定義書作成（Draft） | [`REQ-VERSION-001.md`](../specs/requirements/REQ-VERSION-001.md) (新規) |
-| 2 | `0a346f2` | 仕様書 | 詳細仕様作成 | [`VersionInfo.spec.md`](../specs/domain/VersionInfo.spec.md) (新規) |
+| 2 | `0a346f2` | 仕様書 | 詳細仕様作成 | [`VersionInfo.spec.md`](../specs/domain/master/VersionInfo.spec.md) (新規) |
 | 3 | `80e56e4` | テスト | テストコード作成（実装前） | [`VersionInfo.test.ts`](../../src/common/__tests__/VersionInfo.test.ts) (新規) |
 | 4 | `38326a6` | 実装 | 本体実装＋エクスポート追加 | [`VersionInfo.ts`](../../src/common/VersionInfo.ts) (新規), [`index.ts`](../../src/common/index.ts) (修正) |
 | 5 | `7df3e45` | トレーサビリティ | 要件定義書を更新（Approved） | [`REQ-VERSION-001.md`](../specs/requirements/REQ-VERSION-001.md) (修正) |
@@ -72,7 +72,7 @@
 - 最終ステータス: Approved
 
 ### 仕様書
-- パス: [`docs/specs/domain/VersionInfo.spec.md`](../specs/domain/VersionInfo.spec.md)
+- パス: [`docs/specs/domain/master/VersionInfo.spec.md`](../specs/domain/master/VersionInfo.spec.md)
 - バージョン: 1.0.0
 
 ### テスト

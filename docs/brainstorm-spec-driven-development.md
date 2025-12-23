@@ -428,10 +428,12 @@ docs/specs/domain/
 
 ## 12. 参考
 
-- 本ブレストで作成したProjectクラス詳細仕様書: `docs/specs/domain/Project.spec.md`
+- 本ブレストで作成したProjectクラス詳細仕様書: `docs/specs/domain/master/Project.spec.md`
 - YAMLスキーマ定義: `docs/specs/spec-schema.md`
-- YAML形式仕様書: `docs/specs/domain/Project.spec.yaml`
-- domain層全体の仕様書: `docs/specs/domain/` 配下の全ファイル
+- YAML形式仕様書: `docs/specs/domain/master/Project.spec.yaml`
+- domain層全体の仕様書:
+  - マスター設計書: `docs/specs/domain/master/` 配下
+  - 案件設計書: `docs/specs/domain/features/` 配下
 
 ---
 

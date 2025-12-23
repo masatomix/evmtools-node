@@ -85,7 +85,7 @@ function getVersionInfo(): VersionInfo;
 
 | ドキュメント | パス | 説明 |
 |-------------|------|------|
-| 設計書 | `docs/specs/domain/VersionInfo.spec.md` | 詳細仕様 |
+| 設計書 | `docs/specs/domain/master/VersionInfo.spec.md` | 詳細仕様 |
 | 単体テスト | `src/common/__tests__/VersionInfo.test.ts` | 5件 |
 | 実装 | `src/common/VersionInfo.ts` | 本体実装 |
 | 実装 | `src/common/index.ts` | エクスポート追加 |
