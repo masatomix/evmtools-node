@@ -41,9 +41,9 @@ npm公開済みのCLIコマンド（`pbevm-show-project`, `pbevm-diff`, `pbevm-s
 
 | ファイル | 対応するbinコマンド |
 |---------|-------------------|
-| `src/presentation/cli-pbevm-show-project.ts` | `pbevm-show-project` |
-| `src/presentation/cli-pbevm-diff.ts` | `pbevm-diff` |
-| `src/presentation/cli-pbevm-show-pv.ts` | `pbevm-show-pv` |
+| [`cli-pbevm-show-project.ts`](../../../src/presentation/cli-pbevm-show-project.ts) | `pbevm-show-project` |
+| [`cli-pbevm-diff.ts`](../../../src/presentation/cli-pbevm-diff.ts) | `pbevm-diff` |
+| [`cli-pbevm-show-pv.ts`](../../../src/presentation/cli-pbevm-show-pv.ts) | `pbevm-show-pv` |
 
 ### 2.2 README.md更新
 
@@ -128,9 +128,9 @@ pbevm-show-project --path ./now.xlsm
 | ドキュメント | パス | 説明 |
 |-------------|------|------|
 | GitHub Issue | #67 | CLIコマンドのshebang設定・bin登録の整備 |
-| 詳細仕様書 | `docs/specs/domain/features/CLI.shebang.spec.md` | shebang追加の詳細仕様 |
+| 詳細仕様書 | [`CLI.shebang.spec.md`](../domain/features/CLI.shebang.spec.md) | shebang追加の詳細仕様 |
 | 実装 | `src/presentation/cli-pbevm-*.ts` | CLIファイル |
-| 自動テスト | `src/presentation/__tests__/cli-shebang.test.ts` | CLI shebang検証テスト |
+| 自動テスト | [`cli-shebang.test.ts`](../../../src/presentation/__tests__/cli-shebang.test.ts) | CLI shebang検証テスト |
 | README | `README.md` | 使用方法の説明 |
 
 ---
