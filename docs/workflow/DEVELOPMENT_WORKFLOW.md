@@ -163,6 +163,21 @@ src/infrastructure/              │
 │   └── CsvProjectCreator.integration.test.ts
 ```
 
+> **📝 ドキュメント内のファイル参照について**
+>
+> 要件定義書・設計書でファイルパスを記載する際は、Markdownの相対パスリンクを使用すること。
+>
+> ```markdown
+> <!-- ✅ 良い例：相対パスリンク -->
+> | 設計書 | [`CsvProjectCreator.spec.md`](../domain/master/CsvProjectCreator.spec.md) |
+> | テスト | [`CsvProjectCreator.test.ts`](../../../src/infrastructure/__tests__/CsvProjectCreator.test.ts) |
+>
+> <!-- ❌ 悪い例：リンクなしのパス表記 -->
+> | 設計書 | `docs/specs/domain/master/CsvProjectCreator.spec.md` |
+> ```
+>
+> これにより、GitHub上やVSCodeでクリックによるファイル参照が可能になる。
+
 ##### 2.2.3.1 案件仕様書とマスター設計書
 
 仕様書には2種類ある：
@@ -459,9 +474,9 @@ grep "AC-01" docs/specs/domain/features/Xxx.spec.md
 
 ##### 参考：正しいフォーマットの仕様書
 
-- `docs/specs/domain/master/CsvProjectCreator.spec.md` - セクション10に要件トレーサビリティあり
-- `docs/specs/domain/master/Project.spec.md` - セクション10に要件トレーサビリティあり
-- `docs/specs/domain/features/Project.excludedTasks.spec.md` - セクション7に要件トレーサビリティあり
+- [`CsvProjectCreator.spec.md`](../specs/domain/master/CsvProjectCreator.spec.md) - セクション10に要件トレーサビリティあり
+- [`Project.spec.md`](../specs/domain/master/Project.spec.md) - セクション10に要件トレーサビリティあり
+- [`Project.excludedTasks.spec.md`](../specs/domain/features/Project.excludedTasks.spec.md) - セクション7に要件トレーサビリティあり
 
 ##### 案件設計書とマスター設計書の同期
 

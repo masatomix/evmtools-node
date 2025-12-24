@@ -258,7 +258,7 @@ git push -u origin feature/機能名
 - `main`ブランチからのfeatureブランチ作成
 - developを経由しないマージ
 
-詳細は `docs/workflow/DEVELOPMENT_WORKFLOW.md` を参照。
+詳細は [`docs/workflow/DEVELOPMENT_WORKFLOW.md`](docs/workflow/DEVELOPMENT_WORKFLOW.md) を参照。
 
 ## 注意事項
 
@@ -275,9 +275,9 @@ git push -u origin feature/機能名
 
 | ドキュメント | パス | 内容 |
 |-------------|------|------|
-| 開発ワークフロー | `docs/workflow/DEVELOPMENT_WORKFLOW.md` | 全体フロー、必須セクション |
-| サンプル開発フロー | `docs/workflow/SAMPLE_DEVELOPMENT_FLOW.md` | REQ-TASK-001の実例 |
-| トレーサビリティ例 | `docs/examples/TRACEABILITY_EXAMPLE.md` | AC→TC追跡の具体例 |
+| 開発ワークフロー | [`DEVELOPMENT_WORKFLOW.md`](docs/workflow/DEVELOPMENT_WORKFLOW.md) | 全体フロー、必須セクション |
+| サンプル開発フロー | [`SAMPLE_DEVELOPMENT_FLOW.md`](docs/workflow/SAMPLE_DEVELOPMENT_FLOW.md) | REQ-TASK-001の実例 |
+| トレーサビリティ例 | [`TRACEABILITY_EXAMPLE.md`](docs/examples/TRACEABILITY_EXAMPLE.md) | AC→TC追跡の具体例 |
 
 ### 仕様書の必須セクション
 

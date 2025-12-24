@@ -92,9 +92,9 @@ console.table(displayData);
 
 | 成果物 | パス |
 |--------|------|
-| 案件設計書 | `docs/specs/domain/features/PbevmShowPvUsecase.cli-output-cleanup.spec.md` |
-| テストコード | `src/usecase/__tests__/pbevm-show-pv-usecase.test.ts` |
-| 実装 | `src/usecase/pbevm-show-pv-usecase.ts` |
+| 案件設計書 | [`PbevmShowPvUsecase.cli-output-cleanup.spec.md`](../domain/features/PbevmShowPvUsecase.cli-output-cleanup.spec.md) |
+| テストコード | [`pbevm-show-pv-usecase.test.ts`](../../../src/usecase/__tests__/pbevm-show-pv-usecase.test.ts) |
+| 実装 | [`pbevm-show-pv-usecase.ts`](../../../src/usecase/pbevm-show-pv-usecase.ts) |
 
 ---
 
@@ -104,5 +104,5 @@ console.table(displayData);
 |-------------|------|------|
 | GitHub Issue | #72 | CLI出力から不要なプロパティを除去 |
 | 関連Issue | #73 | pbevm-diff出力から不要なプロパティを除去 |
-| CLI実装 | `src/presentation/cli-pbevm-show-pv.ts` | pbevm-show-pv実装 |
-| CLI実装 | `src/presentation/cli-pbevm-show-project.ts` | pbevm-show-project実装 |
+| CLI実装 | [`cli-pbevm-show-pv.ts`](../../../src/presentation/cli-pbevm-show-pv.ts) | pbevm-show-pv実装 |
+| CLI実装 | [`cli-pbevm-show-project.ts`](../../../src/presentation/cli-pbevm-show-project.ts) | pbevm-show-project実装 |

@@ -94,6 +94,6 @@ function getVersionInfo(): VersionInfo;
 
 | ドキュメント | パス |
 |-------------|------|
-| 要件定義 | docs/specs/requirements/REQ-VERSION-001.md |
+| 要件定義 | [`REQ-VERSION-001.md`](../../requirements/REQ-VERSION-001.md) |
 | テスト | src/common/__tests__/VersionInfo.test.ts |
 | 実装 | src/common/VersionInfo.ts |
