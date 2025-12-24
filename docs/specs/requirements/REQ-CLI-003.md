@@ -3,7 +3,8 @@
 **要件ID**: REQ-CLI-003
 **GitHub Issue**: #73
 **作成日**: 2025-12-24
-**ステータス**: Draft
+**更新日**: 2025-12-24
+**ステータス**: Implemented
 **優先度**: Medium
 
 ---
@@ -101,5 +102,21 @@ console.table(displayData);
 |-------------|------|------|
 | GitHub Issue | #73 | pbevm-diff出力から不要なプロパティを除去 |
 | 関連Issue | #72 | CLI出力から不要なプロパティを除去 |
-| CLI実装 | `src/presentation/cli-pbevm-diff.ts` | pbevm-diff実装 |
-| ドメイン | `src/domain/ProjectService.ts` | TaskDiff生成ロジック |
+| 詳細仕様書 | `docs/specs/domain/features/CLI.pbevm-diff-output.spec.md` | 変更仕様 |
+| テストコード | `src/usecase/__tests__/pbevm-diff-usecase.test.ts` | 単体テスト（7件） |
+| 実装 | `src/usecase/pbevm-diff-usecase.ts` | formatTaskDiffsForDisplay関数 |
+| CLI実装 | `src/presentation/cli-pbevm-diff.ts` | pbevm-diffエントリーポイント |
+| ドメイン | `src/domain/ProjectService.ts` | TaskDiff型定義 |
+
+---
+
+## 6. 受け入れ確認
+
+| AC-ID | 確認方法 | 結果 |
+|-------|---------|------|
+| AC-01 | テスト TC-01 | ✅ PASS |
+| AC-02 | テスト TC-02 | ✅ PASS |
+| AC-03 | テスト TC-03 | ✅ PASS |
+| AC-04 | テスト TC-03 | ✅ PASS |
+
+**テスト実行結果**: 7件 PASS（2025-12-24）
