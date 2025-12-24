@@ -276,8 +276,7 @@ git push -u origin feature/機能名
 | ドキュメント | パス | 内容 |
 |-------------|------|------|
 | 開発ワークフロー | [`DEVELOPMENT_WORKFLOW.md`](docs/workflow/DEVELOPMENT_WORKFLOW.md) | 全体フロー、必須セクション |
-| サンプル開発フロー | [`SAMPLE_DEVELOPMENT_FLOW.md`](docs/workflow/SAMPLE_DEVELOPMENT_FLOW.md) | REQ-TASK-001の実例 |
-| トレーサビリティ例 | [`TRACEABILITY_EXAMPLE.md`](docs/examples/TRACEABILITY_EXAMPLE.md) | AC→TC追跡の具体例 |
+| サンプル開発フロー | [`SAMPLE_DEVELOPMENT_FLOW.md`](docs/workflow/SAMPLE_DEVELOPMENT_FLOW.md) | REQ-TASK-001の実例、トレーサビリティ具体例 |
 
 ### 仕様書の必須セクション
 

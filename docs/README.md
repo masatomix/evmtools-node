@@ -42,16 +42,16 @@ evmtools-node の開発者向けドキュメント一覧です。
 
 | ドキュメント | 内容 |
 |-------------|------|
-| [TRACEABILITY_EXAMPLE.md](examples/TRACEABILITY_EXAMPLE.md) | トレーサビリティの実現例（REQ-TASK-001） |
+| [SAMPLE_DEVELOPMENT_FLOW.md](workflow/SAMPLE_DEVELOPMENT_FLOW.md) | 開発フロー記録サンプル（REQ-TASK-001）、トレーサビリティ具体例 |
 | [brainstorm-spec-driven-development.md](brainstorm-spec-driven-development.md) | 仕様駆動開発のブレスト記録 |
 
 ## よくある質問
 
 ### Q: 要件から実装を探したい（Forward Traceability）
-→ [TRACEABILITY_EXAMPLE.md セクション9](examples/TRACEABILITY_EXAMPLE.md#9-具体例受け入れ基準から実装テストへの追跡forward)
+→ [SAMPLE_DEVELOPMENT_FLOW.md 具体例1](workflow/SAMPLE_DEVELOPMENT_FLOW.md#具体例1-forward要件から実装テストを追跡)
 
 ### Q: コードの存在理由を知りたい（Backward Traceability）
-→ [TRACEABILITY_EXAMPLE.md セクション10](examples/TRACEABILITY_EXAMPLE.md#10-具体例1行のコードから要件を追跡するbackward)
+→ [SAMPLE_DEVELOPMENT_FLOW.md 具体例2](workflow/SAMPLE_DEVELOPMENT_FLOW.md#具体例2-backward1行のコードから要件を追跡)
 
 ### Q: 新機能を追加する手順は？
 → [DEVELOPMENT_WORKFLOW.md](workflow/DEVELOPMENT_WORKFLOW.md)
