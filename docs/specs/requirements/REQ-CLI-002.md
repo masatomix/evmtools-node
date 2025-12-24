@@ -30,7 +30,7 @@ CLIコマンド（`pbevm-show-pv`, `pbevm-show-project`）の出力から、内�
 | 項目 | 対象 |
 |------|:----:|
 | `pbevm-show-pv` の出力整形 | ✅ |
-| `pbevm-show-project` の出力整形 | ✅ |
+| `pbevm-show-project` の出力整形 | - （将来対応） |
 | `pbevm-diff` の対応 | 別Issue (#73) |
 
 ---
