@@ -3,7 +3,8 @@
 **要件ID**: REQ-CLI-002
 **GitHub Issue**: #72
 **作成日**: 2025-12-24
-**ステータス**: Draft
+**更新日**: 2025-12-24
+**ステータス**: Approved
 **優先度**: Medium
 
 ---
@@ -75,17 +76,29 @@ console.table(displayData);
 
 ## 4. 受け入れ基準
 
-| ID | 基準 |
-|----|------|
-| AC-01 | `pbevm-show-pv --help` の出力に `logger` が含まれない |
-| AC-02 | `pbevm-show-pv --help` の出力に `calculateSPI` が含まれない |
-| AC-03 | `pbevm-show-pv --help` の出力に `calculateSV` が含まれない |
-| AC-04 | `pbevm-show-project` の出力にも上記が含まれない |
-| AC-05 | 必要なEVMデータ（PV, EV, SPI等）は引き続き表示される |
+| ID | 基準 | 検証状況 |
+|----|------|:--------:|
+| AC-01 | `pbevm-show-pv` の出力に `logger` が含まれない | ✅ |
+| AC-02 | `pbevm-show-pv` の出力に `calculateSPI` が含まれない | ✅ |
+| AC-03 | `pbevm-show-pv` の出力に `calculateSV` が含まれない | ✅ |
+| AC-04 | `pbevm-show-project` の出力にも上記が含まれない | - （スコープ外） |
+| AC-05 | 必要なEVMデータ（PV, EV, SPI等）は引き続き表示される | ✅ |
+
+**注**: AC-04（pbevm-show-project）は本Issue のスコープ外とし、将来のIssueで対応予定。
 
 ---
 
-## 5. 関連ドキュメント
+## 5. トレーサビリティ
+
+| 成果物 | パス |
+|--------|------|
+| 案件設計書 | `docs/specs/domain/features/PbevmShowPvUsecase.cli-output-cleanup.spec.md` |
+| テストコード | `src/usecase/__tests__/pbevm-show-pv-usecase.test.ts` |
+| 実装 | `src/usecase/pbevm-show-pv-usecase.ts` |
+
+---
+
+## 6. 関連ドキュメント
 
 | ドキュメント | パス | 説明 |
 |-------------|------|------|
