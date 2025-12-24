@@ -18,32 +18,30 @@ export class PbevmShowPvUsecase {
     async save(currentProject: Project, taskRows: TaskRow[]) {
         const path = `${currentProject.name}-pv.xlsx`
 
-        const results = taskRows.map((taskRow) => {
-            const {
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                calculatePV,
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                calculatePVs,
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                plotMap,
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                checkStartEndDateAndPlotMap,
-                startDate,
-                endDate,
-                actualStartDate,
-                actualEndDate,
-                expectedProgressDate,
-                ...rest // ココのデータだけが出力される
-            } = taskRow
-            return {
-                ...rest,
-                予定開始日: dateStr(startDate),
-                予定終了日: dateStr(endDate),
-                実績開始日: dateStr(actualStartDate),
-                実績終了日: dateStr(actualEndDate),
-                進捗応当日: dateStr(expectedProgressDate),
-            }
-        })
+        // 表示用データに変換（内部プロパティを除外）
+        // Issue #72: logger, calculateSPI, calculateSV などを除去
+        const results = taskRows.map((taskRow) => ({
+            sharp: taskRow.sharp,
+            id: taskRow.id,
+            level: taskRow.level,
+            name: taskRow.name,
+            assignee: taskRow.assignee,
+            workload: taskRow.workload,
+            予定開始日: dateStr(taskRow.startDate),
+            予定終了日: dateStr(taskRow.endDate),
+            実績開始日: dateStr(taskRow.actualStartDate),
+            実績終了日: dateStr(taskRow.actualEndDate),
+            progressRate: taskRow.progressRate,
+            scheduledWorkDays: taskRow.scheduledWorkDays,
+            pv: taskRow.pv,
+            ev: taskRow.ev,
+            spi: taskRow.spi,
+            進捗応当日: dateStr(taskRow.expectedProgressDate),
+            delayDays: taskRow.delayDays,
+            remarks: taskRow.remarks,
+            parentId: taskRow.parentId,
+            isLeaf: taskRow.isLeaf,
+        }))
 
         logger.info('pv出力')
         console.table(results)
