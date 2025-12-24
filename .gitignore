@@ -15,4 +15,7 @@ coverage/
 *.xlsm
 
 # Claude Code config (contains secrets)
-.claude/config/package-lock.json
+.claude/config/
+
+# Lock files
+package-lock.json
