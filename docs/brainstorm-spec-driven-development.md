@@ -690,7 +690,7 @@ grep -n "isLeaf" src/domain/__tests__/Project.excludedTasks.test.ts
 | 4. 実装 | `805c45d` | `Project.ts` |
 | 5. 設計書更新 | `52be4c5` | `Project.spec.md` v1.1.0 |
 
-詳細な事例ドキュメント: `docs/examples/TRACEABILITY_EXAMPLE.md`
+詳細な事例ドキュメント: `docs/workflow/SAMPLE_DEVELOPMENT_FLOW.md`
 
 ### 16.6 Backward Traceability（逆方向）
 
@@ -870,7 +870,7 @@ docs/specs/domain/
 
 ### 18.1 発生した事象
 
-TRACEABILITY_EXAMPLE.md のレビュー中に、トレーサビリティが実際に機能しないことが判明。
+TRACEABILITY_EXAMPLE.md（現: SAMPLE_DEVELOPMENT_FLOW.md に統合）のレビュー中に、トレーサビリティが実際に機能しないことが判明。
 
 **症状**:
 ```bash
@@ -927,5 +927,5 @@ grep "AC-01" docs/specs/domain/features/Project.excludedTasks.spec.md
 ### 18.6 関連ドキュメント
 
 - 修正したファイル: `docs/specs/domain/features/Project.excludedTasks.spec.md`
-- トレーサビリティ事例: `docs/examples/TRACEABILITY_EXAMPLE.md`
+- トレーサビリティ事例: `docs/workflow/SAMPLE_DEVELOPMENT_FLOW.md`（旧: TRACEABILITY_EXAMPLE.md）
 - 参照した正しいフォーマット: `docs/specs/domain/master/CsvProjectCreator.spec.md`
