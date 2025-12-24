@@ -5,6 +5,20 @@
 フォーマットは [Keep a Changelog](https://keepachangelog.com/ja/1.0.0/) に基づき、
 [セマンティックバージョニング](https://semver.org/lang/ja/) に準拠しています。
 
+## [0.0.19]
+
+### 変更
+- **pbevm-diff出力整形**: タスクDiff表示から`currentTask`, `prevTask`を除去
+  - 要件定義: `docs/specs/requirements/REQ-CLI-003.md`
+  - 詳細仕様: `docs/specs/domain/features/CLI.pbevm-diff-output.spec.md`
+- **pbevm-show-pv出力整形**: タスク表示から`logger`, `calculateSPI`, `calculateSV`を除去
+  - 要件定義: `docs/specs/requirements/REQ-CLI-002.md`
+  - 詳細仕様: `docs/specs/domain/features/PbevmShowPvUsecase.cli-output-cleanup.spec.md`
+
+### 改善
+- **ドキュメント相対リンク化**: 仕様書・要件定義書内のファイル参照をクリック可能なリンクに変更
+- **仕様書トレーサビリティ強化**: 要件トレーサビリティセクションの必須化、ガイドライン追加
+
 ## [0.0.18]
 
 ### 追加

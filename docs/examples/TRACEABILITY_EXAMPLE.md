@@ -198,7 +198,7 @@ ac573ce docs: Project.excludedTasksの詳細仕様を追加
 ```bash
 # 要件定義書の「関連ドキュメント」セクションから
 grep "spec.md" docs/specs/requirements/REQ-TASK-001.md
-# → docs/specs/domain/Project.excludedTasks.spec.md
+# → docs/specs/domain/features/Project.excludedTasks.spec.md
 ```
 
 #### Step 3: テストファイルを見つける
@@ -211,20 +211,20 @@ ls src/domain/__tests__/Project.excludedTasks.*
 
 #### Step 4: AC-01に対応するテストケースを特定
 
-AC-01「excludedTasksで一覧取得」は、様々なパターンで「一覧に含まれる」ことを検証する必要がある。
+AC-01「excludedTasksで一覧取得」に対応するテストケースを、仕様書の「要件トレーサビリティ」セクションから特定する。
 
 ```bash
-# 仕様書のテスト一覧から、AC-01に関連するTC-IDを確認
-grep -A2 "AC-01" docs/specs/domain/Project.excludedTasks.spec.md
-# → TC-02〜TC-06 が「含まれる」テスト群
+# 仕様書の要件トレーサビリティから、AC-01に対応するTCを確認
+grep -n "AC-01" docs/specs/domain/features/Project.excludedTasks.spec.md
+# → 157:| REQ-TASK-001 AC-01 | excludedTasksで一覧取得 | TC-02〜TC-06 | ✅ PASS |
 
 # テストファイルで該当箇所を検索
 grep -n "TC-02\|TC-03\|TC-04\|TC-05\|TC-06" src/domain/__tests__/Project.excludedTasks.test.ts
-# → 98:  describe('TC-02: 開始日が未設定のタスク', () => {
-# → 130: describe('TC-03: 終了日が未設定のタスク', () => {
-# → 162: describe('TC-04: plotMapが未設定のタスク', () => {
-# → 194: describe('TC-05: 稼働予定日数が0のタスク', () => {
-# → 226: describe('TC-06: 複数の無効タスクがある場合', () => {
+# → 112: describe('TC-02: 開始日が未設定のタスクがある場合', () => {
+# → 132: describe('TC-03: 終了日が未設定のタスクがある場合', () => {
+# → 152: describe('TC-04: plotMapが未設定のタスクがある場合', () => {
+# → 173: describe('TC-05: 稼働予定日数が0のタスクがある場合', () => {
+# → 194: describe('TC-06: 複数の無効タスクがある場合', () => {
 ```
 
 #### Step 5: 実装箇所を特定
@@ -242,11 +242,11 @@ REQ-TASK-001 AC-01 「excludedTasksで一覧取得」
       ├──▶ 詳細仕様: Project.excludedTasks.spec.md セクション2.2
       │
       ├──▶ テスト: Project.excludedTasks.test.ts
-      │         TC-02 (98行目): 開始日未設定 → 除外される
-      │         TC-03 (130行目): 終了日未設定 → 除外される
-      │         TC-04 (162行目): plotMap未設定 → 除外される
-      │         TC-05 (194行目): 稼働日数0 → 除外される
-      │         TC-06 (226行目): 複数無効タスク → すべて除外される
+      │         TC-02 (112行目): 開始日未設定 → 除外される
+      │         TC-03 (132行目): 終了日未設定 → 除外される
+      │         TC-04 (152行目): plotMap未設定 → 除外される
+      │         TC-05 (173行目): 稼働日数0 → 除外される
+      │         TC-06 (194行目): 複数無効タスク → すべて除外される
       │
       └──▶ 実装: Project.ts:377
                get excludedTasks(): ExcludedTask[]
@@ -340,8 +340,8 @@ describe('TC-08: 親タスク（isLeaf=false）のみ無効な場合', () => {
 
 **方法1: テストファイル名から仕様書を探す**
 ```
-src/domain/__tests__/Project.excludedTasks.test.ts  ← テスト
-docs/specs/domain/Project.excludedTasks.spec.md     ← 仕様書はここ！
+src/domain/__tests__/Project.excludedTasks.test.ts       ← テスト
+docs/specs/domain/features/Project.excludedTasks.spec.md ← 仕様書はここ！
 ```
 
 命名規則: `{Class}.{feature}.test.ts` → `{Class}.{feature}.spec.md`
@@ -349,13 +349,13 @@ docs/specs/domain/Project.excludedTasks.spec.md     ← 仕様書はここ！
 **方法2: テストケースID（TC-08）で検索**
 ```bash
 grep -r "TC-08" docs/
-# → docs/specs/domain/Project.excludedTasks.spec.md:106: | TC-08 | 親タスク...
+# → docs/specs/domain/features/Project.excludedTasks.spec.md:106: | TC-08 | 親タスク...
 ```
 
 #### Step 3: 仕様を見る
 
 ```markdown
-// docs/specs/domain/Project.excludedTasks.spec.md
+// docs/specs/domain/features/Project.excludedTasks.spec.md
 
 ## 4.2 境界値
 
@@ -370,7 +370,7 @@ grep -r "TC-08" docs/
 
 **方法1: 仕様書のヘッダーを見る**
 ```markdown
-// docs/specs/domain/Project.excludedTasks.spec.md の冒頭
+// docs/specs/domain/features/Project.excludedTasks.spec.md の冒頭
 
 **要件ID**: REQ-TASK-001   ← ここに書いてある！
 ```

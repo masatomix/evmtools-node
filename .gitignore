@@ -16,3 +16,6 @@ coverage/
 
 # Claude Code config (contains secrets)
 .claude/config/
+
+# Lock files
+package-lock.json

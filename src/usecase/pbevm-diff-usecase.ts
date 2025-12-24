@@ -65,7 +65,8 @@ export class PbevmDiffUsecase {
 
         if (taskDiffs) {
             console.log('タスクDiff')
-            console.table(taskDiffs.filter((row) => row.hasDiff))
+            // currentTask, prevTask を除外して表示（TaskRowオブジェクト参照は表示不可のため）
+            console.table(formatTaskDiffsForDisplay(taskDiffs))
             json2workbook({
                 instances: taskDiffs,
                 workbook,
@@ -83,4 +84,16 @@ export class PbevmDiffUsecase {
         workbook.deleteSheet('Sheet1')
         await toFileAsync(workbook, path)
     }
+}
+
+/**
+ * TaskDiff配列から表示用オブジェクト配列を生成
+ * - hasDiff=true のもののみフィルタ
+ * - currentTask, prevTask プロパティを除外
+ *
+ * @param taskDiffs TaskDiff配列
+ * @returns 表示用オブジェクト配列（currentTask, prevTaskを除外）
+ */
+export const formatTaskDiffsForDisplay = (taskDiffs: TaskDiff[]) => {
+    return taskDiffs.filter((row) => row.hasDiff).map(({ currentTask, prevTask, ...rest }) => rest)
 }
