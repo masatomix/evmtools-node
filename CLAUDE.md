@@ -266,3 +266,44 @@ git push -u origin feature/機能名
 - TypeScript strictモードが有効
 - plotMapはExcelのシリアル値（数値）をキーとしている点に注意
 - CsvProjectCreatorは`iconv-lite`に依存（Shift-JIS対応）
+
+## 仕様駆動開発（重要）
+
+本プロジェクトは仕様駆動開発（Spec-Driven Development）を採用している。新機能開発時は以下のフローに従うこと。
+
+### 参照すべきドキュメント
+
+| ドキュメント | パス | 内容 |
+|-------------|------|------|
+| 開発ワークフロー | `docs/workflow/DEVELOPMENT_WORKFLOW.md` | 全体フロー、必須セクション |
+| サンプル開発フロー | `docs/workflow/SAMPLE_DEVELOPMENT_FLOW.md` | REQ-TASK-001の実例 |
+| トレーサビリティ例 | `docs/examples/TRACEABILITY_EXAMPLE.md` | AC→TC追跡の具体例 |
+
+### 仕様書の必須セクション
+
+**案件設計書（`docs/specs/domain/features/`配下）には以下を必ず含めること:**
+
+| セクション | 必須 | 内容 |
+|-----------|:----:|------|
+| インターフェース仕様 | ✅ | 型定義、メソッドシグネチャ |
+| 処理仕様 | ✅ | ロジック、擬似コード |
+| テストケース | ✅ | TC-ID、テスト内容、期待結果 |
+| **要件トレーサビリティ** | ✅ | AC-ID → TC-ID の対応表 |
+| 使用例 | - | コード例（任意） |
+
+### 要件トレーサビリティセクションの書き方
+
+```markdown
+## 要件トレーサビリティ
+
+| 要件ID | 受け入れ基準 | 対応テストケース | 結果 |
+|--------|-------------|-----------------|------|
+| REQ-XXX AC-01 | 受け入れ基準の内容 | TC-01, TC-02 | ✅ PASS |
+```
+
+**重要**: AC-IDがgrepで検索可能な形式で記載されていること。
+
+### 参考となる既存仕様書
+
+- `docs/specs/domain/master/CsvProjectCreator.spec.md` - 正しいフォーマットの例
+- `docs/specs/domain/features/Project.excludedTasks.spec.md` - 案件設計書の例

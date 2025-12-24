@@ -863,3 +863,69 @@ docs/specs/domain/
 - **新しいドメインモデル追加時**: `master/` に設計書を作成
 - **既存機能の拡張時**: `features/` に案件設計書を作成し、完了後に `master/` へ統合を検討
 - **フォルダの追加**: 必要に応じて `infrastructure/`, `usecase/` 等のフォルダを追加可能
+
+---
+
+## 18. 仕様書フォーマット不整合問題と対策（2025-12-24 追加）
+
+### 18.1 発生した事象
+
+TRACEABILITY_EXAMPLE.md のレビュー中に、トレーサビリティが実際に機能しないことが判明。
+
+**症状**:
+```bash
+# 受け入れ基準 AC-01 に対応するテストケースを仕様書から探す
+grep "AC-01" docs/specs/domain/features/Project.excludedTasks.spec.md
+# → 0件（マッチなし）
+```
+
+**根本原因**: `Project.excludedTasks.spec.md` に「要件トレーサビリティ」セクションが存在しなかった。
+
+### 18.2 問題の背景
+
+| ファイル | 要件トレーサビリティセクション |
+|----------|------------------------------|
+| `CsvProjectCreator.spec.md` | ✅ あり（セクション10） |
+| `Project.excludedTasks.spec.md` | ❌ なかった |
+
+同じ `docs/specs/domain/` 配下の仕様書でありながら、フォーマットが統一されていなかった。
+
+### 18.3 適用した修正
+
+`Project.excludedTasks.spec.md` にセクション7「要件トレーサビリティ」を追加:
+
+```markdown
+## 7. 要件トレーサビリティ
+
+| 要件ID | 受け入れ基準 | 対応テストケース | 結果 |
+|--------|-------------|-----------------|------|
+| REQ-TASK-001 AC-01 | excludedTasksで一覧取得 | TC-02〜TC-06 | ✅ PASS |
+| REQ-TASK-001 AC-02 | reasonが正しく設定 | TC-09, TC-10 | ✅ PASS |
+| REQ-TASK-001 AC-03 | 有効タスクのみ→空配列 | TC-01, TC-07 | ✅ PASS |
+```
+
+修正後の確認:
+```bash
+grep "AC-01" docs/specs/domain/features/Project.excludedTasks.spec.md
+# → | REQ-TASK-001 AC-01 | excludedTasksで一覧取得 | TC-02〜TC-06 | ✅ PASS |
+```
+
+### 18.4 再発防止策
+
+| # | 対策 | ステータス | 詳細 |
+|---|------|-----------|------|
+| ① | CLAUDE.md に仕様駆動開発ルールを追記 | ✅ 完了 | 仕様書作成時の必須セクションを明記 |
+| ② | DEVELOPMENT_WORKFLOW.md に仕様書の必須セクションを追記 | ✅ 完了 | 「要件トレーサビリティ」を必須化（セクション2.2.8） |
+| ③ | 仕様書テンプレートの作成 | ⏳ 未済 | `docs/templates/feature-spec-template.md` を作成予定 |
+
+### 18.5 学んだこと
+
+1. **ドキュメントのフォーマット統一が重要**: 同種のドキュメントはフォーマットを統一しないと、トレーサビリティが機能しない
+2. **サンプルを正として参照しない**: `CsvProjectCreator.spec.md` を参照せずに作成されたため不整合が発生
+3. **grepで検証可能にする**: AC-ID → TC-ID の対応は、grepで辿れる形式で記載すべき
+
+### 18.6 関連ドキュメント
+
+- 修正したファイル: `docs/specs/domain/features/Project.excludedTasks.spec.md`
+- トレーサビリティ事例: `docs/examples/TRACEABILITY_EXAMPLE.md`
+- 参照した正しいフォーマット: `docs/specs/domain/master/CsvProjectCreator.spec.md`
