@@ -14,6 +14,7 @@
 |------|------|
 | **クラス名** | `ProjectService` |
 | **分類** | **ドメインサービス（Domain Service）** |
+| **実装インターフェース** | - |
 | **パッケージ** | `src/domain/ProjectService.ts` |
 | **責務** | プロジェクト間の差分計算、統計データのマージ・補間処理を担当 |
 
@@ -63,15 +64,29 @@
 
 ---
 
-## 3. 型定義
+## 3. プロパティ仕様
 
-### 3.1 DiffType
+### 3.1 コンストラクタ引数
+
+該当なし（ステートレス）
+
+### 3.2 公開プロパティ（getter）
+
+該当なし
+
+### 3.3 内部キャッシュ
+
+該当なし
+
+### 3.4 型定義
+
+#### DiffType
 
 ```typescript
 type DiffType = 'modified' | 'added' | 'removed' | 'none'
 ```
 
-### 3.2 TaskDiff
+#### TaskDiff
 
 | プロパティ | 型 | 説明 |
 |-----------|-----|------|
@@ -97,7 +112,7 @@ type DiffType = 'modified' | 'added' | 'removed' | 'none'
 | `daysOverdueAt` | `number?` | 期限切れ日数 |
 | `daysStrOverdueAt` | `string?` | 期限切れ日数（文字列） |
 
-### 3.3 ProjectDiff / AssigneeDiff
+#### ProjectDiff / AssigneeDiff
 
 | プロパティ | 型 | 説明 |
 |-----------|-----|------|
@@ -113,15 +128,23 @@ type DiffType = 'modified' | 'added' | 'removed' | 'none'
 
 ---
 
-## 4. メソッド仕様
+## 4. コンストラクタ仕様
 
-### 4.1 `calculateTaskDiffs(now: Project, prev: Project): TaskDiff[]`
+該当なし（デフォルトコンストラクタ）
 
-| 項目 | 内容 |
-|------|------|
-| **目的** | 2つのProjectを比較し、タスク単位の差分を計算する |
-| **引数** | `now: Project` - 現在, `prev: Project` - 前回 |
-| **戻り値** | `TaskDiff[]` |
+---
+
+## 5. メソッド仕様
+
+### 5.1 `calculateTaskDiffs(now: Project, prev: Project): TaskDiff[]`
+
+#### 目的
+2つのProjectを比較し、タスク単位の差分を計算する
+
+#### シグネチャ
+```typescript
+calculateTaskDiffs(now: Project, prev: Project): TaskDiff[]
+```
 
 #### 事前条件
 
@@ -183,13 +206,19 @@ type DiffType = 'modified' | 'added' | 'removed' | 'none'
 
 ---
 
-### 4.2 `calculateProjectDiffs(taskDiffs: TaskDiff[]): ProjectDiff[]`
+### 5.2 `calculateProjectDiffs(taskDiffs: TaskDiff[]): ProjectDiff[]`
 
-| 項目 | 内容 |
-|------|------|
-| **目的** | タスク差分をプロジェクト全体で集約する |
-| **引数** | `taskDiffs: TaskDiff[]` |
-| **戻り値** | `ProjectDiff[]`（通常1件） |
+#### 目的
+タスク差分をプロジェクト全体で集約する
+
+#### シグネチャ
+```typescript
+calculateProjectDiffs(taskDiffs: TaskDiff[]): ProjectDiff[]
+```
+
+#### 事前条件
+
+該当なし
 
 #### 事後条件
 
@@ -208,13 +237,19 @@ type DiffType = 'modified' | 'added' | 'removed' | 'none'
 
 ---
 
-### 4.3 `calculateAssigneeDiffs(taskDiffs: TaskDiff[]): AssigneeDiff[]`
+### 5.3 `calculateAssigneeDiffs(taskDiffs: TaskDiff[]): AssigneeDiff[]`
 
-| 項目 | 内容 |
-|------|------|
-| **目的** | タスク差分を担当者別に集約する |
-| **引数** | `taskDiffs: TaskDiff[]` |
-| **戻り値** | `AssigneeDiff[]` |
+#### 目的
+タスク差分を担当者別に集約する
+
+#### シグネチャ
+```typescript
+calculateAssigneeDiffs(taskDiffs: TaskDiff[]): AssigneeDiff[]
+```
+
+#### 事前条件
+
+該当なし
 
 #### 事後条件
 
@@ -232,13 +267,19 @@ type DiffType = 'modified' | 'added' | 'removed' | 'none'
 
 ---
 
-### 4.4 `mergeProjectStatistics(existing: ProjectStatistics[], incoming: ProjectStatistics[]): ProjectStatistics[]`
+### 5.4 `mergeProjectStatistics(existing: ProjectStatistics[], incoming: ProjectStatistics[]): ProjectStatistics[]`
 
-| 項目 | 内容 |
-|------|------|
-| **目的** | 統計データをマージする（同一基準日は上書き） |
-| **引数** | `existing`, `incoming` |
-| **戻り値** | `ProjectStatistics[]`（基準日降順） |
+#### 目的
+統計データをマージする（同一基準日は上書き）
+
+#### シグネチャ
+```typescript
+mergeProjectStatistics(existing: ProjectStatistics[], incoming: ProjectStatistics[]): ProjectStatistics[]
+```
+
+#### 事前条件
+
+該当なし
 
 #### 事後条件
 
@@ -257,13 +298,19 @@ type DiffType = 'modified' | 'added' | 'removed' | 'none'
 
 ---
 
-### 4.5 `fillMissingDates(projectStatisticsArray: ProjectStatistics[]): ProjectStatistics[]`
+### 5.5 `fillMissingDates(projectStatisticsArray: ProjectStatistics[]): ProjectStatistics[]`
 
-| 項目 | 内容 |
-|------|------|
-| **目的** | 欠落している日付を前日データで補間する |
-| **引数** | `projectStatisticsArray` |
-| **戻り値** | `ProjectStatistics[]`（基準日降順） |
+#### 目的
+欠落している日付を前日データで補間する
+
+#### シグネチャ
+```typescript
+fillMissingDates(projectStatisticsArray: ProjectStatistics[]): ProjectStatistics[]
+```
+
+#### 事前条件
+
+該当なし
 
 #### 事後条件
 
@@ -293,9 +340,9 @@ type DiffType = 'modified' | 'added' | 'removed' | 'none'
 
 ---
 
-## 5. テストシナリオ（Given-When-Then形式）
+## 6. テストシナリオ（Given-When-Then形式）
 
-### 5.1 calculateTaskDiffs
+### 6.1 calculateTaskDiffs
 
 ```gherkin
 Scenario: 変更されたタスクをmodifiedとして検出する
@@ -323,7 +370,7 @@ Scenario: isLeaf=falseのタスクは対象外
   Then  diffsは空配列
 ```
 
-### 5.2 mergeProjectStatistics
+### 6.2 mergeProjectStatistics
 
 ```gherkin
 Scenario: 同じ基準日のデータは上書きされる
@@ -338,7 +385,7 @@ Scenario: 結果は基準日降順でソート
   Then  新しい日付が先頭にくる
 ```
 
-### 5.3 fillMissingDates
+### 6.3 fillMissingDates
 
 ```gherkin
 Scenario: 欠落している日付を前日データで補間する
@@ -350,7 +397,7 @@ Scenario: 欠落している日付を前日データで補間する
 
 ---
 
-## 6. 外部依存
+## 7. 外部依存
 
 | 名前 | 種別 | 説明 |
 |------|------|------|
@@ -358,7 +405,23 @@ Scenario: 欠落している日付を前日データで補間する
 
 ---
 
-## 7. 関連オブジェクト
+## 8. 関連オブジェクト
+
+### 8.1 依存関係図
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     ProjectService                          │
+│  (ドメインサービス)                                         │
+├─────────────────────────────────────────────────────────────┤
+│                          │                                  │
+│         ┌────────────────┼────────────────┐                 │
+│         ▼                ▼                ▼                 │
+│      Project         TaskRow      ProjectStatistics         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 8.2 関係一覧
 
 | 関係先 | 関係タイプ | 説明 |
 |--------|-----------|------|
@@ -368,13 +431,57 @@ Scenario: 欠落している日付を前日データで補間する
 
 ---
 
-## 8. テストケース数サマリ
+## 9. テストケース数サマリ
 
-| カテゴリ | テストケース数 |
-|----------|--------------|
-| calculateTaskDiffs | 5件 |
-| calculateProjectDiffs | 2件 |
-| calculateAssigneeDiffs | 2件 |
-| mergeProjectStatistics | 3件 |
-| fillMissingDates | 3件 |
-| **合計** | **約15件** |
+| カテゴリ | 計画 | 実装 |
+|----------|------|------|
+| calculateTaskDiffs | 5件 | 5件 |
+| calculateProjectDiffs | 2件 | 2件 |
+| calculateAssigneeDiffs | 2件 | 2件 |
+| mergeProjectStatistics | 3件 | 3件 |
+| fillMissingDates | 3件 | 3件 |
+| **合計** | **15件** | **15件** |
+
+---
+
+## 10. 要件トレーサビリティ
+
+> **重要**: このセクションは必須です。grepで検索可能な形式で記載すること。
+
+該当なし（基盤サービスのため特定の要件に紐づかない）
+
+---
+
+## 11. テスト実装
+
+### 11.1 テストファイル
+
+| ファイル | 説明 | テスト数 |
+|---------|------|---------|
+| `src/domain/__tests__/ProjectService.test.ts` | 単体テスト | 15件 |
+
+### 11.2 テストフィクスチャ
+
+該当なし
+
+### 11.3 テスト実行結果
+
+```
+実行日: 2025-12-16
+Test Suites: 1 passed, 1 total
+Tests:       15 passed, 15 total
+```
+
+---
+
+## 12. 設計上の課題・改善提案
+
+該当なし
+
+---
+
+## 13. 変更履歴
+
+| バージョン | 日付 | 変更内容 | 要件ID |
+|-----------|------|---------|--------|
+| 1.0.0 | 2025-12-16 | 初版作成 | - |
