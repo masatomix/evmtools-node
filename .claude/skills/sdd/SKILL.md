@@ -149,6 +149,20 @@ docs/specs/
 - 仕様書作成後のコードレビューは `code-reviewer` エージェントを使用
 - `/sdd verify` 実行時、実装とスペックの整合性を確認
 
+## SDD の範囲外（手動で実施）
+
+> **重要**: 以下の作業は SDD スキルの範囲外です。ユーザーが明示的に依頼する必要があります。
+
+| 作業 | コマンド例 |
+|------|-----------|
+| PR 作成 | `gh pr create --base develop` |
+| PR レビュー | `/review-pr-bot {PR番号}` |
+| PR マージ | `gh pr merge` |
+| main へのリリース | release ブランチ → PR → マージ → タグ |
+| worktree クリーンアップ | `git worktree remove ...` |
+
+**SDD の終点**: `/sdd impl` でコミット・プッシュまで完了した時点。
+
 ## 参照ドキュメント
 
 SDDワークフロー実行時は以下を参照:
