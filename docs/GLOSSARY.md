@@ -98,12 +98,43 @@ classDiagram
         +number id
         +string name
         +string fullName
+        +string assignee
         +DiffType diffType
         +number deltaProgressRate
         +number deltaPV
         +number deltaEV
+        +number prevPV
+        +number currentPV
+        +number prevEV
+        +number currentEV
         +boolean isOverdueAt
         +boolean hasDiff
+        +boolean finished
+        +TaskRow prevTask
+        +TaskRow currentTask
+    }
+
+    class ProjectDiff {
+        <<type>>
+        +number modifiedCount
+        +number addedCount
+        +number removedCount
+        +number deltaPV
+        +number deltaEV
+        +boolean hasDiff
+        +boolean finished
+    }
+
+    class AssigneeDiff {
+        <<type>>
+        +string assignee
+        +number modifiedCount
+        +number addedCount
+        +number removedCount
+        +number deltaPV
+        +number deltaEV
+        +boolean hasDiff
+        +boolean finished
     }
 
     class DiffType {
@@ -123,9 +154,12 @@ classDiagram
     TaskService ..> TaskNode : creates
     ProjectService ..> Project : compares
     ProjectService ..> TaskDiff : creates
+    ProjectService ..> ProjectDiff : creates
+    ProjectService ..> AssigneeDiff : creates
     TaskRowCreator ..> TaskRow : creates
     ProjectCreator ..> Project : creates
     TaskDiff ..> DiffType : uses
+    TaskDiff ..> TaskRow : references
 ```
 
 > **注**: 詳細なPlantUML形式のクラス図は [`class-diagram.puml`](class-diagram.puml) を参照。
@@ -384,44 +418,200 @@ PV計算（TaskRow.calculatePV）
 
 ---
 
-## 9. 差分計算（ProjectService）
+## 9. プロジェクト間差分計算
 
-| 日本語 | メソッド/型 | 説明 |
-|--------|-----------|------|
-| タスク差分計算 | `calculateTaskDiffs(now, prev)` | 2つのProjectを比較しリーフ単位で差分算出 |
-| プロジェクト差分 | `calculateProjectDiffs(taskDiffs)` | タスク差分をプロジェクト全体で集約 |
-| 担当者差分 | `calculateAssigneeDiffs(taskDiffs)` | タスク差分を担当者別に集約 |
-| 統計マージ | `mergeProjectStatistics(existing, incoming)` | 同じ基準日は上書き |
-| 欠落日補間 | `fillMissingDates(stats)` | 土日など欠落日を前日で補間 |
+### 概要
+
+`ProjectService`は、2つの時点のProject（`now`と`prev`）を比較し、タスク単位の差分を計算する。これにより、プロジェクトの進捗変化を可視化できる。
+
+```
+prev (前回スナップショット)    now (今回スナップショット)
+       ↓                              ↓
+       └───── ProjectService.calculateTaskDiffs() ─────→ TaskDiff[]
+                                                              ↓
+                          ┌───────────────────────────────────┴───────────────────────────────────┐
+                          ↓                                                                       ↓
+              calculateProjectDiffs()                                              calculateAssigneeDiffs()
+                          ↓                                                                       ↓
+                   ProjectDiff                                                          AssigneeDiff[]
+              (プロジェクト全体の集約)                                                 (担当者別の集約)
+```
+
+### 差分計算の対象
+
+- **リーフタスクのみ**が対象（`isLeaf === true`）
+- 親タスク（サマリータスク）は対象外
+
+### ProjectServiceメソッド
+
+| メソッド | 引数 | 戻り値 | 説明 |
+|---------|------|--------|------|
+| `calculateTaskDiffs` | `now: Project, prev: Project` | `TaskDiff[]` | タスク単位の差分を計算 |
+| `calculateProjectDiffs` | `taskDiffs: TaskDiff[]` | `ProjectDiff[]` | プロジェクト全体で集約 |
+| `calculateAssigneeDiffs` | `taskDiffs: TaskDiff[]` | `AssigneeDiff[]` | 担当者別に集約 |
+| `mergeProjectStatistics` | `existing, incoming` | `ProjectStatistics[]` | 同じ基準日は上書きでマージ |
+| `fillMissingDates` | `stats: ProjectStatistics[]` | `ProjectStatistics[]` | 欠落日を前日データで補間 |
 
 ---
 
-## 10. 差分タイプ
+## 10. DiffType（差分種別）
 
-| 差分種別 | `DiffType` | 説明 |
-|---------|-----------|------|
-| 追加 | `'added'` | 新規タスク |
-| 変更 | `'modified'` | 進捗率・PV・EVに変化あり |
-| 削除 | `'removed'` | 旧データにのみ存在 |
-| 変化なし | `'none'` | 差分なし |
+| 差分種別 | `DiffType` | 判定条件 | 説明 |
+|---------|-----------|----------|------|
+| 追加 | `'added'` | `prev`に存在しない | 新規追加されたタスク |
+| 変更 | `'modified'` | 進捗率・PV・EVのいずれかに変化 | 更新されたタスク |
+| 削除 | `'removed'` | `now`に存在しない | 削除されたタスク |
+| 変化なし | `'none'` | 差分なし | 変更のないタスク |
 
----
+### 変更判定ロジック
 
-## 11. TaskDiff主要プロパティ
+```typescript
+const hasAnyChange =
+    isNew ||
+    [deltaProgressRate, deltaPV, deltaEV].some((d) => d !== undefined && d !== 0)
 
-| 日本語 | プロパティ | 説明 |
-|--------|-----------|------|
-| 差分種別 | `diffType` | `added`/`modified`/`removed`/`none` |
-| 進捗率変化量 | `deltaProgressRate` | `now - prev` |
-| PV変化量 | `deltaPV` | PVの差分 |
-| EV変化量 | `deltaEV` | EVの差分 |
-| 期限切れ | `isOverdueAt` | 基準日時点で期限切れか |
-| 遅延日数 | `daysOverdueAt` | 基準日から終了日への相対日数 |
-| フルパス名 | `fullName` | 親を含む完全なタスク名 |
+diffType = isNew ? 'added' : hasAnyChange ? 'modified' : 'none'
+```
 
 ---
 
-## 12. 統計型定義
+## 11. TaskDiff（タスク差分）
+
+タスク単位の差分情報。`calculateTaskDiffs()`の戻り値。
+
+### 識別・基本情報
+
+| プロパティ | 型 | 説明 |
+|-----------|-----|------|
+| `id` | `number` | タスクID |
+| `name` | `string` | タスク名 |
+| `fullName` | `string` | 親を含む完全なタスク名（"/"区切り） |
+| `assignee` | `string?` | 担当者 |
+| `parentId` | `number?` | 親タスクID |
+| `workload` | `number?` | 予定工数 |
+
+### 差分判定
+
+| プロパティ | 型 | 説明 |
+|-----------|-----|------|
+| `diffType` | `DiffType` | `'added'` / `'modified'` / `'removed'` / `'none'` |
+| `hasDiff` | `boolean` | 差分があるか（`added`/`modified`/`removed`ならtrue） |
+| `hasProgressRateDiff` | `boolean` | 進捗率に変化があるか |
+| `hasPvDiff` | `boolean` | PVに変化があるか |
+| `hasEvDiff` | `boolean` | EVに変化があるか |
+| `finished` | `boolean` | 完了済みか（`progressRate === 1.0`） |
+
+### 変化量（Delta）
+
+| プロパティ | 型 | 説明 |
+|-----------|-----|------|
+| `deltaProgressRate` | `number?` | 進捗率の変化量（`now - prev`） |
+| `deltaPV` | `number?` | PVの変化量 |
+| `deltaEV` | `number?` | EVの変化量 |
+
+### 前回値・今回値
+
+| プロパティ | 型 | 説明 |
+|-----------|-----|------|
+| `prevProgressRate` | `number?` | 前回の進捗率 |
+| `currentProgressRate` | `number?` | 今回の進捗率 |
+| `prevPV` | `number?` | 前回のPV |
+| `currentPV` | `number?` | 今回のPV |
+| `prevEV` | `number?` | 前回のEV |
+| `currentEV` | `number?` | 今回のEV |
+
+### 基準日・期限情報
+
+| プロパティ | 型 | 説明 |
+|-----------|-----|------|
+| `prevBaseDate` | `Date?` | 前回の基準日 |
+| `currentBaseDate` | `Date?` | 今回の基準日 |
+| `baseDate` | `Date?` | 評価基準日（通常は`currentBaseDate`） |
+| `isOverdueAt` | `boolean` | 基準日時点で期限切れか |
+| `daysOverdueAt` | `number?` | 基準日から終了日への相対日数（負=遅延） |
+| `daysStrOverdueAt` | `string?` | 遅延日数の文字列表現 |
+
+### TaskRow参照
+
+| プロパティ | 型 | 説明 |
+|-----------|-----|------|
+| `prevTask` | `TaskRow?` | 前回のTaskRow（削除時のみnullでない） |
+| `currentTask` | `TaskRow?` | 今回のTaskRow（削除時はundefined） |
+
+---
+
+## 12. ProjectDiff（プロジェクト差分集約）
+
+プロジェクト全体の差分を集約した情報。`calculateProjectDiffs()`の戻り値。
+
+| プロパティ | 型 | 説明 |
+|-----------|-----|------|
+| `modifiedCount` | `number` | 変更されたタスク数 |
+| `addedCount` | `number` | 追加されたタスク数 |
+| `removedCount` | `number` | 削除されたタスク数 |
+| `deltaPV` | `number?` | PV変化量の合計 |
+| `deltaEV` | `number?` | EV変化量の合計 |
+| `prevPV` | `number?` | 変化があったタスクの前回PV合計 |
+| `currentPV` | `number?` | 変化があったタスクの今回PV合計 |
+| `prevEV` | `number?` | 変化があったタスクの前回EV合計 |
+| `currentEV` | `number?` | 変化があったタスクの今回EV合計 |
+| `hasDiff` | `boolean` | 差分があるか |
+| `finished` | `boolean` | 全タスクが完了か |
+
+---
+
+## 13. AssigneeDiff（担当者差分集約）
+
+担当者別の差分を集約した情報。`calculateAssigneeDiffs()`の戻り値。
+
+| プロパティ | 型 | 説明 |
+|-----------|-----|------|
+| `assignee` | `string?` | 担当者名 |
+| `modifiedCount` | `number` | 変更されたタスク数 |
+| `addedCount` | `number` | 追加されたタスク数 |
+| `removedCount` | `number` | 削除されたタスク数 |
+| `deltaPV` | `number?` | PV変化量の合計 |
+| `deltaEV` | `number?` | EV変化量の合計 |
+| `prevPV` | `number?` | 変化があったタスクの前回PV合計 |
+| `currentPV` | `number?` | 変化があったタスクの今回PV合計 |
+| `prevEV` | `number?` | 変化があったタスクの前回EV合計 |
+| `currentEV` | `number?` | 変化があったタスクの今回EV合計 |
+| `hasDiff` | `boolean` | 差分があるか |
+| `finished` | `boolean` | 担当タスク全てが完了か |
+
+---
+
+## 14. 差分計算の使用例
+
+```typescript
+import { ProjectService } from 'evmtools-node/domain'
+
+const service = new ProjectService()
+
+// 2つの時点のProjectを取得（例: now.xlsm, prev.xlsm）
+const now: Project = await createProject('now.xlsm')
+const prev: Project = await createProject('prev.xlsm')
+
+// タスク単位の差分を計算
+const taskDiffs = service.calculateTaskDiffs(now, prev)
+
+// 差分があるタスクのみ抽出
+const changedTasks = taskDiffs.filter(d => d.hasDiff)
+
+// プロジェクト全体の集約
+const projectDiff = service.calculateProjectDiffs(taskDiffs)
+console.log(`追加: ${projectDiff[0].addedCount}, 変更: ${projectDiff[0].modifiedCount}`)
+
+// 担当者別の集約
+const assigneeDiffs = service.calculateAssigneeDiffs(taskDiffs)
+for (const diff of assigneeDiffs) {
+    console.log(`${diff.assignee}: EV変化 ${diff.deltaEV}`)
+}
+```
+
+---
+
+## 15. 統計型定義
 
 ### Statistics（共通統計）
 
@@ -447,7 +637,7 @@ PV計算（TaskRow.calculatePV）
 
 ---
 
-## 13. データ形式
+## 16. データ形式
 
 | 形式 | 説明 | 用途 |
 |------|------|------|

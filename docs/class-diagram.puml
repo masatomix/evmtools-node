@@ -117,11 +117,62 @@ package "domain" {
         +name: string
         +fullName: string
         +assignee?: string
+        +parentId?: number
+        +workload?: number
+        --
         +diffType: DiffType
+        +hasDiff: boolean
+        +hasProgressRateDiff: boolean
+        +hasPvDiff: boolean
+        +hasEvDiff: boolean
+        +finished: boolean
+        --
         +deltaProgressRate?: number
         +deltaPV?: number
         +deltaEV?: number
+        +prevProgressRate?: number
+        +currentProgressRate?: number
+        +prevPV?: number
+        +currentPV?: number
+        +prevEV?: number
+        +currentEV?: number
+        --
+        +prevBaseDate?: Date
+        +currentBaseDate?: Date
+        +baseDate?: Date
         +isOverdueAt: boolean
+        +daysOverdueAt?: number
+        +daysStrOverdueAt?: string
+        --
+        +prevTask?: TaskRow
+        +currentTask?: TaskRow
+    }
+
+    class "<<type>> ProjectDiff" as ProjectDiff {
+        +modifiedCount: number
+        +addedCount: number
+        +removedCount: number
+        +deltaPV?: number
+        +deltaEV?: number
+        +prevPV?: number
+        +currentPV?: number
+        +prevEV?: number
+        +currentEV?: number
+        +hasDiff: boolean
+        +finished: boolean
+    }
+
+    class "<<type>> AssigneeDiff" as AssigneeDiff {
+        +assignee?: string
+        +modifiedCount: number
+        +addedCount: number
+        +removedCount: number
+        +deltaPV?: number
+        +deltaEV?: number
+        +prevPV?: number
+        +currentPV?: number
+        +prevEV?: number
+        +currentEV?: number
         +hasDiff: boolean
         +finished: boolean
     }
@@ -160,11 +211,14 @@ TaskService ..> TaskNode : creates
 
 ProjectService ..> Project : compares
 ProjectService ..> TaskDiff : creates
+ProjectService ..> ProjectDiff : creates
+ProjectService ..> AssigneeDiff : creates
 ProjectService ..> ProjectStatistics : creates
 
 TaskRowCreator ..> TaskRow : creates
 ProjectCreator ..> Project : creates
 
 TaskDiff ..> DiffType : uses
+TaskDiff ..> TaskRow : references
 
 @enduml
