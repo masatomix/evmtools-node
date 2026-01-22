@@ -2,6 +2,136 @@
 
 本ドキュメントは、evmtools-nodeプロジェクトにおけるコアな用語・プロパティを定義・整理したものです。
 
+## クラス図
+
+```mermaid
+classDiagram
+    direction TB
+
+    class Project {
+        -TaskNode[] _taskNodes
+        -Date _baseDate
+        -HolidayData[] _holidayDatas
+        -Date _startDate
+        -Date _endDate
+        -string _name
+        +Date baseDate
+        +TaskNode[] taskNodes
+        +HolidayData[] holidayDatas
+        +number length
+        +ProjectStatistics[] statisticsByProject
+        +AssigneeStatistics[] statisticsByName
+        +ExcludedTask[] excludedTasks
+        +toTaskRows() TaskRow[]
+        +getTask(id) TaskRow
+        +getFullTaskName(task) string
+        +getTaskRows(from, to, assignee) TaskRow[]
+        +isHoliday(date) boolean
+    }
+
+    class TaskRow {
+        +number sharp
+        +number id
+        +number level
+        +string name
+        +string assignee
+        +number workload
+        +Date startDate
+        +Date endDate
+        +Date actualStartDate
+        +Date actualEndDate
+        +number progressRate
+        +number scheduledWorkDays
+        +number pv
+        +number ev
+        +number spi
+        +number delayDays
+        +number parentId
+        +boolean isLeaf
+        +Map~number,boolean~ plotMap
+        +number workloadPerDay
+        +boolean finished
+        +ValidStatus validStatus
+        +calculatePV(baseDate) number
+        +calculatePVs(baseDate) number
+        +calculateSPI(baseDate) number
+        +calculateSV(baseDate) number
+        +isOverdueAt(baseDate) boolean
+    }
+
+    class TaskNode {
+        +TaskNode[] children
+        +iterator()
+    }
+
+    class TaskService {
+        +buildTaskTree(rows) TaskNode[]
+        +convertToTaskRows(nodes) TaskRow[]
+    }
+
+    class ProjectService {
+        +calculateTaskDiffs(now, prev) TaskDiff[]
+        +calculateProjectDiffs(diffs) ProjectDiff[]
+        +calculateAssigneeDiffs(diffs) AssigneeDiff[]
+        +mergeProjectStatistics(existing, incoming) ProjectStatistics[]
+        +fillMissingDates(stats) ProjectStatistics[]
+    }
+
+    class HolidayData {
+        -Date _date
+        -string _desc
+        +Date date
+    }
+
+    class TaskRowCreator {
+        <<interface>>
+        +createRowData() Promise~TaskRow[]~
+    }
+
+    class ProjectCreator {
+        <<interface>>
+        +createProject() Promise~Project~
+    }
+
+    class TaskDiff {
+        <<type>>
+        +number id
+        +string name
+        +string fullName
+        +DiffType diffType
+        +number deltaProgressRate
+        +number deltaPV
+        +number deltaEV
+        +boolean isOverdueAt
+        +boolean hasDiff
+    }
+
+    class DiffType {
+        <<enumeration>>
+        added
+        modified
+        removed
+        none
+    }
+
+    TaskNode --|> TaskRow : extends
+    Project "1" *-- "*" TaskNode : taskNodes
+    Project "1" *-- "*" HolidayData : holidayDatas
+    Project ..> TaskService : uses
+    TaskNode "1" *-- "*" TaskNode : children
+    TaskService ..> TaskRow : creates
+    TaskService ..> TaskNode : creates
+    ProjectService ..> Project : compares
+    ProjectService ..> TaskDiff : creates
+    TaskRowCreator ..> TaskRow : creates
+    ProjectCreator ..> Project : creates
+    TaskDiff ..> DiffType : uses
+```
+
+> **注**: 詳細なPlantUML形式のクラス図は [`class-diagram.puml`](class-diagram.puml) を参照。
+
+---
+
 ## 1. 基本概念
 
 | 日本語 | 英語/クラス名 | 説明 |
