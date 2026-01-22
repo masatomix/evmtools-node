@@ -172,9 +172,9 @@ npm test -- --watch   # ウォッチモードで実行
 **git worktreeを使用**して、別ディレクトリでfeatureブランチを作業する。
 
 ```bash
-# 1. developから feature ブランチを作成（worktree）
+# 1. developから feature ブランチを作成（worktree、--no-track でトラッキングなし）
 git fetch origin
-git worktree add ../evmtools-node_feature-機能名 -b feature/機能名 origin/develop
+git worktree add -b feature/機能名 ../evmtools-node_feature-機能名 origin/develop --no-track
 
 # 2. 作業ディレクトリに移動
 cd ../evmtools-node_feature-機能名
@@ -184,7 +184,7 @@ npm install
 
 # 4. 開発作業・コミット
 
-# 5. プッシュ
+# 5. プッシュ（-u で正しいリモートブランチをトラッキング設定）
 git push -u origin feature/機能名
 
 # 6. PRを作成（ベース: develop）
@@ -192,9 +192,12 @@ git push -u origin feature/機能名
 # 7. マージ後、worktreeを削除
 cd ../evmtools-node  # 元のディレクトリに戻る
 git worktree remove ../evmtools-node_feature-機能名
+git branch -d feature/機能名  # ローカルブランチも削除
 ```
 
 > **git worktreeのメリット**: 現在の作業ディレクトリを維持したまま、別ブランチで並行作業できる。`git stash`や`git checkout`による切り替えが不要。
+>
+> **注意**: `--no-track` を指定しないと `origin/develop` をトラッキングしてしまい、push 時にエラーになる。
 
 ### 禁止事項
 

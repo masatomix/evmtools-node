@@ -739,9 +739,9 @@ remotes/origin/feature/invalid             # validStatus機能
 **git worktreeを使用**して、別ディレクトリでfeatureブランチを作業する。
 
 ```bash
-# 1. developから feature ブランチを作成（worktree）
+# 1. developから feature ブランチを作成（worktree、--no-track でトラッキングなし）
 git fetch origin
-git worktree add ../evmtools-node_feature-42-csv-reader -b feature/42-csv-reader origin/develop
+git worktree add -b feature/42-csv-reader ../evmtools-node_feature-42-csv-reader origin/develop --no-track
 # Issue #42 の場合
 
 # 2. 作業ディレクトリに移動
@@ -761,7 +761,7 @@ npm install
 git add .
 git commit -m "feat: CSVファイルからProjectを生成する機能を追加"
 
-# 6. リモートにプッシュ
+# 6. リモートにプッシュ（-u で正しいリモートブランチをトラッキング設定）
 git push -u origin feature/42-csv-reader
 
 # 7. Pull Request作成（GitHub）
@@ -770,6 +770,7 @@ gh pr create --base develop --title "feat: CSV読み込み機能"
 # 8. レビュー・マージ後、worktreeを削除
 cd ../evmtools-node  # 元のディレクトリに戻る
 git worktree remove ../evmtools-node_feature-42-csv-reader
+git branch -d feature/42-csv-reader  # ローカルブランチも削除
 git fetch --prune origin  # リモートの削除されたブランチを反映
 ```
 
@@ -777,6 +778,8 @@ git fetch --prune origin  # リモートの削除されたブランチを反映
 > - 現在の作業ディレクトリを維持したまま、別ブランチで並行作業できる
 > - `git stash`や`git checkout`による切り替えが不要
 > - 複数の機能を同時に開発する場合に便利
+>
+> **注意**: `--no-track` を指定しないと `origin/develop` をトラッキングしてしまい、push 時にエラーになる。
 
 ### 2.5 リリースフロー
 
