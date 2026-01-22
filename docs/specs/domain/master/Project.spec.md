@@ -1,6 +1,6 @@
 # Project 仕様書
 
-**バージョン**: 1.1.1
+**バージョン**: 1.2.0
 **作成日**: 2025-12-16
 **ソースファイル**: `src/domain/Project.ts`
 
@@ -87,6 +87,12 @@
 | `holidayDatas` | `HolidayData[]` | 祝日データ |
 | `length` | `number` | タスク総数（`toTaskRows().length`） |
 | `excludedTasks` | `ExcludedTask[]` | 計算から除外されたタスク一覧 |
+| `bac` | `number` | 完成時総予算（Budget at Completion） |
+| `totalEv` | `number` | 現在の出来高合計（statisticsByProjectと共通） |
+| `totalSpi` | `number` | プロジェクト全体のSPI（statisticsByProjectと共通） |
+| `etcPrime` | `number` | ETC'（残作業完了に必要な計画工数換算） |
+| `dailyPv` | `number` | 日あたりPV（消化能力） |
+| `estimatedCompletionDate` | `Date \| undefined` | 完了予測日 |
 
 ### 3.3 内部キャッシュ
 
@@ -94,6 +100,7 @@
 |-----------|-----|------|
 | `_cachedTaskRows` | `TaskRow[] \| undefined` | `toTaskRows()`の結果キャッシュ |
 | `_cachedTaskMap` | `Map<number, TaskRow> \| undefined` | ID→TaskRowのマップキャッシュ |
+| `_dailyPvOverride` | `number \| undefined` | 日あたりPVの手動オーバーライド値 |
 
 ---
 
@@ -528,6 +535,89 @@ get excludedTasks(): ExcludedTask[]
 
 ---
 
+### 5.10 EVM拡張指標（REQ-EVM-001）
+
+> **参照**: 詳細は [`Project.evm-indicators.spec.md`](../features/Project.evm-indicators.spec.md) を参照
+
+#### 5.10.1 `get bac(): number`
+
+完成時総予算（Budget at Completion）を返す。
+
+```typescript
+get bac(): number {
+  if (!this._endDate) return 0
+  const leafTasks = this.toTaskRows().filter(t => t.isLeaf && t.validStatus.isValid)
+  return sumOrZero(leafTasks.map(t => t.calculatePVs(this._endDate!)), 3)
+}
+```
+
+#### 5.10.2 `get totalEv(): number`
+
+現在の出来高合計を返す。`statisticsByProject.totalEv`と同じ値（コード共通化）。
+
+```typescript
+get totalEv(): number {
+  return this.statisticsByProject[0]?.totalEv ?? 0
+}
+```
+
+#### 5.10.3 `get totalSpi(): number`
+
+プロジェクト全体のSPIを返す。`statisticsByProject.spi`と同じ値（コード共通化）。
+
+```typescript
+get totalSpi(): number {
+  return this.statisticsByProject[0]?.spi ?? 0
+}
+```
+
+#### 5.10.4 `get etcPrime(): number`
+
+ETC'（残作業完了に必要な計画工数換算）を返す。
+
+```typescript
+get etcPrime(): number {
+  if (this.totalSpi === 0) return Infinity
+  const remaining = this.bac - this.totalEv
+  if (remaining <= 0) return 0
+  return remaining / this.totalSpi
+}
+```
+
+#### 5.10.5 `get dailyPv(): number`
+
+日あたりPV（消化能力）を返す。優先度: 手動オーバーライド → 期間平均PV。
+
+#### 5.10.6 `setDailyPvOverride(value: number | undefined): void`
+
+日あたりPVの手動オーバーライドを設定する。
+
+#### 5.10.7 `get estimatedCompletionDate(): Date | undefined`
+
+完了予測日を返す。残作業量を日々の進捗で割り、稼働日をカウントして予測。
+
+#### 同値クラス・境界値（EVM拡張指標）
+
+| ID | 分類 | テスト内容 | 期待結果 |
+|----|------|-----------|----------|
+| TC-01 | 正常系 | BAC取得 | 全リーフPV合計 |
+| TC-02 | 正常系 | totalEv取得 | 全リーフEV合計 |
+| TC-03 | 正常系 | totalSpi計算 | EV/PV |
+| TC-04 | 正常系 | etcPrime計算 | (BAC-EV)/SPI |
+| TC-05 | 正常系 | dailyPv（期間平均） | BAC/稼働日数 |
+| TC-06 | 正常系 | dailyPvOverride | override値が優先 |
+| TC-07 | 正常系 | 完了予測日（SPI=1.0） | 計画終了日と一致 |
+| TC-08 | 正常系 | 完了予測日（SPI<1.0） | 計画終了日より後 |
+| TC-09 | 正常系 | 完了予測日（SPI>1.0） | 計画終了日より前 |
+| TC-10 | 境界値 | タスク0件 | bac=0 |
+| TC-11 | 境界値 | EV=BAC（完了済み） | etcPrime=0 |
+| TC-12 | 境界値 | EV=0（未着手） | etcPrime=BAC/SPI |
+| TC-13 | 異常系 | SPI=0 | etcPrime=Infinity |
+| TC-14 | 異常系 | 日付なし | estimatedCompletionDate=undefined |
+| TC-15 | 異常系 | dailyPv=0 | estimatedCompletionDate=undefined |
+
+---
+
 ## 6. テストシナリオ（Given-When-Then形式）
 
 ### 6.1 基本生成テスト
@@ -696,7 +786,8 @@ Scenario: 親タスクは除外対象外
 | pvByName系 | 4件 | 4件 |
 | isHoliday() | 5件 | 5件 |
 | excludedTasks | 6件 | 6件 |
-| **合計** | **51件** | **51件** |
+| EVM拡張指標 | 15件 | 15件 |
+| **合計** | **66件** | **66件** |
 
 ---
 
@@ -709,6 +800,14 @@ Scenario: 親タスクは除外対象外
 | REQ-TASK-001 AC-01 | excludedTasksで一覧取得 | EQ-ET-002〜EQ-ET-004 | ✅ PASS |
 | REQ-TASK-001 AC-02 | reasonが正しく設定 | EQ-ET-002, EQ-ET-003 | ✅ PASS |
 | REQ-TASK-001 AC-03 | 有効タスクのみ→空配列 | EQ-ET-001, EQ-ET-005 | ✅ PASS |
+| REQ-EVM-001 AC-01 | Project.bacでBACを取得できる | TC-01, TC-10 | ✅ PASS |
+| REQ-EVM-001 AC-02 | Project.etcPrimeでETC'を取得できる | TC-04, TC-11, TC-12, TC-13 | ✅ PASS |
+| REQ-EVM-001 AC-03 | Project.estimatedCompletionDateで完了予測日を取得できる | TC-07, TC-08, TC-09, TC-14, TC-15 | ✅ PASS |
+| REQ-EVM-001 AC-04 | SPI=1.0の場合、完了予測日が計画終了日と一致 | TC-07 | ✅ PASS |
+| REQ-EVM-001 AC-05 | SPI<1.0の場合、完了予測日が計画終了日より後 | TC-08 | ✅ PASS |
+| REQ-EVM-001 AC-06 | SPI>1.0の場合、完了予測日が計画終了日より前 | TC-09 | ✅ PASS |
+| REQ-EVM-001 AC-07 | dailyPVOverrideが日あたりPVとして使用される | TC-06 | ✅ PASS |
+| REQ-EVM-001 AC-08 | 既存のテストが全てPASS | - | ✅ PASS (107件) |
 
 > **ステータス凡例**:
 > - ⏳: 未実装
@@ -724,6 +823,7 @@ Scenario: 親タスクは除外対象外
 | ファイル | 説明 | テスト数 |
 |---------|------|---------|
 | `src/domain/__tests__/Project.test.ts` | 単体テスト | 51件 |
+| `src/domain/__tests__/Project.evm-indicators.test.ts` | EVM拡張指標テスト | 15件 |
 
 ### 11.2 テストフィクスチャ
 
@@ -732,9 +832,9 @@ Scenario: 親タスクは除外対象外
 ### 11.3 テスト実行結果
 
 ```
-実行日: 2025-12-24
-Test Suites: 1 passed, 1 total
-Tests:       51 passed, 51 total
+実行日: 2026-01-22
+Test Suites: 2 passed, 2 total
+Tests:       66 passed, 66 total
 ```
 
 ---
@@ -757,3 +857,4 @@ Tests:       51 passed, 51 total
 | 1.0.0 | 2025-12-16 | 初版作成 | - |
 | 1.1.0 | 2025-12-22 | excludedTasksプロパティ追加 | REQ-TASK-001 |
 | 1.1.1 | 2025-12-24 | 要件トレーサビリティセクション追加 | REQ-TASK-001 |
+| 1.2.0 | 2026-01-22 | EVM拡張指標追加（bac, totalEv, totalSpi, etcPrime, dailyPv, estimatedCompletionDate） | REQ-EVM-001 |

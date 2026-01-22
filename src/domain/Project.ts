@@ -1,5 +1,5 @@
 import { tidy, filter, summarize, groupBy } from '@tidyjs/tidy'
-import { average, dateStr, generateBaseDates, isHoliday, sum } from '../common'
+import { average, dateStr, generateBaseDates, isHoliday, sum, sumOrZero } from '../common'
 import { TaskNode } from './TaskNode'
 import { TaskService } from './TaskService'
 import { TaskRow } from './TaskRow'
@@ -12,6 +12,7 @@ export class Project {
     private _taskService = new TaskService()
     private _cachedTaskRows?: TaskRow[]
     private _cachedTaskMap?: Map<number, TaskRow>
+    private _dailyPvOverride?: number
 
     constructor(
         private readonly _taskNodes: TaskNode[],
@@ -382,6 +383,132 @@ export class Project {
                 task,
                 reason: task.validStatus.invalidReason ?? '理由不明',
             }))
+    }
+
+    // ========================================
+    // REQ-EVM-001: EVM指標拡張
+    // ========================================
+
+    /**
+     * 完成時総予算（Budget at Completion）
+     * 計画終了日時点での全リーフタスクの累積PV合計
+     */
+    get bac(): number {
+        if (!this._endDate) return 0
+        const leafTasks = this.toTaskRows().filter((t) => t.isLeaf && t.validStatus.isValid)
+        return sumOrZero(
+            leafTasks.map((t) => t.calculatePVs(this._endDate!)),
+            3
+        )
+    }
+
+    /**
+     * 現在の出来高合計
+     * statisticsByProject.totalEv と同じ値を返す（便利なショートカット）
+     */
+    get totalEv(): number {
+        return this.statisticsByProject[0]?.totalEv ?? 0
+    }
+
+    /**
+     * プロジェクト全体のSPI
+     * statisticsByProject.spi と同じ値を返す（便利なショートカット）
+     */
+    get totalSpi(): number {
+        return this.statisticsByProject[0]?.spi ?? 0
+    }
+
+    /**
+     * ETC'（残作業完了に必要な計画工数換算）
+     * (BAC - EV) / SPI
+     */
+    get etcPrime(): number {
+        if (this.totalSpi === 0) return Infinity
+        const remaining = this.bac - this.totalEv
+        if (remaining <= 0) return 0
+        return remaining / this.totalSpi
+    }
+
+    /**
+     * 日あたりPV（消化能力）
+     * 優先度: 1.手動オーバーライド → 2.期間平均PV
+     */
+    get dailyPv(): number {
+        // 優先度1: 手動オーバーライド
+        if (this._dailyPvOverride !== undefined) {
+            return this._dailyPvOverride
+        }
+        // 優先度2: 期間平均PV
+        return this.calculateAverageDailyPv()
+    }
+
+    /**
+     * 日あたりPVの手動オーバーライドを設定
+     */
+    setDailyPvOverride(value: number | undefined): void {
+        this._dailyPvOverride = value
+    }
+
+    /**
+     * 期間平均PVを計算
+     */
+    private calculateAverageDailyPv(): number {
+        const workDays = this.getWorkDayCount()
+        if (workDays === 0) return 0
+        return this.bac / workDays
+    }
+
+    /**
+     * プロジェクト期間の稼働日数を計算
+     */
+    private getWorkDayCount(): number {
+        if (!this._startDate || !this._endDate) return 0
+
+        let count = 0
+        const current = new Date(this._startDate)
+        while (current <= this._endDate) {
+            if (!this.isHoliday(current)) {
+                count++
+            }
+            current.setDate(current.getDate() + 1)
+        }
+        return count
+    }
+
+    /**
+     * 完了予測日
+     * 残作業量を日あたり進捗（dailyPv × SPI）で消化し、0になる日
+     */
+    get estimatedCompletionDate(): Date | undefined {
+        if (!this._startDate || !this._endDate) return undefined
+        if (this.dailyPv === 0 || this.totalSpi === 0) return undefined
+        if (this.bac === 0) return undefined
+
+        let remainingWork = this.bac - this.totalEv
+        if (remainingWork <= 0) return this._baseDate // 既に完了
+
+        let currentDate = new Date(this._baseDate)
+        const dailyProgress = this.dailyPv * this.totalSpi
+        const maxIterations = 365 * 5 // 5年を上限
+
+        for (let i = 0; i < maxIterations && remainingWork > 0; i++) {
+            currentDate = this.getNextWorkDay(currentDate)
+            remainingWork -= dailyProgress
+        }
+
+        return currentDate
+    }
+
+    /**
+     * 次の稼働日を取得
+     */
+    private getNextWorkDay(date: Date): Date {
+        const next = new Date(date)
+        next.setDate(next.getDate() + 1)
+        while (this.isHoliday(next)) {
+            next.setDate(next.getDate() + 1)
+        }
+        return next
     }
 }
 
