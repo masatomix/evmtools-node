@@ -722,34 +722,47 @@ remotes/origin/feature/invalid             # validStatus機能
 
 ### 2.4 Feature開発フロー（Git操作）
 
-```bash
-# 1. developから feature ブランチを作成（Issue番号をプレフィックスに）
-git checkout develop
-git pull origin develop
-git checkout -b feature/42-csv-reader  # Issue #42 の場合
+**git worktreeを使用**して、別ディレクトリでfeatureブランチを作業する。
 
-# 2. 開発作業（仕様駆動開発サイクル）
+```bash
+# 1. developから feature ブランチを作成（worktree）
+git fetch origin
+git worktree add ../evmtools-node_feature-42-csv-reader -b feature/42-csv-reader origin/develop
+# Issue #42 の場合
+
+# 2. 作業ディレクトリに移動
+cd ../evmtools-node_feature-42-csv-reader
+
+# 3. 依存関係のインストール
+npm install
+
+# 4. 開発作業（仕様駆動開発サイクル）
 #    - 要件定義書作成
 #    - 仕様書作成
 #    - テストコード作成
 #    - 実装
 #    - テスト実行・修正
 
-# 3. コミット
+# 5. コミット
 git add .
 git commit -m "feat: CSVファイルからProjectを生成する機能を追加"
 
-# 4. リモートにプッシュ
+# 6. リモートにプッシュ
 git push -u origin feature/42-csv-reader
 
-# 5. Pull Request作成（GitHub）
+# 7. Pull Request作成（GitHub）
 gh pr create --base develop --title "feat: CSV読み込み機能"
 
-# 6. レビュー・マージ後、ローカルブランチ削除
-git checkout develop
-git pull origin develop
-git branch -d feature/42-csv-reader
+# 8. レビュー・マージ後、worktreeを削除
+cd ../evmtools-node  # 元のディレクトリに戻る
+git worktree remove ../evmtools-node_feature-42-csv-reader
+git fetch --prune origin  # リモートの削除されたブランチを反映
 ```
+
+> **git worktreeのメリット**:
+> - 現在の作業ディレクトリを維持したまま、別ブランチで並行作業できる
+> - `git stash`や`git checkout`による切り替えが不要
+> - 複数の機能を同時に開発する場合に便利
 
 ### 2.5 リリースフロー
 
