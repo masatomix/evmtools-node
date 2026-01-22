@@ -146,8 +146,14 @@ docs/specs/
 
 ## エージェント連携
 
-`spec-driven-dev-expert` エージェントと連携して動作。
-複雑な仕様策定やレビューが必要な場合は、エージェントに委譲する。
+- 仕様書作成後のコードレビューは `code-reviewer` エージェントを使用
+- `/sdd verify` 実行時、実装とスペックの整合性を確認
+
+## 参照ドキュメント
+
+SDDワークフロー実行時は以下を参照:
+- [docs/GLOSSARY.md](../../../docs/GLOSSARY.md) - EVM用語、ドメインモデル定義
+- [docs/workflow/DEVELOPMENT_WORKFLOW.md](../../../docs/workflow/DEVELOPMENT_WORKFLOW.md) - SDDのWhy説明
 
 ## 詳細リファレンス
 
