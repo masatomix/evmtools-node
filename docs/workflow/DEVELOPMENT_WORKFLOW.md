@@ -635,7 +635,7 @@ tasks.md 内で進捗を管理する：
 
 ##### テンプレート
 
-タスク管理ファイルのテンプレート: [`docs/standards/templates/tasks-template.md`](../standards/templates/tasks-template.md)
+タスク管理ファイルのテンプレート: [`docs/templates/tasks-template.md`](../templates/tasks-template.md)
 
 ##### 運用ルール
 
