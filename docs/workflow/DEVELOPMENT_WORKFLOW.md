@@ -754,7 +754,7 @@ git push -u origin feature/42-csv-reader
 gh pr create --base develop --title "feat: CSV読み込み機能"
 
 # 8. レビュー・マージ後、worktreeを削除
-cd ../evmtools-node_claude  # 元のディレクトリに戻る
+cd ../evmtools-node  # 元のディレクトリに戻る
 git worktree remove ../evmtools-node_feature-42-csv-reader
 git fetch --prune origin  # リモートの削除されたブランチを反映
 ```

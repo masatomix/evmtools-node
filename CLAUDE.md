@@ -190,7 +190,7 @@ git push -u origin feature/機能名
 # 6. PRを作成（ベース: develop）
 
 # 7. マージ後、worktreeを削除
-cd ../evmtools-node_claude  # 元のディレクトリに戻る
+cd ../evmtools-node  # 元のディレクトリに戻る
 git worktree remove ../evmtools-node_feature-機能名
 ```
 
