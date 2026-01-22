@@ -929,3 +929,167 @@ grep "AC-01" docs/specs/domain/features/Project.excludedTasks.spec.md
 - 修正したファイル: `docs/specs/domain/features/Project.excludedTasks.spec.md`
 - トレーサビリティ事例: `docs/workflow/SAMPLE_DEVELOPMENT_FLOW.md`（旧: TRACEABILITY_EXAMPLE.md）
 - 参照した正しいフォーマット: `docs/specs/domain/master/CsvProjectCreator.spec.md`
+
+---
+
+## 19. 仕様書テンプレート統一化（2026-01-21 追加）
+
+### 19.1 背景
+
+セクション18で「仕様書テンプレートの作成」が未済のままだったため、本格的にテンプレート作成と全ファイルの統一化を実施した。
+
+### 19.2 発見された問題
+
+既存の14ファイルの仕様書を分析した結果、以下の不整合が判明:
+
+| 問題 | 影響 |
+|------|------|
+| フォーマットがバラバラ | 新規作成時に参照先が不明 |
+| 要件トレーサビリティセクションの欠落 | grepによる追跡が不可能 |
+| テスト実装セクションの欠落 | テスト状況が不明 |
+| マスター設計書のヘッダーに要件IDがある | 不要な項目で混乱 |
+
+### 19.3 テンプレート作成の方針
+
+1. **既存の良いフォーマットを参考にする**
+   - 案件仕様書: `Project.excludedTasks.spec.md` が最も充実
+   - マスター設計書: `CsvProjectCreator.spec.md` + `Project.spec.md` の組み合わせ
+
+2. **案件仕様書 vs マスター設計書の違い**
+
+| 観点 | 案件仕様書 | マスター設計書 |
+|------|-----------|---------------|
+| 目的 | 特定要件の実装仕様 | クラス全体の永続的な仕様 |
+| ヘッダー | 要件ID必須 | 要件IDなし |
+| セクション数 | 8セクション | 13セクション |
+| 配置 | `features/` | `master/` |
+
+### 19.4 マスター設計書のヘッダーに関する議論
+
+**問題提起**:
+> 「マスターに『要件ID: REQ-{XXX}-001（該当する場合）』あるの変な気がする」
+
+**結論**:
+- マスター設計書は特定の要件に紐づかない永続的なクラス仕様
+- ヘッダーから要件ID行を削除することで合意
+- 要件との関連は「要件トレーサビリティ」セクションで管理
+
+### 19.5 必須セクションの決定
+
+**案件仕様書（8セクション）**
+1. 概要
+2. インターフェース仕様
+3. 処理仕様
+4. テストケース
+5. エクスポート
+6. 使用例
+7. 要件トレーサビリティ（必須）
+8. 変更履歴
+
+**マスター設計書（13セクション）**
+1. 基本情報
+2. 不変条件（Invariants）
+3. プロパティ仕様
+4. コンストラクタ仕様
+5. メソッド仕様
+6. テストシナリオ（Given-When-Then形式）
+7. 外部依存
+8. 関連オブジェクト
+9. テストケース数サマリ
+10. 要件トレーサビリティ（必須）
+11. テスト実装
+12. 設計上の課題・改善提案
+13. 変更履歴
+
+### 19.6 成果物
+
+**作成されたテンプレート**
+- `docs/templates/feature-spec-template.md` - 案件仕様書テンプレート
+- `docs/templates/master-spec-template.md` - マスター設計書テンプレート
+
+**書き換え完了ファイル（全14ファイル）**
+
+| 種類 | ファイル |
+|------|---------|
+| 案件仕様書 | Project.excludedTasks.spec.md |
+| 案件仕様書 | PbevmShowPvUsecase.cli-output-cleanup.spec.md |
+| 案件仕様書 | CLI.shebang.spec.md |
+| 案件仕様書 | CLI.pbevm-diff-output.spec.md |
+| マスター設計書 | CsvProjectCreator.spec.md |
+| マスター設計書 | Project.spec.md |
+| マスター設計書 | TaskRow.spec.md |
+| マスター設計書 | VersionInfo.spec.md |
+| マスター設計書 | TaskNode.spec.md |
+| マスター設計書 | TaskService.spec.md |
+| マスター設計書 | HolidayData.spec.md |
+| マスター設計書 | Interfaces.spec.md |
+| マスター設計書 | ProjectService.spec.md |
+| マスター設計書 | ProjectCreator.spec.md |
+
+### 19.7 主な変更点
+
+#### マスター設計書のヘッダー変更
+
+**変更前**:
+```markdown
+# {ClassName} 仕様書
+
+**バージョン**: 1.0.0
+**要件ID**: REQ-{XXX}-001（該当する場合）
+**作成日**: {YYYY-MM-DD}
+```
+
+**変更後**:
+```markdown
+# {ClassName} 仕様書
+
+**バージョン**: 1.0.0
+**作成日**: {YYYY-MM-DD}
+**ソースファイル**: `src/{layer}/{ClassName}.ts`
+```
+
+#### 追加されたセクション
+
+| セクション | 目的 |
+|-----------|------|
+| 要件トレーサビリティ | AC-ID → TC-ID の対応表（grepで検索可能） |
+| テスト実装 | テストファイル、フィクスチャ、実行結果 |
+| 設計上の課題・改善提案 | 今後の改善点を明文化 |
+
+#### 同値クラス・境界値のID付与
+
+**変更前**:
+```markdown
+| 分類 | 入力条件 | 期待結果 |
+|------|----------|----------|
+| 正常系 | 有効な入力 | 正常終了 |
+```
+
+**変更後**:
+```markdown
+| ID | 分類 | 入力条件 | 期待結果 |
+|----|------|----------|----------|
+| EQ-XXX-001 | 正常系 | 有効な入力 | 正常終了 |
+```
+
+### 19.8 今後の運用
+
+#### 新規仕様書作成時
+1. `docs/templates/` 配下のテンプレートをコピー
+2. 案件仕様書 → `feature-spec-template.md`
+3. マスター設計書 → `master-spec-template.md`
+
+#### 仕様書レビュー時のチェックポイント
+- [ ] 要件トレーサビリティセクションが存在するか
+- [ ] AC-IDがgrepで検索可能な形式か
+- [ ] テストケースにIDが付与されているか
+- [ ] 変更履歴が更新されているか
+
+#### 案件設計書とマスター設計書の同期
+案件設計書を修正した場合、対応するマスター設計書への反映を必ず確認すること
+
+### 19.9 関連ドキュメント
+
+- テンプレート: `docs/templates/feature-spec-template.md`, `docs/templates/master-spec-template.md`
+- 開発ワークフロー: `docs/workflow/DEVELOPMENT_WORKFLOW.md`
+- サンプル開発フロー: `docs/workflow/SAMPLE_DEVELOPMENT_FLOW.md`

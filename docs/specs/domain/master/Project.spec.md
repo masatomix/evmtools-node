@@ -1,22 +1,24 @@
-# Project クラス詳細仕様書
+# Project 仕様書
 
-**バージョン**: 1.1.0
+**バージョン**: 1.1.1
 **作成日**: 2025-12-16
-**更新日**: 2025-12-22
 **ソースファイル**: `src/domain/Project.ts`
 
 ---
 
 ## 1. 基本情報
 
+### 1.1 概要
+
 | 項目 | 内容 |
 |------|------|
 | **クラス名** | `Project` |
 | **分類** | **集約ルート（Aggregate Root）** |
+| **実装インターフェース** | - |
 | **パッケージ** | `src/domain/Project.ts` |
 | **責務** | プロジェクト全体のタスク情報を保持し、EVM分析に必要な統計データ・PVデータを提供する |
 
-### 1.1 ユビキタス言語（ドメイン用語）
+### 1.2 ユビキタス言語（ドメイン用語）
 
 | ドメイン用語 | 実装名 | 定義 |
 |-------------|--------|------|
@@ -30,7 +32,7 @@
 | スケジュール効率（SPI） | `spi` | EV/PV。1.0以上なら予定通り |
 | 祝日データ | `HolidayData` | プロジェクト固有の休日定義 |
 
-### 1.2 境界づけられたコンテキスト（所属ドメイン）
+### 1.3 境界づけられたコンテキスト（所属ドメイン）
 
 ```
 ┌─────────────────────────────────────────┐
@@ -48,41 +50,32 @@
 
 ## 2. 不変条件（Invariants）
 
-テスト時に常に検証すべき条件。
-
 | ID | 不変条件 | 検証タイミング |
 |----|----------|----------------|
-| INV-01 | `baseDate`は必ず存在する（non-null） | 生成時・全操作 |
-| INV-02 | `taskNodes`は必ず存在する（空配列可） | 生成時・全操作 |
-| INV-03 | `holidayDatas`は必ず存在する（空配列可） | 生成時・全操作 |
-| INV-04 | `startDate`が存在する場合、`endDate`も存在し、`startDate ≤ endDate` | 生成時 |
-| INV-05 | `toTaskRows()`の結果は冪等（同一インスタンスで複数回呼んでも同じ結果） | キャッシュ機構 |
-| INV-06 | `getTask(id)`で取得したTaskRowは`toTaskRows()`の要素と同一参照 | ID検索 |
-| INV-07 | リーフタスクのみが統計計算の対象（`isLeaf === true`） | 統計計算時 |
+| INV-PJ-01 | `baseDate`は必ず存在する（non-null） | 生成時・全操作 |
+| INV-PJ-02 | `taskNodes`は必ず存在する（空配列可） | 生成時・全操作 |
+| INV-PJ-03 | `holidayDatas`は必ず存在する（空配列可） | 生成時・全操作 |
+| INV-PJ-04 | `startDate`が存在する場合、`endDate`も存在し、`startDate ≤ endDate` | 生成時 |
+| INV-PJ-05 | `toTaskRows()`の結果は冪等（同一インスタンスで複数回呼んでも同じ結果） | キャッシュ機構 |
+| INV-PJ-06 | `getTask(id)`で取得したTaskRowは`toTaskRows()`の要素と同一参照 | ID検索 |
+| INV-PJ-07 | リーフタスクのみが統計計算の対象（`isLeaf === true`） | 統計計算時 |
 
 ---
 
 ## 3. プロパティ仕様
 
-### 3.1 コンストラクタ引数（プライベートフィールド）
+### 3.1 コンストラクタ引数
 
 | プロパティ | 型 | 必須 | 制約 | デフォルト | 説明 |
-|-----------|-----|------|------|-----------|------|
-| `_taskNodes` | `TaskNode[]` | ○ | - | - | タスクのツリー構造 |
-| `_baseDate` | `Date` | ○ | 有効な日付 | - | EVM計算の基準日 |
-| `_holidayDatas` | `HolidayData[]` | ○ | - | - | プロジェクト固有の祝日 |
-| `_startDate` | `Date` | - | `≤ _endDate` | `undefined` | プロジェクト開始日 |
-| `_endDate` | `Date` | - | `≥ _startDate` | `undefined` | プロジェクト終了日 |
-| `_name` | `string` | - | - | `undefined` | プロジェクト名 |
+|-----------|-----|:----:|------|-----------|------|
+| `taskNodes` | `TaskNode[]` | ○ | - | - | タスクのツリー構造 |
+| `baseDate` | `Date` | ○ | 有効な日付 | - | EVM計算の基準日 |
+| `holidayDatas` | `HolidayData[]` | ○ | - | - | プロジェクト固有の祝日 |
+| `startDate` | `Date` | - | `≤ endDate` | `undefined` | プロジェクト開始日 |
+| `endDate` | `Date` | - | `≥ startDate` | `undefined` | プロジェクト終了日 |
+| `name` | `string` | - | - | `undefined` | プロジェクト名 |
 
-### 3.2 内部キャッシュ
-
-| プロパティ | 型 | 説明 |
-|-----------|-----|------|
-| `_cachedTaskRows` | `TaskRow[] \| undefined` | `toTaskRows()`の結果キャッシュ |
-| `_cachedTaskMap` | `Map<number, TaskRow> \| undefined` | ID→TaskRowのマップキャッシュ |
-
-### 3.3 公開プロパティ（getter）
+### 3.2 公開プロパティ（getter）
 
 | プロパティ | 戻り型 | 説明 |
 |-----------|--------|------|
@@ -93,7 +86,14 @@
 | `name` | `string \| undefined` | プロジェクト名 |
 | `holidayDatas` | `HolidayData[]` | 祝日データ |
 | `length` | `number` | タスク総数（`toTaskRows().length`） |
-| `excludedTasks` | `ExcludedTask[]` | 計算から除外されたタスク一覧（詳細は5.9参照） |
+| `excludedTasks` | `ExcludedTask[]` | 計算から除外されたタスク一覧 |
+
+### 3.3 内部キャッシュ
+
+| プロパティ | 型 | 説明 |
+|-----------|-----|------|
+| `_cachedTaskRows` | `TaskRow[] \| undefined` | `toTaskRows()`の結果キャッシュ |
+| `_cachedTaskMap` | `Map<number, TaskRow> \| undefined` | ID→TaskRowのマップキャッシュ |
 
 ---
 
@@ -114,8 +114,8 @@ constructor(
 
 ### 4.2 事前条件（Preconditions）
 
-| ID | 条件 | 違反時の期待動作 |
-|----|------|------------------|
+| ID | 条件 | 違反時の動作 |
+|----|------|-------------|
 | PRE-C01 | `taskNodes`が配列である | TypeError |
 | PRE-C02 | `baseDate`が有効なDateオブジェクト | 不正な計算結果 |
 | PRE-C03 | `holidayDatas`が配列である | TypeError |
@@ -145,26 +145,39 @@ toTaskRows(): TaskRow[]
 ```
 
 #### 事前条件
-なし
+
+該当なし
 
 #### 事後条件
+
 | ID | 条件 |
 |----|------|
-| POST-TR01 | 戻り値は`TaskRow[]`型 |
-| POST-TR02 | 同一インスタンスで再呼び出し時、同一配列参照を返す（キャッシュ） |
-| POST-TR03 | 各TaskRowの`level`は深さに応じて1から順に設定される |
-| POST-TR04 | 各TaskRowの`parentId`は親ノードのIDが設定される（ルートは`undefined`） |
+| POST-TR-01 | 戻り値は`TaskRow[]`型 |
+| POST-TR-02 | 同一インスタンスで再呼び出し時、同一配列参照を返す（キャッシュ） |
+| POST-TR-03 | 各TaskRowの`level`は深さに応じて1から順に設定される |
+| POST-TR-04 | 各TaskRowの`parentId`は親ノードのIDが設定される（ルートは`undefined`） |
+
+#### アルゴリズム
+
+```
+1. キャッシュが存在すればそれを返す
+2. TaskNodeツリーを深さ優先で走査
+3. 各ノードをTaskRowに変換
+   - level: 現在の深さ（1から開始）
+   - parentId: 親ノードのID
+4. 結果をキャッシュして返却
+```
 
 #### 同値クラス・境界値
 
-| 分類 | 入力条件 | 期待結果 |
-|------|----------|----------|
-| **正常系** | taskNodes: 1件のルートノード（リーフ） | TaskRow 1件、level=1 |
-| **正常系** | taskNodes: 親1+子2の階層構造 | TaskRow 3件、親level=1、子level=2 |
-| **正常系** | taskNodes: 3階層ネスト | 各levelが1,2,3と設定 |
-| **境界値** | taskNodes: 空配列 | 空配列`[]` |
-| **境界値** | taskNodes: 子なしルート1件 | TaskRow 1件 |
-| **特殊** | 2回連続呼び出し | 同一参照を返す |
+| ID | 分類 | 入力条件 | 期待結果 |
+|----|------|----------|----------|
+| EQ-TR-001 | 正常系 | taskNodes: 1件のルートノード（リーフ） | TaskRow 1件、level=1 |
+| EQ-TR-002 | 正常系 | taskNodes: 親1+子2の階層構造 | TaskRow 3件、親level=1、子level=2 |
+| EQ-TR-003 | 正常系 | taskNodes: 3階層ネスト | 各levelが1,2,3と設定 |
+| EQ-TR-004 | 境界値 | taskNodes: 空配列 | 空配列`[]` |
+| EQ-TR-005 | 境界値 | taskNodes: 子なしルート1件 | TaskRow 1件 |
+| EQ-TR-006 | 特殊 | 2回連続呼び出し | 同一参照を返す |
 
 ---
 
@@ -179,26 +192,28 @@ getTask(id: number): TaskRow | undefined
 ```
 
 #### 事前条件
-| ID | 条件 |
-|----|------|
-| PRE-GT01 | `id`は数値型 |
+
+| ID | 条件 | 違反時の動作 |
+|----|------|-------------|
+| PRE-GT-01 | `id`は数値型 | undefined を返す |
 
 #### 事後条件
+
 | ID | 条件 |
 |----|------|
-| POST-GT01 | 該当IDが存在すれば、そのTaskRowを返す |
-| POST-GT02 | 該当IDが存在しなければ`undefined`を返す |
-| POST-GT03 | 内部マップが未生成なら、初回呼び出し時に生成・キャッシュ |
+| POST-GT-01 | 該当IDが存在すれば、そのTaskRowを返す |
+| POST-GT-02 | 該当IDが存在しなければ`undefined`を返す |
+| POST-GT-03 | 内部マップが未生成なら、初回呼び出し時に生成・キャッシュ |
 
 #### 同値クラス・境界値
 
-| 分類 | 入力条件 | 期待結果 |
-|------|----------|----------|
-| **正常系** | 存在するID | 該当TaskRow |
-| **異常系** | 存在しないID | `undefined` |
-| **境界値** | id=0（存在する場合） | 該当TaskRow |
-| **境界値** | id=-1（負数） | `undefined`（通常存在しない） |
-| **境界値** | 空のtaskNodesでid指定 | `undefined` |
+| ID | 分類 | 入力条件 | 期待結果 |
+|----|------|----------|----------|
+| EQ-GT-001 | 正常系 | 存在するID | 該当TaskRow |
+| EQ-GT-002 | 異常系 | 存在しないID | `undefined` |
+| EQ-GT-003 | 境界値 | id=0（存在する場合） | 該当TaskRow |
+| EQ-GT-004 | 境界値 | id=-1（負数） | `undefined`（通常存在しない） |
+| EQ-GT-005 | 境界値 | 空のtaskNodesでid指定 | `undefined` |
 
 ---
 
@@ -212,7 +227,19 @@ getTask(id: number): TaskRow | undefined
 getFullTaskName(task?: TaskRow): string
 ```
 
-#### 計算ロジック
+#### 事前条件
+
+該当なし
+
+#### 事後条件
+
+| ID | 条件 |
+|----|------|
+| POST-FN-01 | タスクの祖先を辿り、"/"区切りで連結した文字列を返す |
+| POST-FN-02 | task=undefinedの場合、空文字列を返す |
+
+#### アルゴリズム
+
 ```
 1. 現在のタスクから開始
 2. parentIdが存在する限り、getTask(parentId)で親を取得
@@ -222,13 +249,13 @@ getFullTaskName(task?: TaskRow): string
 
 #### 同値クラス・境界値
 
-| 分類 | 入力条件 | 期待結果 |
-|------|----------|----------|
-| **正常系** | ルートタスク（parentId=undefined） | `"タスク名"` |
-| **正常系** | 2階層目のタスク | `"親名/子名"` |
-| **正常系** | 3階層目のタスク | `"祖父名/親名/子名"` |
-| **境界値** | `task=undefined` | `""`（空文字列） |
-| **異常系** | parentIdが存在するがgetTask()で見つからない | 途中で終了（見つかった分まで） |
+| ID | 分類 | 入力条件 | 期待結果 |
+|----|------|----------|----------|
+| EQ-FN-001 | 正常系 | ルートタスク（parentId=undefined） | `"タスク名"` |
+| EQ-FN-002 | 正常系 | 2階層目のタスク | `"親名/子名"` |
+| EQ-FN-003 | 正常系 | 3階層目のタスク | `"祖父名/親名/子名"` |
+| EQ-FN-004 | 境界値 | `task=undefined` | `""`（空文字列） |
+| EQ-FN-005 | 異常系 | parentIdが存在するがgetTask()で見つからない | 途中で終了（見つかった分まで） |
 
 ---
 
@@ -242,7 +269,22 @@ getFullTaskName(task?: TaskRow): string
 getTaskRows(fromDate: Date, toDate?: Date, assignee?: string): TaskRow[]
 ```
 
-#### 計算ロジック
+#### 事前条件
+
+| ID | 条件 | 違反時の動作 |
+|----|------|-------------|
+| PRE-GTR-01 | `fromDate`は有効なDate | 不正な結果 |
+| PRE-GTR-02 | `toDate`指定時は`fromDate ≤ toDate` | 空配列 |
+
+#### 事後条件
+
+| ID | 条件 |
+|----|------|
+| POST-GTR-01 | 戻り値は`TaskRow[]`型 |
+| POST-GTR-02 | 全要素は`isLeaf === true` |
+
+#### アルゴリズム
+
 ```
 1. generateBaseDates(fromDate, toDate ?? fromDate) で日付配列生成
 2. toTaskRows()でフラット化し、isLeaf===trueのみ抽出
@@ -252,23 +294,17 @@ getTaskRows(fromDate: Date, toDate?: Date, assignee?: string): TaskRow[]
 4. hasPV && assigneeMatch のタスクを返す
 ```
 
-#### 事前条件
-| ID | 条件 |
-|----|------|
-| PRE-GTR01 | `fromDate`は有効なDate |
-| PRE-GTR02 | `toDate`指定時は`fromDate ≤ toDate` |
-
 #### 同値クラス・境界値
 
-| 分類 | 入力条件 | 期待結果 |
-|------|----------|----------|
-| **正常系** | 期間内にPVがあるタスク | 該当タスク配列 |
-| **正常系** | fromDate=toDate（1日指定） | その日にPVがあるタスク |
-| **正常系** | assignee指定 | 担当者一致かつPVありのタスク |
-| **境界値** | 期間外のみのタスク | 空配列 |
-| **境界値** | 全タスクがisLeaf=false | 空配列 |
-| **境界値** | assigneeが存在しない担当者 | 空配列 |
-| **境界値** | toDate省略 | fromDateのみで判定 |
+| ID | 分類 | 入力条件 | 期待結果 |
+|----|------|----------|----------|
+| EQ-GTR-001 | 正常系 | 期間内にPVがあるタスク | 該当タスク配列 |
+| EQ-GTR-002 | 正常系 | fromDate=toDate（1日指定） | その日にPVがあるタスク |
+| EQ-GTR-003 | 正常系 | assignee指定 | 担当者一致かつPVありのタスク |
+| EQ-GTR-004 | 境界値 | 期間外のみのタスク | 空配列 |
+| EQ-GTR-005 | 境界値 | 全タスクがisLeaf=false | 空配列 |
+| EQ-GTR-006 | 境界値 | assigneeが存在しない担当者 | 空配列 |
+| EQ-GTR-007 | 境界値 | toDate省略 | fromDateのみで判定 |
 
 ---
 
@@ -277,25 +313,23 @@ getTaskRows(fromDate: Date, toDate?: Date, assignee?: string): TaskRow[]
 #### 目的
 プロジェクト全体のEVM統計情報を返す。
 
-#### 戻り値の型
+#### シグネチャ
 ```typescript
-type ProjectStatistics = {
-    projectName?: string
-    startDate: string          // 日付文字列 (yyyy/mm/dd)
-    endDate: string            // 日付文字列 (yyyy/mm/dd)
-    totalTasksCount?: number   // リーフタスク数
-    totalWorkloadExcel?: number      // Excelのworkload合計
-    totalWorkloadCalculated?: number // endDate時点の累積PV合計
-    averageWorkload?: number   // workload平均
-    baseDate: string           // 基準日文字列
-    totalPvExcel?: number      // ExcelのPV合計
-    totalPvCalculated?: number // 計算による累積PV合計
-    totalEv?: number           // EV合計
-    spi?: number               // SPI (EV/PV)
-}
+get statisticsByProject(): ProjectStatistics[]
 ```
 
-#### 計算ロジック
+#### 事前条件
+
+該当なし
+
+#### 事後条件
+
+| ID | 条件 |
+|----|------|
+| POST-SP-01 | 戻り値は`ProjectStatistics[]`型 |
+
+#### アルゴリズム
+
 ```
 1. toTaskRows()でフラット化
 2. isLeaf===trueのみフィルタ
@@ -319,13 +353,13 @@ type ProjectStatistics = {
 
 #### 同値クラス・境界値
 
-| 分類 | 入力条件 | 期待結果 |
-|------|----------|----------|
-| **正常系** | リーフタスク複数 | 集計されたProjectStatistics |
-| **正常系** | spi計算可能（PV>0） | 数値spi |
-| **境界値** | リーフタスク0件 | totalTasksCount=0 |
-| **境界値** | 全タスクのPV=0 | spi=undefined（0除算回避） |
-| **境界値** | startDate/endDate未設定 | 空文字列 |
+| ID | 分類 | 入力条件 | 期待結果 |
+|----|------|----------|----------|
+| EQ-SP-001 | 正常系 | リーフタスク複数 | 集計されたProjectStatistics |
+| EQ-SP-002 | 正常系 | spi計算可能（PV>0） | 数値spi |
+| EQ-SP-003 | 境界値 | リーフタスク0件 | totalTasksCount=0 |
+| EQ-SP-004 | 境界値 | 全タスクのPV=0 | spi=undefined（0除算回避） |
+| EQ-SP-005 | 境界値 | startDate/endDate未設定 | 空文字列 |
 
 ---
 
@@ -334,20 +368,20 @@ type ProjectStatistics = {
 #### 目的
 担当者別のEVM統計情報を返す。
 
-#### 戻り値の型
+#### シグネチャ
 ```typescript
-type AssigneeStatistics = {
-    assignee?: string  // 担当者名（未割当は undefined）
-} & Statistics
+get statisticsByName(): AssigneeStatistics[]
 ```
 
-#### 計算ロジック
-```
-1. toTaskRows()でフラット化
-2. isLeaf===trueのみフィルタ
-3. groupBy('assignee')で担当者別にグループ化
-4. 各グループでstatisticsByProjectと同様の集計
-```
+#### 事前条件
+
+該当なし
+
+#### 事後条件
+
+| ID | 条件 |
+|----|------|
+| POST-SN-01 | 戻り値は`AssigneeStatistics[]`型 |
 
 #### ビジネスルール
 
@@ -358,12 +392,12 @@ type AssigneeStatistics = {
 
 #### 同値クラス・境界値
 
-| 分類 | 入力条件 | 期待結果 |
-|------|----------|----------|
-| **正常系** | 担当者A: 2件, B: 3件 | 2件のAssigneeStatistics |
-| **境界値** | assignee=undefined のタスクあり | assignee=undefinedのエントリ |
-| **境界値** | 全タスク同一担当者 | 1件のAssigneeStatistics |
-| **境界値** | リーフタスク0件 | 空配列 |
+| ID | 分類 | 入力条件 | 期待結果 |
+|----|------|----------|----------|
+| EQ-SN-001 | 正常系 | 担当者A: 2件, B: 3件 | 2件のAssigneeStatistics |
+| EQ-SN-002 | 境界値 | assignee=undefined のタスクあり | assignee=undefinedのエントリ |
+| EQ-SN-003 | 境界値 | 全タスク同一担当者 | 1件のAssigneeStatistics |
+| EQ-SN-004 | 境界値 | リーフタスク0件 | 空配列 |
 
 ---
 
@@ -372,26 +406,19 @@ type AssigneeStatistics = {
 #### 目的
 担当者別のPVデータをWide形式（横持ち）で返す。
 
-#### データ形式
+#### シグネチャ
 ```typescript
-// Wide形式
-[
-  { assignee: "田中", "2025/06/01": 0.5, "2025/06/02": 0.5, ... },
-  { assignee: "鈴木", "2025/06/01": 0.3, "2025/06/02": 0.3, ... }
-]
+get pvByName(): Record<string, unknown>[]
+get pvsByName(): Record<string, unknown>[]
+get pvByNameLong(): PvDataLong[]
+get pvsByNameLong(): PvDataLong[]
 ```
 
-| メソッド | 説明 |
-|----------|------|
-| `pvByName` | 日ごとのPV（非累積） |
-| `pvsByName` | 累積PV |
-| `pvByNameLong` | Long形式のPV |
-| `pvsByNameLong` | Long形式の累積PV |
-
 #### 事前条件
-| ID | 条件 |
-|----|------|
-| PRE-PV01 | `startDate`と`endDate`が両方存在する |
+
+| ID | 条件 | 違反時の動作 |
+|----|------|-------------|
+| PRE-PV-01 | `startDate`と`endDate`が両方存在する | Error |
 
 #### ビジネスルール
 
@@ -400,9 +427,10 @@ type AssigneeStatistics = {
 | BR-PV-01 | プロジェクト期間（startDate〜endDate）が設定されている必要がある | `Error: 'fromかtoが取得できませんでした'` |
 | BR-PV-02 | リーフタスク（isLeaf===true）のみがPV計算の対象となる | 親タスクは計算から除外 |
 
-#### 例外条件
-| 条件 | 動作 |
-|------|------|
+#### 例外処理
+
+| 条件 | エラー内容 |
+|------|-----------|
 | `startDate`または`endDate`が`undefined` | `Error: 'fromかtoが取得できませんでした'` |
 
 ---
@@ -412,7 +440,24 @@ type AssigneeStatistics = {
 #### 目的
 指定日が祝日（土日または`holidayDatas`に含まれる）かを判定する。
 
-#### 計算ロジック
+#### シグネチャ
+```typescript
+isHoliday(date: Date): boolean
+```
+
+#### 事前条件
+
+該当なし
+
+#### 事後条件
+
+| ID | 条件 |
+|----|------|
+| POST-IH-01 | 土日または祝日データに含まれる日付ならtrue |
+| POST-IH-02 | それ以外はfalse |
+
+#### アルゴリズム
+
 ```
 1. date.getDay()で曜日取得（0:日, 6:土）
 2. 土日ならtrue
@@ -422,13 +467,13 @@ type AssigneeStatistics = {
 
 #### 同値クラス・境界値
 
-| 分類 | 入力条件 | 期待結果 |
-|------|----------|----------|
-| **正常系** | 土曜日 | `true` |
-| **正常系** | 日曜日 | `true` |
-| **正常系** | 平日（月〜金） | `false` |
-| **正常系** | holidayDatasに登録された平日 | `true` |
-| **境界値** | holidayDatas空で平日 | `false` |
+| ID | 分類 | 入力条件 | 期待結果 |
+|----|------|----------|----------|
+| EQ-IH-001 | 正常系 | 土曜日 | `true` |
+| EQ-IH-002 | 正常系 | 日曜日 | `true` |
+| EQ-IH-003 | 正常系 | 平日（月〜金） | `false` |
+| EQ-IH-004 | 正常系 | holidayDatasに登録された平日 | `true` |
+| EQ-IH-005 | 境界値 | holidayDatas空で平日 | `false` |
 
 ---
 
@@ -437,41 +482,31 @@ type AssigneeStatistics = {
 #### 目的
 PV/EV計算から除外されたタスク（無効なタスク）の一覧を取得する。
 
-#### 関連型定義
-```typescript
-/**
- * 計算から除外されたタスクの情報
- */
-export interface ExcludedTask {
-  /** 除外されたタスク */
-  task: TaskRow
-  /** 除外理由（validStatus.invalidReason） */
-  reason: string
-}
-```
-
 #### シグネチャ
 ```typescript
 get excludedTasks(): ExcludedTask[]
 ```
 
-#### 計算ロジック
+#### 事前条件
+
+該当なし
+
+#### 事後条件
+
+| ID | 条件 |
+|----|------|
+| POST-ET-01 | 戻り値は`ExcludedTask[]`型 |
+| POST-ET-02 | 含まれるタスクは全て`isLeaf===true`かつ`validStatus.isValid===false` |
+| POST-ET-03 | `reason`は`validStatus.invalidReason`の値（nullの場合は'理由不明'） |
+
+#### アルゴリズム
+
 ```
 1. toTaskRows()でフラット化
 2. isLeaf===trueのみフィルタ（リーフタスクのみ対象）
 3. validStatus.isValid===falseのタスクを収集
 4. ExcludedTask[]として返却（task + reason）
 ```
-
-#### 事前条件
-なし
-
-#### 事後条件
-| ID | 条件 |
-|----|------|
-| POST-ET01 | 戻り値は`ExcludedTask[]`型 |
-| POST-ET02 | 含まれるタスクは全て`isLeaf===true`かつ`validStatus.isValid===false` |
-| POST-ET03 | `reason`は`validStatus.invalidReason`の値（nullの場合は'理由不明'） |
 
 #### ビジネスルール
 
@@ -482,52 +517,20 @@ get excludedTasks(): ExcludedTask[]
 
 #### 同値クラス・境界値
 
-| 分類 | 入力条件 | 期待結果 |
-|------|----------|----------|
-| **正常系** | 全タスクが有効（isValid=true） | 空配列`[]` |
-| **正常系** | 日付未設定のリーフタスクあり | 該当タスクがExcludedTask[]に含まれる |
-| **正常系** | 稼働日数0のリーフタスクあり | 該当タスクがExcludedTask[]に含まれる |
-| **正常系** | 複数の無効タスクあり | 全無効タスクがExcludedTask[]に含まれる |
-| **境界値** | taskNodes空配列 | 空配列`[]` |
-| **境界値** | 親タスクのみ無効（isLeaf=false） | 空配列（親は対象外） |
+| ID | 分類 | 入力条件 | 期待結果 |
+|----|------|----------|----------|
+| EQ-ET-001 | 正常系 | 全タスクが有効（isValid=true） | 空配列`[]` |
+| EQ-ET-002 | 正常系 | 日付未設定のリーフタスクあり | 該当タスクがExcludedTask[]に含まれる |
+| EQ-ET-003 | 正常系 | 稼働日数0のリーフタスクあり | 該当タスクがExcludedTask[]に含まれる |
+| EQ-ET-004 | 正常系 | 複数の無効タスクあり | 全無効タスクがExcludedTask[]に含まれる |
+| EQ-ET-005 | 境界値 | taskNodes空配列 | 空配列`[]` |
+| EQ-ET-006 | 境界値 | 親タスクのみ無効（isLeaf=false） | 空配列（親は対象外） |
 
 ---
 
-## 6. 関連オブジェクト
+## 6. テストシナリオ（Given-When-Then形式）
 
-### 6.1 依存関係図
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      Project                                │
-│  (集約ルート)                                               │
-├─────────────────────────────────────────────────────────────┤
-│                         │                                   │
-│    ┌────────────────────┼────────────────────┐              │
-│    ▼                    ▼                    ▼              │
-│ TaskNode[]         HolidayData[]        TaskService         │
-│ (値オブジェクト)    (値オブジェクト)      (ドメインサービス)   │
-│    │                                         │              │
-│    ▼                                         │              │
-│ TaskRow                                      │              │
-│ (エンティティ) ◄─────────────────────────────┘              │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### 6.2 集約境界
-
-| オブジェクト | 関係 | ライフサイクル |
-|-------------|------|----------------|
-| `TaskNode[]` | 構成要素 | Projectと同一 |
-| `HolidayData[]` | 構成要素 | Projectと同一 |
-| `TaskRow[]` | 導出（キャッシュ） | Projectと同一 |
-| `TaskService` | 協調（現状：直接生成） | 独立（要DI化） |
-
----
-
-## 7. テストシナリオ（Given-When-Then形式）
-
-### 7.1 基本生成テスト
+### 6.1 基本生成テスト
 
 ```gherkin
 Scenario: 空のタスクノードでProjectを生成できる
@@ -552,7 +555,7 @@ Scenario: 必須項目のみでProjectを生成できる
   And   name が undefined である
 ```
 
-### 7.2 toTaskRows()テスト
+### 6.2 toTaskRows()テスト
 
 ```gherkin
 Scenario: 階層構造のTaskNodeがフラット化される
@@ -573,7 +576,7 @@ Scenario: toTaskRows()は同一参照をキャッシュして返す
   Then  1回目と2回目の戻り値が同一参照（===）である
 ```
 
-### 7.3 getTask()テスト
+### 6.3 getTask()テスト
 
 ```gherkin
 Scenario: 存在するIDでTaskRowを取得できる
@@ -589,7 +592,7 @@ Scenario: 存在しないIDでundefinedが返る
   Then  undefined が返される
 ```
 
-### 7.4 getFullTaskName()テスト
+### 6.4 getFullTaskName()テスト
 
 ```gherkin
 Scenario: 3階層のタスクのフルパス名を取得する
@@ -609,93 +612,7 @@ Scenario: undefinedを渡すと空文字列が返る
   Then  "" が返される
 ```
 
-### 7.5 getTaskRows()テスト
-
-```gherkin
-Scenario: 指定期間内にPVがあるリーフタスクを取得する
-  Given 以下のリーフタスク:
-    | id | assignee | startDate  | endDate    |
-    | 1  | 田中     | 2025-06-01 | 2025-06-10 |
-    | 2  | 鈴木     | 2025-06-15 | 2025-06-20 |
-  When  getTaskRows(2025-06-01, 2025-06-10) を呼び出す
-  Then  id=1のタスクのみが返される
-```
-
-```gherkin
-Scenario: 担当者でフィルタできる
-  Given 以下のリーフタスク:
-    | id | assignee | startDate  | endDate    |
-    | 1  | 田中     | 2025-06-01 | 2025-06-10 |
-    | 2  | 鈴木     | 2025-06-01 | 2025-06-10 |
-  When  getTaskRows(2025-06-01, 2025-06-10, "田中") を呼び出す
-  Then  id=1のタスクのみが返される
-```
-
-### 7.6 statisticsByProject テスト
-
-```gherkin
-Scenario: プロジェクト統計が正しく計算される
-  Given 以下のリーフタスク:
-    | id | workload | pv  | ev  |
-    | 1  | 5.0      | 3.0 | 2.5 |
-    | 2  | 3.0      | 2.0 | 2.0 |
-  And   基準日 2025-06-15
-  When  statisticsByProject を取得する
-  Then  totalTasksCount が 2 である
-  And   totalWorkloadExcel が 8.0 である
-  And   totalPvExcel が 5.0 である
-  And   totalEv が 4.5 である
-```
-
-```gherkin
-Scenario: PVが0の場合SPIはundefined
-  Given 全リーフタスクのcalculatePVs(baseDate)が0
-  When  statisticsByProject を取得する
-  Then  spi が undefined である
-```
-
-### 7.7 pvByName / pvsByName テスト
-
-```gherkin
-Scenario: startDate/endDateが未設定の場合エラー
-  Given startDate=undefined のProject
-  When  pvByName を取得しようとする
-  Then  "fromかtoが取得できませんでした" エラーがスローされる
-```
-
-```gherkin
-Scenario: 担当者別PVがWide形式で返される
-  Given startDate=2025-06-01, endDate=2025-06-03 のProject
-  And   担当者"田中"のタスクが存在
-  When  pvByName を取得する
-  Then  assignee="田中" のレコードが含まれる
-  And   "2025/06/01", "2025/06/02", "2025/06/03" のキーが存在する
-```
-
-### 7.8 isHoliday()テスト
-
-```gherkin
-Scenario: 土曜日は祝日と判定される
-  Given 任意のProject（holidayDatas空）
-  When  isHoliday(2025-06-14) を呼び出す（土曜日）
-  Then  true が返される
-```
-
-```gherkin
-Scenario: 平日は祝日ではないと判定される
-  Given 任意のProject（holidayDatas空）
-  When  isHoliday(2025-06-16) を呼び出す（月曜日）
-  Then  false が返される
-```
-
-```gherkin
-Scenario: holidayDatasに登録された日は祝日と判定される
-  Given holidayDatas に 2025-06-16 が登録されたProject
-  When  isHoliday(2025-06-16) を呼び出す（月曜日）
-  Then  true が返される
-```
-
-### 7.9 excludedTasks テスト
+### 6.5 excludedTasks テスト
 
 ```gherkin
 Scenario: 全タスクが有効な場合、除外タスクは空
@@ -713,21 +630,6 @@ Scenario: 日付未設定のタスクが除外リストに含まれる
 ```
 
 ```gherkin
-Scenario: 稼働日数0のタスクが除外リストに含まれる
-  Given 稼働予定日数が0のリーフタスク（id=2）
-  When  excludedTasks を取得する
-  Then  id=2のタスクがExcludedTask[]に含まれる
-  And   reasonに「日数エラー」が含まれる
-```
-
-```gherkin
-Scenario: 複数の無効タスクが全て除外リストに含まれる
-  Given 無効なリーフタスク3件（id=1,2,3）
-  When  excludedTasks を取得する
-  Then  3件のExcludedTaskが返される
-```
-
-```gherkin
 Scenario: 親タスクは除外対象外
   Given 無効な親タスク（isLeaf=false, id=1）
   And   有効な子タスク（isLeaf=true, id=2）
@@ -737,7 +639,107 @@ Scenario: 親タスクは除外対象外
 
 ---
 
-## 8. 設計上の課題・改善提案
+## 7. 外部依存
+
+| 名前 | 種別 | 説明 |
+|------|------|------|
+| `TaskNode` | 内部モジュール | タスクのツリー構造 |
+| `TaskRow` | 内部モジュール | フラット化されたタスク |
+| `TaskService` | 内部モジュール | ツリー→フラット変換 |
+| `HolidayData` | 内部モジュール | 祝日情報 |
+
+---
+
+## 8. 関連オブジェクト
+
+### 8.1 依存関係図
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      Project                                │
+│  (集約ルート)                                               │
+├─────────────────────────────────────────────────────────────┤
+│                         │                                   │
+│    ┌────────────────────┼────────────────────┐              │
+│    ▼                    ▼                    ▼              │
+│ TaskNode[]         HolidayData[]        TaskService         │
+│ (値オブジェクト)    (値オブジェクト)      (ドメインサービス)   │
+│    │                                         │              │
+│    ▼                                         │              │
+│ TaskRow                                      │              │
+│ (エンティティ) ◄─────────────────────────────┘              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 8.2 関係一覧
+
+| 関係先 | 関係タイプ | 説明 |
+|--------|-----------|------|
+| `TaskNode` | aggregates | タスクツリー構造を保持 |
+| `TaskRow` | creates | toTaskRows()でTaskRowを導出 |
+| `HolidayData` | aggregates | 祝日データを保持 |
+| `TaskService` | uses | ツリー→フラット変換に使用 |
+
+---
+
+## 9. テストケース数サマリ
+
+| カテゴリ | 計画 | 実装 |
+|----------|------|------|
+| コンストラクタ | 4件 | 4件 |
+| toTaskRows() | 6件 | 6件 |
+| getTask() | 5件 | 5件 |
+| getFullTaskName() | 5件 | 5件 |
+| getTaskRows() | 7件 | 7件 |
+| statisticsByProject | 5件 | 5件 |
+| statisticsByName | 4件 | 4件 |
+| pvByName系 | 4件 | 4件 |
+| isHoliday() | 5件 | 5件 |
+| excludedTasks | 6件 | 6件 |
+| **合計** | **51件** | **51件** |
+
+---
+
+## 10. 要件トレーサビリティ
+
+> **重要**: このセクションは必須です。grepで検索可能な形式で記載すること。
+
+| 要件ID | 受け入れ基準 | 対応テストケース | 結果 |
+|--------|-------------|-----------------|------|
+| REQ-TASK-001 AC-01 | excludedTasksで一覧取得 | EQ-ET-002〜EQ-ET-004 | ✅ PASS |
+| REQ-TASK-001 AC-02 | reasonが正しく設定 | EQ-ET-002, EQ-ET-003 | ✅ PASS |
+| REQ-TASK-001 AC-03 | 有効タスクのみ→空配列 | EQ-ET-001, EQ-ET-005 | ✅ PASS |
+
+> **ステータス凡例**:
+> - ⏳: 未実装
+> - ✅ PASS: テスト合格
+> - ❌ FAIL: テスト失敗
+
+---
+
+## 11. テスト実装
+
+### 11.1 テストファイル
+
+| ファイル | 説明 | テスト数 |
+|---------|------|---------|
+| `src/domain/__tests__/Project.test.ts` | 単体テスト | 51件 |
+
+### 11.2 テストフィクスチャ
+
+該当なし
+
+### 11.3 テスト実行結果
+
+```
+実行日: 2025-12-24
+Test Suites: 1 passed, 1 total
+Tests:       51 passed, 51 total
+```
+
+---
+
+## 12. 設計上の課題・改善提案
 
 | 課題 | 現状 | 改善案 |
 |------|------|--------|
@@ -748,38 +750,10 @@ Scenario: 親タスクは除外対象外
 
 ---
 
-## 9. テストケース数サマリ
-
-| カテゴリ | テストケース数（概算） |
-|----------|----------------------|
-| コンストラクタ | 4件 |
-| toTaskRows() | 6件 |
-| getTask() | 4件 |
-| getFullTaskName() | 4件 |
-| getTaskRows() | 6件 |
-| statisticsByProject | 4件 |
-| statisticsByName | 4件 |
-| pvByName系 | 4件 |
-| isHoliday() | 4件 |
-| excludedTasks | 5件 |
-| **合計** | **約45件** |
-
----
-
-## 10. 要件トレーサビリティ
-
-| 要件ID | 受け入れ基準 | 対応テストケース | 結果 |
-|--------|-------------|-----------------|------|
-| REQ-TASK-001 AC-01 | excludedTasksで一覧取得 | TC-02〜TC-06（7.9参照） | ✅ PASS |
-| REQ-TASK-001 AC-02 | reasonが正しく設定 | TC-09, TC-10（7.9参照） | ✅ PASS |
-| REQ-TASK-001 AC-03 | 有効タスクのみ→空配列 | TC-01, TC-07（7.9参照） | ✅ PASS |
-
----
-
-## 11. 変更履歴
+## 13. 変更履歴
 
 | バージョン | 日付 | 変更内容 | 要件ID |
 |-----------|------|---------|--------|
 | 1.0.0 | 2025-12-16 | 初版作成 | - |
-| 1.1.0 | 2025-12-22 | excludedTasksプロパティ追加（セクション3.3, 5.9, 7.9） | REQ-TASK-001 |
-| 1.1.1 | 2025-12-24 | 要件トレーサビリティセクション追加（セクション10） | REQ-TASK-001 |
+| 1.1.0 | 2025-12-22 | excludedTasksプロパティ追加 | REQ-TASK-001 |
+| 1.1.1 | 2025-12-24 | 要件トレーサビリティセクション追加 | REQ-TASK-001 |

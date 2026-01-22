@@ -1,62 +1,93 @@
-# pbevm-diff出力整形 詳細仕様
+# PbevmDiffUsecase.cli-output-cleanup 詳細仕様
 
 **バージョン**: 1.0.0
 **作成日**: 2025-12-24
 **要件ID**: REQ-CLI-003
+**GitHub Issue**: -
 **ソースファイル**: `src/usecase/pbevm-diff-usecase.ts`
 
 ---
 
 ## 1. 概要
 
+### 1.1 目的
+
 `pbevm-diff` コマンドのタスクDiff出力から、内部実装用プロパティ（`currentTask`, `prevTask`）を除外し、ユーザーにとって意味のある差分情報のみを表示する。
+
+### 1.2 現状の問題
+
+| 問題点 | 内容 |
+|-------|------|
+| `currentTask` プロパティ | オブジェクト参照のため `[TaskRow]` としか表示されず意味がない |
+| `prevTask` プロパティ | 同上 |
+
+### 1.3 対象ファイル
+
+| ファイル | 修正内容 |
+|---------|---------|
+| `src/usecase/pbevm-diff-usecase.ts` | `save()` メソッド内の `console.table()` 呼び出しを修正 |
 
 ---
 
-## 2. 変更仕様
+## 2. インターフェース仕様
 
-### 2.1 対象ファイル
+### 2.1 型定義
 
-| ファイル | 変更箇所 |
-|---------|---------|
-| `src/usecase/pbevm-diff-usecase.ts` | `save()` メソッド内の `console.table()` 呼び出し |
+```typescript
+/**
+ * 表示用TaskDiff（内部プロパティを除外）
+ */
+type DisplayTaskDiff = Omit<TaskDiff, 'currentTask' | 'prevTask'>
+```
 
-### 2.2 除外対象プロパティ
+### 2.2 メソッド/プロパティ追加
+
+```typescript
+/**
+ * TaskDiff配列から表示用オブジェクト配列を生成
+ *
+ * @param taskDiffs - TaskDiff配列
+ * @returns currentTask, prevTaskを除外したオブジェクト配列
+ *
+ * @remarks
+ * - hasDiff === true のタスクのみをフィルタ
+ * - currentTask, prevTask を除外（console.tableで意味のある表示にならないため）
+ */
+export const formatTaskDiffsForDisplay = (
+    taskDiffs: TaskDiff[]
+): DisplayTaskDiff[]
+```
+
+---
+
+## 3. 処理仕様
+
+### 3.1 処理ロジック
+
+```
+1. taskDiffsから hasDiff === true の要素をフィルタ
+2. 各要素から currentTask, prevTask を除外
+3. 残りのプロパティを持つオブジェクト配列を返却
+```
+
+### 3.2 擬似コード
+
+```typescript
+export const formatTaskDiffsForDisplay = (taskDiffs: TaskDiff[]) => {
+    return taskDiffs
+        .filter((row) => row.hasDiff)
+        .map(({ currentTask, prevTask, ...rest }) => rest)
+}
+```
+
+### 3.3 除外対象プロパティ
 
 | プロパティ | 型 | 除外理由 |
 |-----------|-----|---------|
-| `currentTask` | `TaskRow \| undefined` | オブジェクト参照。console.tableでは `[TaskRow]` としか表示されず意味がない |
+| `currentTask` | `TaskRow \| undefined` | オブジェクト参照。console.tableでは意味のある表示にならない |
 | `prevTask` | `TaskRow \| undefined` | 同上 |
 
-### 2.3 変更内容
-
-`save()` メソッド内の taskDiffs 表示処理を変更：
-
-**変更前**:
-```typescript
-if (taskDiffs) {
-    console.log('タスクDiff')
-    console.table(taskDiffs.filter((row) => row.hasDiff))
-    // ...
-}
-```
-
-**変更後**:
-```typescript
-if (taskDiffs) {
-    console.log('タスクDiff')
-    // currentTask, prevTask を除外して表示
-    const displayTaskDiffs = taskDiffs
-        .filter((row) => row.hasDiff)
-        .map(({ currentTask, prevTask, ...rest }) => rest)
-    console.table(displayTaskDiffs)
-    // ...
-}
-```
-
-### 2.4 表示されるプロパティ
-
-変更後も表示されるプロパティ（TaskDiff型から `currentTask`, `prevTask` を除いたもの）：
+### 3.4 表示されるプロパティ
 
 | プロパティ | 型 | 説明 |
 |-----------|-----|------|
@@ -75,75 +106,43 @@ if (taskDiffs) {
 | `currentEV` | `number \| undefined` | 現在EV |
 | `deltaEV` | `number \| undefined` | EV変化 |
 | `hasDiff` | `boolean` | 差分有無 |
-| その他 | - | TaskDiffの残りのプロパティ |
 
 ---
 
-## 3. 影響範囲
+## 4. テストケース
 
-### 3.1 影響あり
+### 4.1 正常系
 
-| 項目 | 影響内容 |
-|------|---------|
-| CLI出力 | `currentTask`, `prevTask` カラムが表示されなくなる |
-
-### 3.2 影響なし
-
-| 項目 | 理由 |
-|------|------|
-| Excel出力 | `json2workbook` には元の `taskDiffs` を渡すため変更なし |
-| 他のDiff（ProjectDiff, AssigneeDiff） | TaskRow参照を持たないため対象外 |
-| ドメインロジック | 表示整形のみのため影響なし |
-
----
-
-## 4. テスト仕様
-
-### 4.1 テストファイル
-
-`src/usecase/__tests__/pbevm-diff-usecase.test.ts`
-
-### 4.2 テストケース
-
-| テストID | テスト内容 | 期待結果 |
-|---------|----------|---------|
+| TC-ID | テスト内容 | 期待結果 |
+|-------|-----------|---------|
 | TC-01 | displayTaskDiffsに `currentTask` が含まれない | 全要素で `currentTask` プロパティが存在しない |
 | TC-02 | displayTaskDiffsに `prevTask` が含まれない | 全要素で `prevTask` プロパティが存在しない |
 | TC-03 | displayTaskDiffsに必要なプロパティが含まれる | `id`, `name`, `diffType` 等が存在する |
 
-### 4.3 テストアプローチ
+### 4.2 境界値
 
-表示整形ロジックを直接テストするため、ヘルパー関数を抽出してテスト可能にする。
-
-```typescript
-// テスト対象の関数を抽出
-export const formatTaskDiffsForDisplay = (taskDiffs: TaskDiff[]) => {
-    return taskDiffs
-        .filter((row) => row.hasDiff)
-        .map(({ currentTask, prevTask, ...rest }) => rest)
-}
-```
+| TC-ID | テスト内容 | 期待結果 |
+|-------|-----------|---------|
+| TC-04 | 空のtaskDiffs配列 | 空配列を返す |
+| TC-05 | hasDiff=falseのみの配列 | 空配列を返す |
 
 ---
 
-## 5. インターフェース仕様
+## 5. エクスポート
 
-### 5.1 formatTaskDiffsForDisplay 関数
-
-```typescript
-/**
- * TaskDiff配列から表示用オブジェクト配列を生成
- * @param taskDiffs - TaskDiff配列
- * @returns currentTask, prevTaskを除外したオブジェクト配列
- */
-export const formatTaskDiffsForDisplay = (
-    taskDiffs: TaskDiff[]
-): Omit<TaskDiff, 'currentTask' | 'prevTask'>[]
-```
+該当なし（ユースケース内部の表示整形のみ）
 
 ---
 
-## 6. 要件トレーサビリティ
+## 6. 使用例
+
+該当なし（CLI出力の改善のため、使用方法に変更なし）
+
+---
+
+## 7. 要件トレーサビリティ
+
+> **重要**: このセクションは必須です。grepで検索可能な形式で記載すること。
 
 | 要件ID | 受け入れ基準 | 対応テストケース | 結果 |
 |--------|-------------|-----------------|------|
@@ -152,9 +151,11 @@ export const formatTaskDiffsForDisplay = (
 | REQ-CLI-003 AC-03 | 差分情報（diffType, progressRateDelta等）は引き続き表示される | TC-03 | ✅ PASS |
 | REQ-CLI-003 AC-04 | タスクの識別情報（id, name）は表示される | TC-03 | ✅ PASS |
 
+**テストファイル**: `src/usecase/__tests__/pbevm-diff-usecase.test.ts`
+
 ---
 
-## 7. 変更履歴
+## 8. 変更履歴
 
 | バージョン | 日付 | 変更内容 | 要件ID |
 |-----------|------|---------|--------|
