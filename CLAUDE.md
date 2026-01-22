@@ -46,76 +46,7 @@ src/
 - **Project** (`domain/Project.ts`): プロジェクトメタデータとタスクツリーを含む集約ルート
 - **ProjectService** (`domain/ProjectService.ts`): プロジェクトスナップショット間の差分計算
 
-### EVM用語
-
-- **PV (Planned Value)**: 計画価値。基準日までに完了予定だった作業量
-- **EV (Earned Value)**: 出来高。実際に完了した作業の価値
-- **SPI (Schedule Performance Index)**: スケジュール効率指標 (EV/PV)。1.0以上なら予定通り
-- **SV (Schedule Variance)**: スケジュール差異 (EV-PV)
-
-### TaskRowの詳細仕様
-
-主要プロパティ:
-- `sharp`: 表示順の行番号（#列）
-- `id`: タスクの一意なID
-- `level`: 階層レベル（1=ルート、2=子）
-- `name`, `assignee`: タスク名、担当者
-- `workload`: 予定工数（日単位）
-- `startDate`, `endDate`: 予定開始日・終了日
-- `actualStartDate`, `actualEndDate`: 実績開始日・終了日
-- `progressRate`: 進捗率（0.0〜1.0）
-- `scheduledWorkDays`: 稼働予定日数
-- `plotMap`: Map<number, boolean> - Excelのシリアル値をキーとした稼働日マップ
-- `isLeaf`: リーフノード（末端タスク）かどうか
-- `parentId`: 親タスクのID
-
-主要メソッド:
-- `calculatePV(baseDate)`: 基準日のPV（その日のみ）を計算。稼働日でなければ0
-- `calculatePVs(baseDate)`: 基準日までの累積PVを計算
-- `calculateSPI(baseDate)`: SPI = EV / 累積PV
-- `calculateSV(baseDate)`: SV = EV - 累積PV
-- `isOverdueAt(baseDate)`: 期限切れ判定（終了日<=基準日 かつ 未完了）
-- `validStatus`: データの有効性チェック（開始日・終了日・plotMap・稼働日数の検証）
-
-### Projectの詳細仕様
-
-主要プロパティ:
-- `baseDate`: 基準日
-- `name`, `startDate`, `endDate`: プロジェクト名、開始日、終了日
-- `taskNodes`: TaskNode[]のツリー構造
-- `holidayDatas`: 祝日データ
-
-主要メソッド:
-- `toTaskRows()`: TaskNodeツリーをフラットなTaskRow[]に変換（キャッシュあり）
-- `getTask(id)`: IDからTaskRowを取得
-- `getFullTaskName(task)`: 親を遡って"/"区切りのフルパス名を取得
-- `getTaskRows(fromDate, toDate?, assignee?)`: 期間・担当者でフィルタしたリーフタスク取得
-- `statisticsByProject`: プロジェクト全体の統計（タスク数、工数合計、PV/EV/SPI）
-- `statisticsByName`: 担当者別の統計
-- `pvByName`, `pvsByName`: 担当者別のPV/累積PVデータ（Wide形式）
-- `pvByNameLong`, `pvsByNameLong`: Long形式のPVデータ
-- `isHoliday(date)`: 祝日判定
-
-### ProjectServiceの差分計算仕様
-
-`calculateTaskDiffs(now, prev)`:
-- 2つのProjectを比較し、タスク単位の差分を計算
-- isLeaf（リーフノード）のみを対象
-- diffType: `'added'` | `'modified'` | `'removed'` | `'none'`
-- 進捗率、PV、EVの変化量（delta）を計算
-
-`calculateProjectDiffs(taskDiffs)`:
-- タスク差分をプロジェクト全体で集約
-- 変更・追加・削除の件数をカウント
-
-`calculateAssigneeDiffs(taskDiffs)`:
-- タスク差分を担当者別に集約
-
-`mergeProjectStatistics(existing, incoming)`:
-- 統計データのマージ（同じ基準日は上書き）
-
-`fillMissingDates(stats)`:
-- 欠落日（土日など）を前日データで補間
+> **詳細仕様**: EVM用語、各クラスのプロパティ・メソッド詳細、稼働日計算ロジック等は [コア用語集 (GLOSSARY.md)](docs/GLOSSARY.md) を参照。
 
 ### データフロー
 
@@ -238,19 +169,32 @@ npm test -- --watch   # ウォッチモードで実行
 
 ### 新機能開発の手順
 
+**git worktreeを使用**して、別ディレクトリでfeatureブランチを作業する。
+
 ```bash
-# 1. developから feature ブランチを作成
-git checkout develop
-git pull origin develop
-git checkout -b feature/機能名
+# 1. developから feature ブランチを作成（worktree）
+git fetch origin
+git worktree add ../evmtools-node_feature-機能名 -b feature/機能名 origin/develop
 
-# 2. 開発作業・コミット
+# 2. 作業ディレクトリに移動
+cd ../evmtools-node_feature-機能名
 
-# 3. プッシュ
+# 3. 依存関係のインストール（必要に応じて）
+npm install
+
+# 4. 開発作業・コミット
+
+# 5. プッシュ
 git push -u origin feature/機能名
 
-# 4. PRを作成（ベース: develop）
+# 6. PRを作成（ベース: develop）
+
+# 7. マージ後、worktreeを削除
+cd ../evmtools-node  # 元のディレクトリに戻る
+git worktree remove ../evmtools-node_feature-機能名
 ```
+
+> **git worktreeのメリット**: 現在の作業ディレクトリを維持したまま、別ブランチで並行作業できる。`git stash`や`git checkout`による切り替えが不要。
 
 ### 禁止事項
 
@@ -264,7 +208,7 @@ git push -u origin feature/機能名
 
 - 要員計画モジュール（`src/resource/`）はベータ版
 - TypeScript strictモードが有効
-- plotMapはExcelのシリアル値（数値）をキーとしている点に注意
+- plotMapはExcelのシリアル値（数値）をキーとしている点に注意（詳細は[GLOSSARY.md](docs/GLOSSARY.md)「稼働日の計算方法」参照）
 - CsvProjectCreatorは`iconv-lite`に依存（Shift-JIS対応）
 
 ## 仕様駆動開発（重要）
@@ -275,6 +219,7 @@ git push -u origin feature/機能名
 
 | ドキュメント | パス | 内容 |
 |-------------|------|------|
+| コア用語集 | [`GLOSSARY.md`](docs/GLOSSARY.md) | EVM用語、クラス詳細仕様、稼働日計算ロジック |
 | 開発ワークフロー | [`DEVELOPMENT_WORKFLOW.md`](docs/workflow/DEVELOPMENT_WORKFLOW.md) | 全体フロー、必須セクション |
 | サンプル開発フロー | [`SAMPLE_DEVELOPMENT_FLOW.md`](docs/workflow/SAMPLE_DEVELOPMENT_FLOW.md) | REQ-TASK-001の実例、トレーサビリティ具体例 |
 
