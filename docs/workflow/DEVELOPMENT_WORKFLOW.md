@@ -783,6 +783,8 @@ git fetch --prune origin  # リモートの削除されたブランチを反映
 
 ### 2.5 リリースフロー
 
+> **注意**: main/develop ブランチは直接 push が禁止されています。全ての変更は PR 経由で行います。
+
 ```bash
 # 1. developからreleaseブランチを作成
 git checkout develop
@@ -791,28 +793,33 @@ git checkout -b release/0.0.18
 
 # 2. バージョン更新
 npm version 0.0.18 --no-git-tag-version
-# package.json, CHANGELOG.md を更新
 
-# 3. コミット
-git add .
+# 3. コミット・プッシュ
+git add package.json
 git commit -m "0.0.18"
+git push -u origin release/0.0.18
 
-# 4. mainにマージ
+# 4. mainへのPR作成・マージ
+gh pr create --base main --title "Release 0.0.18" --body "Release 0.0.18"
+gh pr merge --merge
+
+# 5. タグ作成・プッシュ
 git checkout main
-git merge --no-ff release/0.0.18
+git pull origin main
+git tag v0.0.18
+git push origin v0.0.18
 
-# 5. タグ作成
-git tag 0.0.18
+# 6. developへの同期（PR経由）
+git checkout -b chore/sync-main-to-develop-v0.0.18
+git push -u origin chore/sync-main-to-develop-v0.0.18
+gh pr create --base develop --title "chore: sync main to develop (v0.0.18)" --body "main の v0.0.18 を develop に同期"
+gh pr merge --merge --admin  # レビュー不要の場合
 
-# 6. developにもマージ（タグをマージ）
+# 7. クリーンアップ
 git checkout develop
-git merge --no-ff 0.0.18 -m "Merge tag '0.0.18' into develop"
-
-# 7. プッシュ
-git push origin main develop --tags
-
-# 8. releaseブランチ削除
-git branch -d release/0.0.18
+git pull origin develop
+git branch -d release/0.0.18 chore/sync-main-to-develop-v0.0.18
+git fetch --prune origin
 ```
 
 ---
