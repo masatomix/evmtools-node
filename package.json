@@ -1,6 +1,6 @@
 {
     "name": "evmtools-node",
-    "version": "0.0.21",
+    "version": "0.0.22",
     "description": "このライブラリは、プライムブレインズ社で利用している「進捗管理ツール(Excel)」ファイルを読み込み、 プロジェクトの進捗状況や要員別の作業量を可視化するためのライブラリです。",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
