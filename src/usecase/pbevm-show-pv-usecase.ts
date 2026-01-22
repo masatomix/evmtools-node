@@ -17,9 +17,11 @@ export class PbevmShowPvUsecase {
 
     async save(currentProject: Project, taskRows: TaskRow[]) {
         const path = `${currentProject.name}-pv.xlsx`
+        const baseDate = currentProject.baseDate
 
         // 表示用データに変換（内部プロパティを除外）
         // Issue #72: logger, calculateSPI, calculateSV などを除去
+        // Issue #86: pvToday, pvTodayActual を追加
         const results = taskRows.map((taskRow) => ({
             sharp: taskRow.sharp,
             id: taskRow.id,
@@ -36,6 +38,9 @@ export class PbevmShowPvUsecase {
             pv: taskRow.pv,
             ev: taskRow.ev,
             spi: taskRow.spi,
+            pvToday: taskRow.workloadPerDay,
+            remainingDays: taskRow.calculateRemainingDays(baseDate),
+            pvTodayActual: taskRow.calculatePvTodayActual(baseDate),
             進捗応当日: dateStr(taskRow.expectedProgressDate),
             delayDays: taskRow.delayDays,
             remarks: taskRow.remarks,

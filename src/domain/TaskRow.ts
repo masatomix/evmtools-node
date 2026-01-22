@@ -276,6 +276,77 @@ export class TaskRow {
     }
 
     /**
+     * 基準日から終了日までの残日数を計算する
+     * plotMapでプロットされている日のみカウント（基準日を含む）
+     *
+     * @param baseDate 基準日
+     * @returns 残日数。計算不能な場合は undefined
+     */
+    calculateRemainingDays = (baseDate: Date): number | undefined => {
+        if (!this.checkStartEndDateAndPlotMap()) {
+            return undefined
+        }
+
+        const { endDate, plotMap } = this
+
+        const baseSerial = date2Sn(baseDate)
+        const endSerial = date2Sn(endDate)
+
+        // 基準日が終了日より後の場合は0
+        if (baseSerial > endSerial) {
+            return 0
+        }
+
+        // 基準日〜終了日の間でplotMapにプロットされている日数をカウント
+        let count = 0
+        for (const [serial] of plotMap.entries()) {
+            if (baseSerial <= serial && serial <= endSerial) {
+                if (plotMap.get(serial) === true) {
+                    count++
+                }
+            }
+        }
+
+        return count
+    }
+
+    /**
+     * 実行PV（残工数 / 残日数）を計算する
+     * 進捗を反映した「今日やるべきPV」
+     *
+     * @param baseDate 基準日
+     * @returns 実行PV。計算不能な場合は undefined。完了タスクは 0
+     */
+    calculatePvTodayActual = (baseDate: Date): number | undefined => {
+        const { progressRate, workload } = this
+
+        // 完了タスクは0
+        if (progressRate === 1.0) {
+            return 0
+        }
+
+        // progressRate未設定
+        if (progressRate === undefined) {
+            return undefined
+        }
+
+        // workload未設定
+        if (workload === undefined) {
+            return undefined
+        }
+
+        const remainingDays = this.calculateRemainingDays(baseDate)
+
+        // 計算不能または残日数0
+        if (remainingDays === undefined || remainingDays === 0) {
+            return undefined
+        }
+
+        const remainingWorkload = workload * (1 - progressRate)
+        return remainingWorkload / remainingDays
+    }
+
+    /**
      * startDate, endDate ,plotMap がundefinedだったらfalse
      * @returns
      */
