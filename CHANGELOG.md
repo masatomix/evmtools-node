@@ -5,6 +5,19 @@
 フォーマットは [Keep a Changelog](https://keepachangelog.com/ja/1.0.0/) に基づき、
 [セマンティックバージョニング](https://semver.org/lang/ja/) に準拠しています。
 
+## [0.0.20]
+
+### 追加
+- **タスク管理機能**: 仕様書からタスクを導出し進捗管理する仕組み
+  - タスクテンプレート: `docs/templates/tasks-template.md`
+  - ワークフロー: `docs/workflow/DEVELOPMENT_WORKFLOW.md`（セクション2.2.10）
+
+### 改善
+- **仕様書テンプレート統一化**: 全14ファイルの設計書を統一フォーマットに書き換え
+  - テンプレート配置場所を `docs/templates/` に統一
+  - マスター設計書テンプレート: `docs/templates/master-spec-template.md`
+  - 案件設計書テンプレート: `docs/templates/feature-spec-template.md`
+
 ## [0.0.19]
 
 ### 変更
