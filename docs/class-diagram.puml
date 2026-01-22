@@ -1,0 +1,170 @@
+@startuml evmtools-node-domain
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+package "domain" {
+
+    class Project {
+        -_taskNodes: TaskNode[]
+        -_baseDate: Date
+        -_holidayDatas: HolidayData[]
+        -_startDate?: Date
+        -_endDate?: Date
+        -_name?: string
+        -_taskService: TaskService
+        -_cachedTaskRows?: TaskRow[]
+        -_cachedTaskMap?: Map<number, TaskRow>
+        --
+        +baseDate: Date
+        +taskNodes: TaskNode[]
+        +startDate?: Date
+        +endDate?: Date
+        +name?: string
+        +holidayDatas: HolidayData[]
+        +length: number
+        +statisticsByProject: ProjectStatistics[]
+        +statisticsByName: AssigneeStatistics[]
+        +excludedTasks: ExcludedTask[]
+        +pvByName: Record<string, unknown>[]
+        +pvsByName: Record<string, unknown>[]
+        +pvByNameLong: LongData[]
+        +pvsByNameLong: LongData[]
+        --
+        +toTaskRows(): TaskRow[]
+        +getTask(id: number): TaskRow | undefined
+        +getFullTaskName(task?: TaskRow): string
+        +getTaskRows(from: Date, to?: Date, assignee?: string): TaskRow[]
+        +isHoliday(date: Date): boolean
+    }
+
+    class TaskRow {
+        +sharp: number
+        +id: number
+        +level: number
+        +name: string
+        +assignee?: string
+        +workload?: number
+        +startDate?: Date
+        +endDate?: Date
+        +actualStartDate?: Date
+        +actualEndDate?: Date
+        +progressRate?: number
+        +scheduledWorkDays?: number
+        +pv?: number
+        +ev?: number
+        +spi?: number
+        +expectedProgressDate?: Date
+        +delayDays?: number
+        +remarks?: string
+        +parentId?: number
+        +isLeaf?: boolean
+        +plotMap?: Map<number, boolean>
+        --
+        +workloadPerDay: number | undefined
+        +finished: boolean
+        +validStatus: ValidStatus
+        --
+        +calculatePV(baseDate: Date): number | undefined
+        +calculatePVs(baseDate: Date): number
+        +calculateSPI(baseDate: Date): number | undefined
+        +calculateSV(baseDate: Date): number | undefined
+        +isOverdueAt(baseDate: Date): boolean
+        +checkStartEndDateAndPlotMap(): boolean
+        +{static} fromNode(node: TaskNode, level: number, parentId?: number): TaskRow
+    }
+
+    class TaskNode extends TaskRow {
+        +children: TaskNode[]
+        --
+        +[Symbol.iterator](): IterableIterator<TaskNode>
+        +{static} fromRow(row: TaskRow, children?: TaskNode[]): TaskNode
+    }
+
+    class TaskService {
+        +buildTaskTree(rows: TaskRow[]): TaskNode[]
+        +convertToTaskRows(nodes: TaskNode[]): TaskRow[]
+    }
+
+    class ProjectService {
+        +calculateTaskDiffs(now: Project, prev: Project): TaskDiff[]
+        +calculateProjectDiffs(taskDiffs: TaskDiff[]): ProjectDiff[]
+        +calculateAssigneeDiffs(taskDiffs: TaskDiff[]): AssigneeDiff[]
+        +mergeProjectStatistics(existing: ProjectStatistics[], incoming: ProjectStatistics[]): ProjectStatistics[]
+        +fillMissingDates(stats: ProjectStatistics[]): ProjectStatistics[]
+    }
+
+    class HolidayData {
+        -_date: Date
+        -_desc?: string
+        -_rule?: string
+        -_hurikae?: string
+        --
+        +date: Date
+    }
+
+    interface TaskRowCreator <<interface>> {
+        +createRowData(): Promise<TaskRow[]>
+    }
+
+    interface ProjectCreator <<interface>> {
+        +createProject(): Promise<Project>
+    }
+
+    ' 型定義
+    class "<<type>> TaskDiff" as TaskDiff {
+        +id: number
+        +name: string
+        +fullName: string
+        +assignee?: string
+        +diffType: DiffType
+        +deltaProgressRate?: number
+        +deltaPV?: number
+        +deltaEV?: number
+        +isOverdueAt: boolean
+        +hasDiff: boolean
+        +finished: boolean
+    }
+
+    class "<<type>> ProjectStatistics" as ProjectStatistics {
+        +projectName?: string
+        +startDate: string
+        +endDate: string
+        +totalTasksCount?: number
+        +totalWorkloadExcel?: number
+        +totalPvCalculated?: number
+        +totalEv?: number
+        +spi?: number
+        +baseDate: string
+    }
+
+    enum DiffType {
+        added
+        modified
+        removed
+        none
+    }
+}
+
+' リレーション
+Project "1" *-- "*" TaskNode : taskNodes
+Project "1" *-- "*" HolidayData : holidayDatas
+Project ..> TaskService : uses
+Project ..> TaskRow : toTaskRows()
+
+TaskNode --|> TaskRow : extends
+TaskNode "1" *-- "*" TaskNode : children
+
+TaskService ..> TaskRow : creates
+TaskService ..> TaskNode : creates
+
+ProjectService ..> Project : compares
+ProjectService ..> TaskDiff : creates
+ProjectService ..> ProjectStatistics : creates
+
+TaskRowCreator ..> TaskRow : creates
+ProjectCreator ..> Project : creates
+
+TaskDiff ..> DiffType : uses
+
+@enduml
