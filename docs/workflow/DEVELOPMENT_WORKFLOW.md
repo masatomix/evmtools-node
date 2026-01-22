@@ -58,6 +58,23 @@
 
 ### 2.2 仕様駆動開発（Spec-Driven Development）
 
+本プロジェクトでは、SDDスキル（`/sdd`コマンド）により仕様駆動開発ワークフローをサポートしている。
+
+| コマンド | 機能 | 引数 |
+|---------|------|------|
+| `/sdd init` | SDDワークフロー開始、Issue確認 | `{issue番号}` |
+| `/sdd requirements` | 要件定義書の作成 | `{REQ-ID}` |
+| `/sdd design` | 案件設計書の作成 | `{機能名}` |
+| `/sdd tasks` | タスク管理ファイルの作成 | `{機能名}` |
+| `/sdd impl` | 仕様に基づく実装 | `{機能名}` |
+| `/sdd verify` | 実装と仕様の整合性確認 | `{機能名}` |
+| `/sdd status` | 進捗状況確認 | `{機能名}` (省略可) |
+| `/sdd backward` | 既存コードの文書化 | `{ファイルパス}` |
+
+> **詳細**: SDDスキルの詳細は [`.claude/skills/sdd/SKILL.md`](../../.claude/skills/sdd/SKILL.md) を参照。
+
+以下のセクションでは、SDDワークフローの**Why（なぜそうするのか）**を説明する。
+
 #### 2.2.1 Forward フロー（新規開発）
 
 ```
@@ -500,21 +517,18 @@ PRマージ前に「マスター設計書が更新されていること」を確
 
 #### 2.2.9 GitHub Issue連携の実践
 
-##### 要件定義書テンプレート（Issue連携版）
+> **テンプレート**: 完全な要件定義書・設計書テンプレートは SDDスキルの [templates.md](../../.claude/skills/sdd/references/templates.md) を参照。
+
+##### 要件定義書ヘッダー（Issue連携）
+
+要件定義書のヘッダーには必ず `GitHub Issue` フィールドを含める:
 
 ```markdown
-# 要件定義書: XXX機能
-
 **要件ID**: REQ-XXX-001
 **GitHub Issue**: #nn              ← Issueへのリンク
 **作成日**: 2025-12-22
 **ステータス**: Draft | Approved | Implemented
 **優先度**: High | Medium | Low
-
----
-
-## 1. 概要
-...
 ```
 
 ##### PRテンプレート（Issue連携版）
@@ -635,7 +649,7 @@ tasks.md 内で進捗を管理する：
 
 ##### テンプレート
 
-タスク管理ファイルのテンプレート: [`docs/templates/tasks-template.md`](../templates/tasks-template.md)
+タスク管理ファイルのテンプレート: SDDスキルの [templates.md](../../.claude/skills/sdd/references/templates.md#3-タスク管理テンプレート) を参照。
 
 ##### 運用ルール
 
