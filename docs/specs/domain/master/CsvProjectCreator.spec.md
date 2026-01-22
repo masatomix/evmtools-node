@@ -2,8 +2,7 @@
 
 **バージョン**: 1.0.0
 **作成日**: 2025-12-16
-**要件ID**: REQ-CSV-001
-**ソースファイル**: `src/infrastructure/CsvProjectCreator.ts`（新規作成）
+**ソースファイル**: `src/infrastructure/CsvProjectCreator.ts`
 
 ---
 
@@ -34,7 +33,7 @@
 │                    インフラストラクチャ層                    │
 │  ┌─────────────────┐  ┌─────────────────────────────────┐  │
 │  │ ExcelProject    │  │ CsvProjectCreator               │  │
-│  │ Creator         │  │ （新規）                         │  │
+│  │ Creator         │  │                                 │  │
 │  └────────┬────────┘  └───────────────┬─────────────────┘  │
 │           │                           │                    │
 │           └───────────┬───────────────┘                    │
@@ -62,9 +61,28 @@
 
 ---
 
-## 3. コンストラクタ仕様
+## 3. プロパティ仕様
 
-### 3.1 シグネチャ
+### 3.1 コンストラクタ引数
+
+| プロパティ | 型 | 必須 | 制約 | デフォルト | 説明 |
+|-----------|-----|:----:|------|-----------|------|
+| `csvPath` | `string` | ○ | 有効なファイルパス | - | CSVファイルの絶対パスまたは相対パス |
+| `options` | `CsvProjectCreatorOptions` | - | - | `undefined` | オプション設定 |
+
+### 3.2 公開プロパティ（getter）
+
+該当なし
+
+### 3.3 内部キャッシュ
+
+該当なし
+
+---
+
+## 4. コンストラクタ仕様
+
+### 4.1 シグネチャ
 
 ```typescript
 constructor(
@@ -77,45 +95,54 @@ type CsvProjectCreatorOptions = {
 }
 ```
 
-### 3.2 パラメータ
-
-| パラメータ | 型 | 必須 | 説明 |
-|-----------|-----|:----:|------|
-| `csvPath` | `string` | ○ | CSVファイルの絶対パスまたは相対パス |
-| `options.encoding` | `'utf-8' \| 'shift-jis' \| 'auto'` | - | 文字エンコーディング（デフォルト: auto） |
-
-### 3.3 事前条件
+### 4.2 事前条件（Preconditions）
 
 | ID | 条件 | 違反時の動作 |
 |----|------|-------------|
-| PRE-CSV-01 | `csvPath`が有効なファイルパス | ファイルI/Oエラー |
-| PRE-CSV-02 | 指定パスにCSVファイルが存在する | ファイルI/Oエラー |
-| PRE-CSV-03 | ファイル名が規則に従う（`{name}_{yyyyMMdd}.csv`） | パースエラー |
+| PRE-C01 | `csvPath`が有効なファイルパス | ファイルI/Oエラー |
+| PRE-C02 | 指定パスにCSVファイルが存在する | ファイルI/Oエラー |
+| PRE-C03 | ファイル名が規則に従う（`{name}_{yyyyMMdd}.csv`） | パースエラー |
 
----
-
-## 4. メソッド仕様
-
-### 4.1 `createProject(): Promise<Project>`
-
-| 項目 | 内容 |
-|------|------|
-| **目的** | CSVファイルを読み込んでProjectオブジェクトを生成する |
-| **戻り値** | `Promise<Project>` |
-| **非同期** | Yes（ファイルI/Oを含むため） |
-
-#### 4.1.1 事後条件
+### 4.3 事後条件（Postconditions）
 
 | ID | 条件 |
 |----|------|
-| POST-CSV-01 | 戻り値のProjectにbaseDateが設定されている（ファイル名から抽出） |
-| POST-CSV-02 | 戻り値のProjectにtaskNodesが設定されている（空配列可） |
-| POST-CSV-03 | 戻り値のProjectのholidayDatasは空配列 |
-| POST-CSV-04 | 全てのTaskNodeはisLeaf=true |
-| POST-CSV-05 | 全てのTaskNodeはparentId=undefined |
-| POST-CSV-06 | startDateはタスクの最小開始日、endDateは最大終了日 |
+| POST-C01 | インスタンスが生成される |
+| POST-C02 | csvPathが内部に保持される |
 
-#### 4.1.2 アルゴリズム
+---
+
+## 5. メソッド仕様
+
+### 5.1 `createProject(): Promise<Project>`
+
+#### 目的
+CSVファイルを読み込んでProjectオブジェクトを生成する
+
+#### シグネチャ
+```typescript
+createProject(): Promise<Project>
+```
+
+#### 事前条件
+
+| ID | 条件 | 違反時の動作 |
+|----|------|-------------|
+| PRE-CP-01 | CSVファイルが存在する | ファイルI/Oエラー |
+| PRE-CP-02 | ファイルがCSV形式として解析可能 | パースエラー |
+
+#### 事後条件
+
+| ID | 条件 |
+|----|------|
+| POST-CP-01 | 戻り値のProjectにbaseDateが設定されている（ファイル名から抽出） |
+| POST-CP-02 | 戻り値のProjectにtaskNodesが設定されている（空配列可） |
+| POST-CP-03 | 戻り値のProjectのholidayDatasは空配列 |
+| POST-CP-04 | 全てのTaskNodeはisLeaf=true |
+| POST-CP-05 | 全てのTaskNodeはparentId=undefined |
+| POST-CP-06 | startDateはタスクの最小開始日、endDateは最大終了日 |
+
+#### アルゴリズム
 
 ```
 1. ファイル名からプロジェクト名と基準日を抽出
@@ -164,7 +191,15 @@ type CsvProjectCreatorOptions = {
    - name: ファイル名から抽出
 ```
 
-#### 4.1.3 例外処理
+#### ビジネスルール
+
+| ID | ルール | 違反時の動作 |
+|----|--------|-------------|
+| BR-CP-01 | 進捗率が1より大きい場合（例: 50）、100で割って0-1に正規化 | 自動変換 |
+| BR-CP-02 | タスクIDが空または数値でない行はスキップ | 警告ログ出力、処理継続 |
+| BR-CP-03 | 日付形式は`yyyy/MM/dd`または`yyyy-MM-dd`を許容 | 自動パース |
+
+#### 例外処理
 
 | 条件 | エラー内容 |
 |------|-----------|
@@ -172,47 +207,25 @@ type CsvProjectCreatorOptions = {
 | ファイル名パターン不一致 | `Error: Invalid filename format. Expected: {name}_{yyyyMMdd}.csv` |
 | CSV解析エラー | `Error: Failed to parse CSV: {details}` |
 
-#### 4.1.4 ビジネスルール
-
-| ID | ルール | 違反時の動作 |
-|----|--------|-------------|
-| BR-CSV-01 | 進捗率が1より大きい場合（例: 50）、100で割って0-1に正規化 | 自動変換 |
-| BR-CSV-02 | タスクIDが空または数値でない行はスキップ | 警告ログ出力、処理継続 |
-| BR-CSV-03 | 日付形式は`yyyy/MM/dd`または`yyyy-MM-dd`を許容 | 自動パース |
-
----
-
-## 5. 同値クラス・境界値
-
-### 5.1 ファイル読み込み
+#### 同値クラス・境界値
 
 | ID | 分類 | 入力条件 | 期待結果 |
 |----|------|----------|----------|
-| EQ-CSV-001 | 正常系 | 有効なUTF-8 CSVファイル | Projectが返される |
-| EQ-CSV-002 | 正常系 | 有効なShift-JIS CSVファイル | Projectが返される |
-| EQ-CSV-003 | 正常系 | タスク0件のCSV（ヘッダーのみ） | taskNodes空のProject |
-| EQ-CSV-004 | 異常系 | 存在しないファイルパス | エラー |
-| EQ-CSV-005 | 異常系 | ファイル名パターン不一致 | エラー |
-
-### 5.2 データ変換
-
-| ID | 分類 | 入力条件 | 期待結果 |
-|----|------|----------|----------|
-| EQ-CSV-010 | 正常系 | 進捗率=0.5 | progressRate=0.5 |
-| EQ-CSV-011 | 正常系 | 進捗率=50（%表記） | progressRate=0.5（正規化） |
-| EQ-CSV-012 | 境界値 | 進捗率=0 | progressRate=0 |
-| EQ-CSV-013 | 境界値 | 進捗率=1 | progressRate=1 |
-| EQ-CSV-014 | 境界値 | 進捗率=100 | progressRate=1（正規化） |
-| EQ-CSV-015 | 異常系 | タスクID空の行 | スキップ、警告ログ |
-
-### 5.3 日付パース
-
-| ID | 分類 | 入力条件 | 期待結果 |
-|----|------|----------|----------|
-| EQ-CSV-020 | 正常系 | `2025/01/15` | Date(2025-01-15) |
-| EQ-CSV-021 | 正常系 | `2025-01-15` | Date(2025-01-15) |
-| EQ-CSV-022 | 境界値 | 空文字 | undefined |
-| EQ-CSV-023 | 異常系 | `invalid` | undefined、警告ログ |
+| EQ-CP-001 | 正常系 | 有効なUTF-8 CSVファイル | Projectが返される |
+| EQ-CP-002 | 正常系 | 有効なShift-JIS CSVファイル | Projectが返される |
+| EQ-CP-003 | 正常系 | タスク0件のCSV（ヘッダーのみ） | taskNodes空のProject |
+| EQ-CP-004 | 異常系 | 存在しないファイルパス | エラー |
+| EQ-CP-005 | 異常系 | ファイル名パターン不一致 | エラー |
+| EQ-CP-010 | 正常系 | 進捗率=0.5 | progressRate=0.5 |
+| EQ-CP-011 | 正常系 | 進捗率=50（%表記） | progressRate=0.5（正規化） |
+| EQ-CP-012 | 境界値 | 進捗率=0 | progressRate=0 |
+| EQ-CP-013 | 境界値 | 進捗率=1 | progressRate=1 |
+| EQ-CP-014 | 境界値 | 進捗率=100 | progressRate=1（正規化） |
+| EQ-CP-015 | 異常系 | タスクID空の行 | スキップ、警告ログ |
+| EQ-CP-020 | 正常系 | 日付`2025/01/15` | Date(2025-01-15) |
+| EQ-CP-021 | 正常系 | 日付`2025-01-15` | Date(2025-01-15) |
+| EQ-CP-022 | 境界値 | 日付が空文字 | undefined |
+| EQ-CP-023 | 異常系 | 日付が`invalid` | undefined、警告ログ |
 
 ---
 
@@ -279,11 +292,28 @@ Scenario: 不正な行があっても処理を継続する
 | 名前 | 種別 | 説明 |
 |------|------|------|
 | `fs` (Node.js) | 標準ライブラリ | ファイル読み込み |
-| `iconv-lite` または同等 | ライブラリ | Shift-JIS対応（要検討） |
+| `iconv-lite` | npm | Shift-JIS対応 |
 
 ---
 
 ## 8. 関連オブジェクト
+
+### 8.1 依存関係図
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    CsvProjectCreator                        │
+│  (アダプター)                                               │
+├─────────────────────────────────────────────────────────────┤
+│                         │                                   │
+│    ┌────────────────────┼────────────────────┐              │
+│    ▼                    ▼                    ▼              │
+│ TaskRow            TaskNode              Project            │
+│ (エンティティ)     (エンティティ)        (集約ルート)        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 8.2 関係一覧
 
 | 関係先 | 関係タイプ | 説明 |
 |--------|-----------|------|
@@ -303,20 +333,27 @@ Scenario: 不正な行があっても処理を継続する
 | データ変換 | 6件 | 6件 |
 | 日付パース | 4件 | 4件 |
 | シナリオテスト | 6件 | 7件 |
-| 統合テスト (AC-04) | - | 10件 |
+| 統合テスト | - | 10件 |
 | **合計** | **21件** | **32件** |
 
 ---
 
 ## 10. 要件トレーサビリティ
 
+> **重要**: このセクションは必須です。grepで検索可能な形式で記載すること。
+
 | 要件ID | 受け入れ基準 | 対応テストケース | 結果 |
 |--------|-------------|-----------------|------|
-| REQ-CSV-001 AC-01 | UTF-8 CSVから読み込み | TC-CSV-001, EQ-CSV-001 | ✅ PASS |
-| REQ-CSV-001 AC-02 | Shift-JIS CSVから読み込み | TC-CSV-002, EQ-CSV-002 | ✅ PASS |
-| REQ-CSV-001 AC-03 | ファイル名から抽出 | TC-CSV-001 | ✅ PASS |
+| REQ-CSV-001 AC-01 | UTF-8 CSVから読み込み | EQ-CP-001 | ✅ PASS |
+| REQ-CSV-001 AC-02 | Shift-JIS CSVから読み込み | EQ-CP-002 | ✅ PASS |
+| REQ-CSV-001 AC-03 | ファイル名から抽出 | EQ-CP-001 | ✅ PASS |
 | REQ-CSV-001 AC-04 | EVM計算動作 | 統合テスト (10件) | ✅ PASS |
-| REQ-CSV-001 AC-05 | 不正行で継続 | TC-CSV-006, EQ-CSV-015 | ✅ PASS |
+| REQ-CSV-001 AC-05 | 不正行で継続 | EQ-CP-015 | ✅ PASS |
+
+> **ステータス凡例**:
+> - ⏳: 未実装
+> - ✅ PASS: テスト合格
+> - ❌ FAIL: テスト失敗
 
 ---
 
@@ -327,7 +364,7 @@ Scenario: 不正な行があっても処理を継続する
 | ファイル | 説明 | テスト数 |
 |---------|------|---------|
 | `src/infrastructure/__tests__/CsvProjectCreator.test.ts` | 単体テスト | 22件 |
-| `src/infrastructure/__tests__/CsvProjectCreator.integration.test.ts` | 統合テスト (AC-04) | 10件 |
+| `src/infrastructure/__tests__/CsvProjectCreator.integration.test.ts` | 統合テスト | 10件 |
 
 ### 11.2 テストフィクスチャ
 
@@ -347,3 +384,17 @@ Scenario: 不正な行があっても処理を継続する
 Test Suites: 4 passed, 4 total
 Tests:       80 passed (全体), 32 passed (CsvProjectCreator関連)
 ```
+
+---
+
+## 12. 設計上の課題・改善提案
+
+該当なし
+
+---
+
+## 13. 変更履歴
+
+| バージョン | 日付 | 変更内容 | 要件ID |
+|-----------|------|---------|--------|
+| 1.0.0 | 2025-12-16 | 初版作成 | REQ-CSV-001 |

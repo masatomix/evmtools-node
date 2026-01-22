@@ -3,19 +3,29 @@
 **バージョン**: 1.0.0
 **作成日**: 2025-12-22
 **要件ID**: REQ-TASK-001
+**GitHub Issue**: -
 **ソースファイル**: `src/domain/Project.ts`
 
 ---
 
 ## 1. 概要
 
+### 1.1 目的
+
 Projectクラスに`excludedTasks`プロパティを追加し、PV/EV計算から除外されたタスクを一覧で取得できるようにする。
+
+### 1.2 対象ファイル
+
+| ファイル | 修正内容 |
+|---------|---------|
+| `src/domain/Project.ts` | `excludedTasks` getterを追加 |
+| `src/domain/index.ts` | `ExcludedTask`型をエクスポート |
 
 ---
 
 ## 2. インターフェース仕様
 
-### 2.1 ExcludedTask型
+### 2.1 型定義
 
 ```typescript
 /**
@@ -29,7 +39,7 @@ export interface ExcludedTask {
 }
 ```
 
-### 2.2 Projectクラスへの追加
+### 2.2 メソッド/プロパティ追加
 
 ```typescript
 class Project {
@@ -53,7 +63,7 @@ class Project {
 
 ## 3. 処理仕様
 
-### 3.1 除外判定ロジック
+### 3.1 処理ロジック
 
 ```
 1. toTaskRows() でフラットなタスク配列を取得
@@ -77,7 +87,7 @@ get excludedTasks(): ExcludedTask[] {
 }
 ```
 
-### 3.3 キャッシュ戦略
+### 3.3 パフォーマンス考慮事項
 
 - `toTaskRows()` が既にキャッシュを持っているため、追加のキャッシュは不要
 - 呼び出しごとにfilter/mapが実行されるが、タスク数が数百程度なら問題なし
@@ -152,11 +162,15 @@ console.log(`合計: ${stats.totalTasksCount! + excluded.length}件`)
 
 ## 7. 要件トレーサビリティ
 
+> **重要**: このセクションは必須です。grepで検索可能な形式で記載すること。
+
 | 要件ID | 受け入れ基準 | 対応テストケース | 結果 |
 |--------|-------------|-----------------|------|
 | REQ-TASK-001 AC-01 | excludedTasksで一覧取得 | TC-02〜TC-06 | ✅ PASS |
 | REQ-TASK-001 AC-02 | reasonが正しく設定 | TC-09, TC-10 | ✅ PASS |
 | REQ-TASK-001 AC-03 | 有効タスクのみ→空配列 | TC-01, TC-07 | ✅ PASS |
+
+**テストファイル**: `src/domain/__tests__/Project.test.ts`
 
 ---
 
