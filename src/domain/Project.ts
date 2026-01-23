@@ -1,5 +1,5 @@
 import { tidy, filter, summarize, groupBy } from '@tidyjs/tidy'
-import { average, dateStr, generateBaseDates, isHoliday, sum } from '../common'
+import { average, dateStr, formatRelativeDaysNumber, generateBaseDates, isHoliday, sum } from '../common'
 import { TaskNode } from './TaskNode'
 import { TaskService } from './TaskService'
 import { TaskRow } from './TaskRow'
@@ -597,6 +597,38 @@ export class Project {
         }
         // spi < 0.5
         return { confidence: 'low', confidenceReason: '大幅な遅延（SPI < 0.5）' }
+    }
+
+    /**
+     * 遅延しているタスクの一覧を取得
+     *
+     * @param minDays 遅延日数の閾値（デフォルト: 0）
+     * @returns 遅延タスクの配列（遅延日数降順）
+     *
+     * @remarks
+     * - 遅延日数は baseDate - endDate で動的に計算される（工期ベース、カレンダー日数）
+     * - TaskRow をそのまま返す（新しい型は定義しない）
+     * - isLeaf === true のタスクのみを対象とする
+     * - finished === false（未完了）のタスクのみを対象とする
+     * - 遅延日数 > minDays のタスクを返す
+     * - 結果は遅延日数の降順でソートされる
+     * - フルパス名が必要な場合は getFullTaskName(task) を使用
+     */
+    getDelayedTasks(minDays: number = 0): TaskRow[] {
+        const baseDate = this.baseDate
+
+        // 遅延日数を計算するヘルパー関数
+        // formatRelativeDaysNumber は endDate - baseDate を返すので符号反転
+        const calcDelayDays = (task: TaskRow): number => {
+            return -(formatRelativeDaysNumber(baseDate, task.endDate) ?? 0)
+        }
+
+        return this.toTaskRows()
+            .filter((task) => task.isLeaf)
+            .filter((task) => !task.finished)
+            .filter((task) => task.endDate !== undefined)
+            .filter((task) => calcDelayDays(task) > minDays)
+            .sort((a, b) => calcDelayDays(b) - calcDelayDays(a))
     }
 }
 

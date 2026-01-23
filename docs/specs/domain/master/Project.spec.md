@@ -1,6 +1,6 @@
 # Project 仕様書
 
-**バージョン**: 1.1.1
+**バージョン**: 1.2.0
 **作成日**: 2025-12-16
 **ソースファイル**: `src/domain/Project.ts`
 
@@ -528,6 +528,73 @@ get excludedTasks(): ExcludedTask[]
 
 ---
 
+### 5.10 `getDelayedTasks(minDays?: number): TaskRow[]`
+
+#### 目的
+遅延しているタスク（未完了かつ予定終了日を過ぎたリーフタスク）の一覧を取得する。
+
+#### シグネチャ
+```typescript
+getDelayedTasks(minDays?: number): TaskRow[]
+```
+
+#### 事前条件
+
+該当なし
+
+#### 事後条件
+
+| ID | 条件 |
+|----|------|
+| POST-DT-01 | 戻り値は`TaskRow[]`型 |
+| POST-DT-02 | 全要素は`isLeaf===true`かつ`finished===false` |
+| POST-DT-03 | 全要素は`endDate`が定義されている |
+| POST-DT-04 | 全要素の遅延日数（`baseDate - endDate`）が`minDays`より大きい |
+| POST-DT-05 | 遅延日数の降順でソートされている |
+
+#### アルゴリズム
+
+```
+1. baseDateを取得
+2. 遅延日数を計算するヘルパー関数を定義
+   - delayDays = -(formatRelativeDaysNumber(baseDate, endDate) ?? 0)
+   - ※ formatRelativeDaysNumberは endDate - baseDate を返すため符号反転
+3. toTaskRows()でフラット化
+4. isLeaf===trueのみフィルタ（リーフタスクのみ対象）
+5. finished===falseのみフィルタ（未完了のみ対象）
+6. endDate!==undefinedのみフィルタ（終了日設定済みのみ対象）
+7. delayDays > minDaysのみフィルタ（閾値より大きい遅延のみ）
+8. 遅延日数の降順でソート
+```
+
+#### ビジネスルール
+
+| ID | ルール | 違反時の動作 |
+|----|--------|-------------|
+| BR-DT-01 | リーフタスク（isLeaf===true）のみが対象となる | 親タスクは除外 |
+| BR-DT-02 | 完了タスク（finished===true）は対象外 | 完了済みは除外 |
+| BR-DT-03 | 遅延日数は工期ベース（カレンダー日数）で計算 | 土日・祝日は考慮しない |
+| BR-DT-04 | 遅延日数はbaseDate - endDateで動的計算 | TaskRow.delayDays（Excel値）は使用しない |
+
+#### 同値クラス・境界値
+
+| ID | 分類 | 入力条件 | 期待結果 |
+|----|------|----------|----------|
+| EQ-DT-001 | 正常系 | 遅延タスクなし | 空配列`[]` |
+| EQ-DT-002 | 正常系 | 遅延タスク（endDate < baseDate）あり | 該当タスクが含まれる |
+| EQ-DT-003 | 正常系 | 複数の遅延タスク | 遅延日数の降順でソート |
+| EQ-DT-004 | 正常系 | minDays指定 | 閾値より大きい遅延のみ |
+| EQ-DT-005 | 正常系 | 完了タスク（finished=true） | 含まれない |
+| EQ-DT-006 | 正常系 | 親タスク（isLeaf=false） | 含まれない |
+| EQ-DT-007 | 境界値 | endDate=undefined | 含まれない |
+| EQ-DT-008 | 境界値 | delayDays=0（minDays=0） | 含まれない（>であり>=ではない） |
+| EQ-DT-009 | 境界値 | delayDays=負（前倒し） | 含まれない |
+| EQ-DT-010 | 境界値 | minDays=5, delayDays=5 | 含まれない（>であり>=ではない） |
+| EQ-DT-011 | 境界値 | minDays=5, delayDays=6 | 含まれる |
+| EQ-DT-012 | 境界値 | taskNodes空配列 | 空配列`[]` |
+
+---
+
 ## 6. テストシナリオ（Given-When-Then形式）
 
 ### 6.1 基本生成テスト
@@ -637,6 +704,46 @@ Scenario: 親タスクは除外対象外
   Then  空配列が返される（親タスクは対象外）
 ```
 
+### 6.6 getDelayedTasks() テスト
+
+```gherkin
+Scenario: 遅延タスクがない場合は空配列を返す
+  Given 全リーフタスクのendDateがbaseDate以降
+  When  getDelayedTasks() を呼び出す
+  Then  空配列が返される
+```
+
+```gherkin
+Scenario: 遅延タスクが遅延日数の降順でソートされる
+  Given 3日遅延のタスク（id=1）
+  And   5日遅延のタスク（id=2）
+  And   1日遅延のタスク（id=3）
+  When  getDelayedTasks() を呼び出す
+  Then  id=2, id=1, id=3 の順で返される
+```
+
+```gherkin
+Scenario: minDaysを指定すると閾値より大きい遅延のみ抽出
+  Given 3日遅延のタスク
+  And   5日遅延のタスク
+  When  getDelayedTasks(3) を呼び出す
+  Then  5日遅延のタスクのみ返される
+```
+
+```gherkin
+Scenario: 完了タスクは除外される
+  Given 遅延しているが完了済み（progressRate=1.0）のタスク
+  When  getDelayedTasks() を呼び出す
+  Then  空配列が返される
+```
+
+```gherkin
+Scenario: getFullTaskName()と組み合わせて使用可能
+  Given 親タスク "親" の下に遅延タスク "子" がある
+  When  getDelayedTasks() で取得したタスクに getFullTaskName() を適用
+  Then  "親/子" が返される
+```
+
 ---
 
 ## 7. 外部依存
@@ -696,7 +803,8 @@ Scenario: 親タスクは除外対象外
 | pvByName系 | 4件 | 4件 |
 | isHoliday() | 5件 | 5件 |
 | excludedTasks | 6件 | 6件 |
-| **合計** | **51件** | **51件** |
+| getDelayedTasks() | 17件 | 17件 |
+| **合計** | **68件** | **68件** |
 
 ---
 
@@ -709,6 +817,11 @@ Scenario: 親タスクは除外対象外
 | REQ-TASK-001 AC-01 | excludedTasksで一覧取得 | EQ-ET-002〜EQ-ET-004 | ✅ PASS |
 | REQ-TASK-001 AC-02 | reasonが正しく設定 | EQ-ET-002, EQ-ET-003 | ✅ PASS |
 | REQ-TASK-001 AC-03 | 有効タスクのみ→空配列 | EQ-ET-001, EQ-ET-005 | ✅ PASS |
+| REQ-DELAY-001 AC-01 | getDelayedTasks()が実装されている | TC-01〜TC-04 | ✅ PASS |
+| REQ-DELAY-001 AC-02 | delayDays（動的計算）> minDays かつ未完了のみ抽出 | TC-04, TC-05, TC-08, TC-15〜TC-17 | ✅ PASS |
+| REQ-DELAY-001 AC-03 | 遅延日数の降順でソート | TC-03 | ✅ PASS |
+| REQ-DELAY-001 AC-04 | リーフタスクのみが対象 | TC-06 | ✅ PASS |
+| REQ-DELAY-001 AC-05 | 単体テストがPASS | 全TC（17件） | ✅ PASS |
 
 > **ステータス凡例**:
 > - ⏳: 未実装
@@ -724,6 +837,7 @@ Scenario: 親タスクは除外対象外
 | ファイル | 説明 | テスト数 |
 |---------|------|---------|
 | `src/domain/__tests__/Project.test.ts` | 単体テスト | 51件 |
+| `src/domain/__tests__/Project.delayedTasks.test.ts` | getDelayedTasks()テスト | 17件 |
 
 ### 11.2 テストフィクスチャ
 
@@ -732,9 +846,9 @@ Scenario: 親タスクは除外対象外
 ### 11.3 テスト実行結果
 
 ```
-実行日: 2025-12-24
-Test Suites: 1 passed, 1 total
-Tests:       51 passed, 51 total
+実行日: 2026-01-23
+Test Suites: 2 passed, 2 total
+Tests:       68 passed, 68 total
 ```
 
 ---
@@ -757,3 +871,4 @@ Tests:       51 passed, 51 total
 | 1.0.0 | 2025-12-16 | 初版作成 | - |
 | 1.1.0 | 2025-12-22 | excludedTasksプロパティ追加 | REQ-TASK-001 |
 | 1.1.1 | 2025-12-24 | 要件トレーサビリティセクション追加 | REQ-TASK-001 |
+| 1.2.0 | 2026-01-23 | getDelayedTasks()メソッド追加（遅延タスク抽出機能） | REQ-DELAY-001 |
