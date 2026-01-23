@@ -1,6 +1,6 @@
 # Project 仕様書
 
-**バージョン**: 1.2.0
+**バージョン**: 1.3.0
 **作成日**: 2025-12-16
 **ソースファイル**: `src/domain/Project.ts`
 
@@ -87,6 +87,10 @@
 | `holidayDatas` | `HolidayData[]` | 祝日データ |
 | `length` | `number` | タスク総数（`toTaskRows().length`） |
 | `excludedTasks` | `ExcludedTask[]` | 計算から除外されたタスク一覧 |
+| `bac` | `number` | プロジェクト全体のBAC（Budget at Completion）。全リーフタスクの予定工数合計 |
+| `totalEv` | `number` | プロジェクト全体の累積EV。全リーフタスクのEV合計 |
+| `etcPrime` | `number \| undefined` | ETC'（SPI版）。(BAC - EV) / SPI。SPI=0またはSPI未定義の場合はundefined |
+| `plannedWorkDays` | `number` | 計画稼働日数（開始日〜終了日の稼働日数）。開始日または終了日が未設定の場合は0 |
 
 ### 3.3 内部キャッシュ
 
@@ -595,6 +599,143 @@ getDelayedTasks(minDays?: number): TaskRow[]
 
 ---
 
+### 5.11 `calculateRecentDailyPv(lookbackDays?: number): number`
+
+#### 目的
+直近N日間の平均PV（日あたり消化量）を計算する。完了予測の日あたり消化量として使用。
+
+#### シグネチャ
+```typescript
+calculateRecentDailyPv(lookbackDays?: number): number
+```
+
+#### 事前条件
+
+該当なし
+
+#### 事後条件
+
+| ID | 条件 |
+|----|------|
+| POST-RDP-01 | 戻り値は`number`型 |
+| POST-RDP-02 | 計算不能な場合は0を返す |
+
+#### アルゴリズム
+
+```
+1. baseDateから過去に遡って稼働日のPVを取得
+2. lookbackDays分の稼働日のPVを収集（最大lookbackDays×3日まで遡る）
+3. 収集したPVの平均値を算出
+4. PVが0件の場合は0を返す
+```
+
+#### 同値クラス・境界値
+
+| ID | 分類 | 入力条件 | 期待結果 |
+|----|------|----------|----------|
+| EQ-RDP-001 | 正常系 | lookbackDays=7（デフォルト） | 直近7稼働日の平均PV |
+| EQ-RDP-002 | 正常系 | lookbackDays=14 | 直近14稼働日の平均PV |
+| EQ-RDP-003 | 境界値 | PVが0件 | 0 |
+| EQ-RDP-004 | 境界値 | 全期間が休日 | 0 |
+
+---
+
+### 5.12 `calculateCompletionForecast(options?: CompletionForecastOptions): CompletionForecast | undefined`
+
+#### 目的
+現在のSPIが続いた場合の完了予測日を計算する。
+
+#### シグネチャ
+```typescript
+calculateCompletionForecast(options?: CompletionForecastOptions): CompletionForecast | undefined
+```
+
+#### 型定義
+
+```typescript
+interface CompletionForecastOptions {
+  /** 手入力の日あたりPV（優先使用） */
+  dailyPvOverride?: number
+  /** 直近PV平均の計算日数（デフォルト: 7） */
+  lookbackDays?: number
+  /** 計算を打ち切る最大日数（デフォルト: 730 = 2年） */
+  maxForecastDays?: number
+}
+
+interface CompletionForecast {
+  /** ETC': 残作業完了に必要な計画工数換算（人日） */
+  etcPrime: number
+  /** 完了予測日 */
+  forecastDate: Date
+  /** 残作業量（BAC - EV） */
+  remainingWork: number
+  /** 使用した日あたりPV */
+  usedDailyPv: number
+  /** 使用したSPI */
+  usedSpi: number
+  /** 日あたり消化量（usedDailyPv × usedSpi） */
+  dailyBurnRate: number
+  /** 予測の信頼性 */
+  confidence: 'high' | 'medium' | 'low'
+  /** 信頼性の理由 */
+  confidenceReason: string
+}
+```
+
+#### 事前条件
+
+該当なし
+
+#### 事後条件
+
+| ID | 条件 |
+|----|------|
+| POST-CF-01 | 戻り値は`CompletionForecast \| undefined`型 |
+| POST-CF-02 | SPI=0またはSPI未定義の場合は`undefined` |
+| POST-CF-03 | dailyPv=0の場合は`undefined` |
+| POST-CF-04 | maxForecastDays超過の場合は`undefined` |
+
+#### アルゴリズム
+
+```
+1. SPIを取得（statisticsByProject[0].spi）
+2. SPI=0またはundefinedならundefinedを返す
+3. 残作業量 = BAC - EV
+4. 残作業量 <= 0 の場合、完了済みとして結果を返す
+5. dailyPv = dailyPvOverride ?? calculateRecentDailyPv(lookbackDays)
+6. dailyPv = 0 ならundefinedを返す
+7. dailyBurnRate = dailyPv × SPI
+8. baseDateから稼働日ごとにdailyBurnRateを消化
+9. 残作業量 <= 0 になった日 = 完了予測日
+10. maxForecastDays超過で収束しなければundefined
+11. 信頼性を判定（determineConfidence）
+```
+
+#### ビジネスルール
+
+| ID | ルール | 違反時の動作 |
+|----|--------|-------------|
+| BR-CF-01 | 日あたりPVは手入力が優先される | dailyPvOverrideがあればそれを使用 |
+| BR-CF-02 | 計画終了日以降も直近N日平均を固定で使用 | 一貫した予測のため |
+| BR-CF-03 | 信頼性はSPIに基づいて判定 | high: 0.8-1.2, medium: 0.5-0.8 or >1.2, low: <0.5 |
+
+#### 同値クラス・境界値
+
+| ID | 分類 | 入力条件 | 期待結果 |
+|----|------|----------|----------|
+| EQ-CF-001 | 正常系 | 残作業あり、SPI=1.0 | 完了予測日算出 |
+| EQ-CF-002 | 正常系 | dailyPvOverride指定 | 指定値を使用 |
+| EQ-CF-003 | 正常系 | 完了済み（BAC=EV） | etcPrime=0, forecastDate=baseDate |
+| EQ-CF-004 | 境界値 | SPI=0 | undefined |
+| EQ-CF-005 | 境界値 | SPI=undefined | undefined |
+| EQ-CF-006 | 境界値 | dailyPv=0 | undefined |
+| EQ-CF-007 | 境界値 | maxForecastDays超過 | undefined |
+| EQ-CF-008 | 正常系 | SPI=0.8（高信頼性） | confidence='high' |
+| EQ-CF-009 | 正常系 | SPI=0.6（中信頼性） | confidence='medium' |
+| EQ-CF-010 | 正常系 | SPI=0.3（低信頼性） | confidence='low' |
+
+---
+
 ## 6. テストシナリオ（Given-When-Then形式）
 
 ### 6.1 基本生成テスト
@@ -744,6 +885,53 @@ Scenario: getFullTaskName()と組み合わせて使用可能
   Then  "親/子" が返される
 ```
 
+### 6.7 bac/totalEv/etcPrime テスト
+
+```gherkin
+Scenario: BACは全リーフタスクのworkload合計
+  Given 3つのリーフタスク（workload: 10, 20, 30人日）
+  When  bac を取得する
+  Then  60 が返される
+```
+
+```gherkin
+Scenario: SPI=0の場合etcPrimeはundefined
+  Given SPIが0のプロジェクト
+  When  etcPrime を取得する
+  Then  undefined が返される
+```
+
+### 6.8 calculateCompletionForecast() テスト
+
+```gherkin
+Scenario: 基本的な完了予測
+  Given 残作業20人日、dailyPvOverride=2、SPI=1.0
+  When  calculateCompletionForecast() を呼び出す
+  Then  10稼働日後が完了予測日として返される
+```
+
+```gherkin
+Scenario: 完了済みプロジェクト
+  Given BAC = EV のプロジェクト
+  When  calculateCompletionForecast() を呼び出す
+  Then  etcPrime=0、forecastDate=baseDate が返される
+```
+
+```gherkin
+Scenario: 手入力PV優先
+  Given dailyPvOverride=5を指定
+  When  calculateCompletionForecast() を呼び出す
+  Then  usedDailyPv=5 が使用される
+  And   confidence='high' が返される
+```
+
+```gherkin
+Scenario: SPI=0で予測不可
+  Given SPIが0のプロジェクト
+  When  calculateCompletionForecast() を呼び出す
+  Then  undefined が返される
+```
+
 ---
 
 ## 7. 外部依存
@@ -804,7 +992,11 @@ Scenario: getFullTaskName()と組み合わせて使用可能
 | isHoliday() | 5件 | 5件 |
 | excludedTasks | 6件 | 6件 |
 | getDelayedTasks() | 17件 | 17件 |
-| **合計** | **68件** | **68件** |
+| bac/totalEv/etcPrime | 9件 | 9件 |
+| plannedWorkDays | 3件 | 3件 |
+| calculateRecentDailyPv() | 4件 | 4件 |
+| calculateCompletionForecast() | 11件 | 11件 |
+| **合計** | **95件** | **95件** |
 
 ---
 
@@ -822,6 +1014,13 @@ Scenario: getFullTaskName()と組み合わせて使用可能
 | REQ-DELAY-001 AC-03 | 遅延日数の降順でソート | TC-03 | ✅ PASS |
 | REQ-DELAY-001 AC-04 | リーフタスクのみが対象 | TC-06 | ✅ PASS |
 | REQ-DELAY-001 AC-05 | 単体テストがPASS | 全TC（17件） | ✅ PASS |
+| REQ-EVM-001 AC-01 | ETC'が正しく計算される | TC-05, TC-08, TC-09 | ✅ PASS |
+| REQ-EVM-001 AC-02 | 完了予測日が正しく算出される | TC-10, TC-11, TC-12 | ✅ PASS |
+| REQ-EVM-001 AC-03 | 日あたりPVの優先度 | TC-17, TC-18, TC-20 | ✅ PASS |
+| REQ-EVM-001 AC-04 | 計画終了日以降も直近N日平均を固定使用 | TC-19 | ✅ PASS |
+| REQ-EVM-001 AC-05 | SPI=0時はundefined | TC-06, TC-07, TC-25 | ✅ PASS |
+| REQ-EVM-001 AC-06 | 既存テストへの影響なし | 既存テスト全件 | ✅ PASS (143件) |
+| REQ-EVM-001 AC-07 | 完了済み時の動作 | TC-08, TC-12 | ✅ PASS |
 
 > **ステータス凡例**:
 > - ⏳: 未実装
@@ -838,6 +1037,7 @@ Scenario: getFullTaskName()と組み合わせて使用可能
 |---------|------|---------|
 | `src/domain/__tests__/Project.test.ts` | 単体テスト | 51件 |
 | `src/domain/__tests__/Project.delayedTasks.test.ts` | getDelayedTasks()テスト | 17件 |
+| `src/domain/__tests__/Project.completionForecast.test.ts` | 完了予測機能テスト | 27件 |
 
 ### 11.2 テストフィクスチャ
 
@@ -847,8 +1047,8 @@ Scenario: getFullTaskName()と組み合わせて使用可能
 
 ```
 実行日: 2026-01-23
-Test Suites: 2 passed, 2 total
-Tests:       68 passed, 68 total
+Test Suites: 3 passed, 3 total
+Tests:       95 passed, 95 total
 ```
 
 ---
@@ -872,3 +1072,4 @@ Tests:       68 passed, 68 total
 | 1.1.0 | 2025-12-22 | excludedTasksプロパティ追加 | REQ-TASK-001 |
 | 1.1.1 | 2025-12-24 | 要件トレーサビリティセクション追加 | REQ-TASK-001 |
 | 1.2.0 | 2026-01-23 | getDelayedTasks()メソッド追加（遅延タスク抽出機能） | REQ-DELAY-001 |
+| 1.3.0 | 2026-01-23 | 完了予測機能追加（bac, totalEv, etcPrime, plannedWorkDays, calculateRecentDailyPv, calculateCompletionForecast） | REQ-EVM-001 |
