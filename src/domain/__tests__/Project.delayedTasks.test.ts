@@ -252,22 +252,22 @@ describe('Project.getDelayedTasks', () => {
     })
 
     describe('TC-06: 親タスク（isLeaf=false）', () => {
-        it('結果に含まれない', () => {
+        it('遅延条件を満たしていても結果に含まれない（子タスクのみ含まれる）', () => {
             const baseDate = new Date('2025-01-20')
 
             const parentTask = createTaskNode({
                 id: 1,
                 name: '親タスク',
-                endDate: new Date('2025-01-17'), // 遅延しているが親
-                isLeaf: false, // 親タスク
+                endDate: new Date('2025-01-17'), // 3日遅延しているが親タスク
+                isLeaf: false,
                 progressRate: 0.5,
             })
 
             const childTask = createTaskNode({
                 id: 2,
-                name: '子タスク',
+                name: '遅延子タスク',
                 parentId: 1,
-                endDate: new Date('2025-01-25'), // 遅延なし
+                endDate: new Date('2025-01-15'), // 5日遅延
                 isLeaf: true,
                 progressRate: 0.5,
             })
@@ -283,8 +283,11 @@ describe('Project.getDelayedTasks', () => {
                 'テストプロジェクト'
             )
 
-            // 親タスクは除外、子タスクは遅延なし
-            expect(project.getDelayedTasks()).toEqual([])
+            const result = project.getDelayedTasks()
+            // 親タスクは遅延条件を満たしていても除外され、子タスクのみ含まれる
+            expect(result.length).toBe(1)
+            expect(result[0].id).toBe(2)
+            expect(result[0].name).toBe('遅延子タスク')
         })
     })
 
