@@ -276,6 +276,85 @@ export class TaskRow {
     }
 
     /**
+     * 基準日から終了日までの残日数を計算する。
+     * plotMapでプロットされている日のみカウント。
+     *
+     * @param baseDate 基準日（Project.baseDateを渡す）
+     * @returns 残日数。計算不能な場合は undefined
+     *
+     * @remarks
+     * - 基準日がタスク期間外（startDate〜endDate外）の場合は 0
+     * - startDate, endDate, plotMap が未設定の場合は undefined
+     *
+     * @see REQ-PV-TODAY-001
+     */
+    remainingDays = (baseDate: Date): number | undefined => {
+        if (!this.checkStartEndDateAndPlotMap()) {
+            return undefined
+        }
+
+        const { startDate, endDate, plotMap } = this
+
+        const baseSerial = date2Sn(baseDate)
+        const startSerial = date2Sn(startDate)
+        const endSerial = date2Sn(endDate)
+
+        // タスク期間外チェック
+        if (baseSerial < startSerial || baseSerial > endSerial) {
+            return 0
+        }
+
+        // 残日数カウント: 基準日〜終了日で plotMap が true の日数
+        let count = 0
+        for (const [serial, value] of plotMap.entries()) {
+            if (value === true && serial >= baseSerial && serial <= endSerial) {
+                count++
+            }
+        }
+
+        return count
+    }
+
+    /**
+     * 実行PV（今日やるべきPV）を計算する。
+     * = 残工数 / 残日数
+     * = workload × (1 - progressRate) / remainingDays
+     *
+     * @param baseDate 基準日（Project.baseDateを渡す）
+     * @returns 実行PV。計算不能な場合は undefined
+     *
+     * @remarks
+     * - 残日数が 0 の場合は 0 を返す（ゼロ除算回避）
+     * - progressRate が undefined の場合は 0 として扱う
+     * - workload が undefined の場合は undefined を返す
+     *
+     * @see REQ-PV-TODAY-001
+     */
+    pvTodayActual = (baseDate: Date): number | undefined => {
+        const remaining = this.remainingDays(baseDate)
+
+        if (remaining === undefined) {
+            return undefined
+        }
+
+        if (remaining === 0) {
+            return 0 // ゼロ除算回避
+        }
+
+        const { workload, progressRate } = this
+
+        if (workload === undefined) {
+            return undefined
+        }
+
+        // progressRate が undefined なら 0 として扱う（進捗なし）
+        const rate = progressRate ?? 0
+        const remainingWorkload = workload * (1 - rate)
+
+        return remainingWorkload / remaining
+    }
+
+    /**
      * startDate, endDate ,plotMap がundefinedだったらfalse
      * @returns
      */
