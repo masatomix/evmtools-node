@@ -12,11 +12,11 @@
 |---|--------|:----:|------|------|
 | 1 | 要件定義書作成 | ✅ | Claude | REQ-PV-TODAY-001.md |
 | 2 | 詳細仕様書作成 | ✅ | Claude | TaskRow.pv-today.spec.md |
-| 3 | テストコード作成 | ⬜ | - | TC-01〜TC-19（単体） |
-| 4 | TaskRow実装 | ⬜ | - | remainingDays, pvTodayActual |
-| 5 | ユースケース修正 | ⬜ | - | pbevm-show-pv出力カラム追加 |
-| 6 | 統合テスト | ⬜ | - | TC-20〜TC-22 |
-| 7 | トレーサビリティ更新 | ⬜ | - | AC→TC結果を仕様書に反映 |
+| 3 | テストコード作成 | ✅ | Claude | TC-01〜TC-19（単体）19件PASS |
+| 4 | TaskRow実装 | ✅ | Claude | remainingDays, pvTodayActual |
+| 5 | ユースケース修正 | ✅ | Claude | pbevm-show-pv出力カラム追加 |
+| 6 | 統合テスト | ✅ | Claude | TC-20〜TC-22（手動確認） |
+| 7 | トレーサビリティ更新 | ✅ | Claude | AC→TC結果を仕様書に反映 |
 
 ---
 
@@ -70,9 +70,9 @@ pvTodayActual(baseDate: Date): number | undefined
 
 ## 進捗サマリー
 
-- **完了**: 2/7
-- **残り**: 5タスク
-- **次のアクション**: タスク3（テストコード作成）
+- **完了**: 7/7
+- **残り**: 0タスク
+- **ステータス**: 実装完了
 
 ---
 
@@ -81,3 +81,4 @@ pvTodayActual(baseDate: Date): number | undefined
 | 日付 | 変更内容 |
 |------|---------|
 | 2026-01-23 | 初版作成、タスク1,2完了 |
+| 2026-01-23 | タスク3〜7完了、実装完了 |

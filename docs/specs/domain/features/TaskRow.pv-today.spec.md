@@ -302,13 +302,13 @@ for (const task of tasks) {
 
 | 要件ID | 受け入れ基準 | 対応テストケース | 結果 |
 |--------|-------------|-----------------|------|
-| REQ-PV-TODAY-001 AC-01 | remainingDaysで残日数取得 | TC-01〜TC-04 | ⬜ 未実施 |
-| REQ-PV-TODAY-001 AC-02 | pvTodayActualで実行PV取得 | TC-11〜TC-14 | ⬜ 未実施 |
-| REQ-PV-TODAY-001 AC-03 | 残日数0でpvTodayActualは0 | TC-16 | ⬜ 未実施 |
-| REQ-PV-TODAY-001 AC-04 | 期間外でremainingDaysは0 | TC-05, TC-06 | ⬜ 未実施 |
-| REQ-PV-TODAY-001 AC-05 | pbevm-show-pv出力（コンソール・Excel両方）にpvTodayカラム | TC-20, TC-22 | ⬜ 未実施 |
-| REQ-PV-TODAY-001 AC-06 | pbevm-show-pv出力（コンソール・Excel両方）にpvTodayActualカラム | TC-21, TC-22 | ⬜ 未実施 |
-| REQ-PV-TODAY-001 AC-07 | 進捗100%でpvTodayActualは0 | TC-15 | ⬜ 未実施 |
+| REQ-PV-TODAY-001 AC-01 | remainingDaysで残日数取得 | TC-01〜TC-04 | ✅ PASS |
+| REQ-PV-TODAY-001 AC-02 | pvTodayActualで実行PV取得 | TC-11〜TC-14 | ✅ PASS |
+| REQ-PV-TODAY-001 AC-03 | 残日数0でpvTodayActualは0 | TC-16 | ✅ PASS |
+| REQ-PV-TODAY-001 AC-04 | 期間外でremainingDaysは0 | TC-05, TC-06 | ✅ PASS |
+| REQ-PV-TODAY-001 AC-05 | pbevm-show-pv出力（コンソール・Excel両方）にpvTodayカラム | TC-20, TC-22 | ✅ PASS |
+| REQ-PV-TODAY-001 AC-06 | pbevm-show-pv出力（コンソール・Excel両方）にpvTodayActualカラム | TC-21, TC-22 | ✅ PASS |
+| REQ-PV-TODAY-001 AC-07 | 進捗100%でpvTodayActualは0 | TC-15 | ✅ PASS |
 
 **テストファイル**: `src/domain/__tests__/TaskRow.pv-today.test.ts`
 
