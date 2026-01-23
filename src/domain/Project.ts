@@ -383,6 +383,221 @@ export class Project {
                 reason: task.validStatus.invalidReason ?? '理由不明',
             }))
     }
+
+    /**
+     * プロジェクト全体のBAC（Budget at Completion）
+     * 全リーフタスクの予定工数の合計
+     *
+     * @returns BAC（人日）。タスクがない場合は0
+     */
+    get bac(): number {
+        return this.toTaskRows()
+            .filter((task) => task.isLeaf)
+            .reduce((sum, task) => sum + (task.workload ?? 0), 0)
+    }
+
+    /**
+     * プロジェクト全体の累積EV
+     * 全リーフタスクのEVの合計
+     *
+     * @returns 累積EV（人日）
+     */
+    get totalEv(): number {
+        const stats = this.statisticsByProject[0]
+        return stats?.totalEv ?? 0
+    }
+
+    /**
+     * プロジェクト全体のETC'（SPI版）
+     * (BAC - 累積EV) / SPI
+     *
+     * @returns ETC'（人日）。SPI=0またはSPI未定義の場合はundefined
+     */
+    get etcPrime(): number | undefined {
+        const stats = this.statisticsByProject[0]
+        const spi = stats?.spi
+        if (spi === undefined || spi === null || spi === 0) return undefined
+
+        const ev = this.totalEv
+        return (this.bac - ev) / spi
+    }
+
+    /**
+     * 計画稼働日数を取得
+     * プロジェクト開始日から終了日までの、休日を除いた稼働日数
+     *
+     * @returns 稼働日数。開始日または終了日が未設定の場合は0
+     */
+    get plannedWorkDays(): number {
+        if (!this._startDate || !this._endDate) return 0
+
+        let count = 0
+        const current = new Date(this._startDate)
+        while (current <= this._endDate) {
+            if (!this.isHoliday(current)) {
+                count++
+            }
+            current.setDate(current.getDate() + 1)
+        }
+        return count
+    }
+
+    /**
+     * 直近N日平均PV（baseDate時点）
+     * 完了予測の日あたり消化量として使用
+     *
+     * @param lookbackDays 直近何日の平均を取るか（デフォルト: 7）
+     * @returns 直近N日平均PV（人日/日）。計算不能な場合は0
+     */
+    calculateRecentDailyPv(lookbackDays: number = 7): number {
+        const rows = this.toTaskRows().filter((task) => task.isLeaf)
+        const pvValues: number[] = []
+
+        // baseDateから過去に遡って稼働日のPVを取得
+        const current = new Date(this._baseDate)
+        let daysChecked = 0
+
+        while (pvValues.length < lookbackDays && daysChecked < lookbackDays * 3) {
+            // 最大で3倍の日数まで遡る（休日考慮）
+            if (!this.isHoliday(current)) {
+                const dailyPv = sumCalculatePV(rows, current)
+                if (dailyPv !== undefined) {
+                    pvValues.push(dailyPv)
+                }
+            }
+            current.setDate(current.getDate() - 1)
+            daysChecked++
+        }
+
+        if (pvValues.length === 0) return 0
+        return pvValues.reduce((a, b) => a + b, 0) / pvValues.length
+    }
+
+    /**
+     * 完了予測を計算
+     *
+     * @param options 予測オプション
+     * @returns 完了予測結果。計算不能な場合はundefined
+     */
+    calculateCompletionForecast(
+        options?: CompletionForecastOptions
+    ): CompletionForecast | undefined {
+        const lookbackDays = options?.lookbackDays ?? 7
+        const maxForecastDays = options?.maxForecastDays ?? 730
+
+        // SPI を取得
+        const stats = this.statisticsByProject[0]
+        const spi = stats?.spi
+        if (spi === undefined || spi === null || spi === 0) {
+            return undefined
+        }
+
+        // 残作業量を計算
+        const ev = this.totalEv
+        const bac = this.bac
+        const remainingWork = bac - ev
+
+        // 完了済みの場合
+        if (remainingWork <= 0) {
+            return {
+                etcPrime: 0,
+                forecastDate: new Date(this._baseDate),
+                remainingWork: 0,
+                usedDailyPv: 0,
+                usedSpi: spi,
+                dailyBurnRate: 0,
+                confidence: 'high',
+                confidenceReason: 'プロジェクト完了済み',
+            }
+        }
+
+        // 日あたりPVを決定
+        const usedDailyPv = options?.dailyPvOverride ?? this.calculateRecentDailyPv(lookbackDays)
+
+        // dailyPv が 0 の場合は予測不可
+        if (usedDailyPv === 0) {
+            return undefined
+        }
+
+        // ETC' を計算
+        const etcPrime = remainingWork / spi
+
+        // 日あたり消化量
+        const dailyBurnRate = usedDailyPv * spi
+
+        // 完了予測日を計算
+        let currentRemaining = remainingWork
+        const currentDate = new Date(this._baseDate)
+        let daysElapsed = 0
+
+        while (currentRemaining > 0 && daysElapsed < maxForecastDays) {
+            currentDate.setDate(currentDate.getDate() + 1)
+            daysElapsed++
+
+            if (!this.isHoliday(currentDate)) {
+                currentRemaining -= dailyBurnRate
+            }
+        }
+
+        // maxForecastDays を超えた場合
+        if (currentRemaining > 0) {
+            return undefined
+        }
+
+        // 信頼性を判定
+        const { confidence, confidenceReason } = this.determineConfidence(
+            spi,
+            options?.dailyPvOverride !== undefined,
+            currentDate
+        )
+
+        return {
+            etcPrime,
+            forecastDate: currentDate,
+            remainingWork,
+            usedDailyPv,
+            usedSpi: spi,
+            dailyBurnRate,
+            confidence,
+            confidenceReason,
+        }
+    }
+
+    /**
+     * 信頼性を判定
+     */
+    private determineConfidence(
+        spi: number,
+        hasDailyPvOverride: boolean,
+        forecastDate: Date
+    ): { confidence: 'high' | 'medium' | 'low'; confidenceReason: string } {
+        // 手入力PV使用の場合は高信頼
+        if (hasDailyPvOverride) {
+            return { confidence: 'high', confidenceReason: 'ユーザーが日あたりPVを指定' }
+        }
+
+        // 予測日が計画終了日を大幅に超過（2倍以上）
+        if (this._endDate) {
+            const plannedDuration = this._endDate.getTime() - (this._startDate?.getTime() ?? 0)
+            const forecastDuration = forecastDate.getTime() - (this._startDate?.getTime() ?? 0)
+            if (forecastDuration > plannedDuration * 2) {
+                return { confidence: 'low', confidenceReason: '予測日が計画の2倍以上超過' }
+            }
+        }
+
+        // SPI に基づく判定
+        if (spi >= 0.8 && spi <= 1.2) {
+            return { confidence: 'high', confidenceReason: '安定した進捗（SPI: 0.8-1.2）' }
+        }
+        if (spi >= 0.5 && spi < 0.8) {
+            return { confidence: 'medium', confidenceReason: 'やや遅れ気味（SPI: 0.5-0.8）' }
+        }
+        if (spi > 1.2) {
+            return { confidence: 'medium', confidenceReason: '前倒し進捗（SPI > 1.2）' }
+        }
+        // spi < 0.5
+        return { confidence: 'low', confidenceReason: '大幅な遅延（SPI < 0.5）' }
+    }
 }
 
 const sumWorkload = (group: TaskRow[]) => sum(group.map((d) => d.workload))
@@ -469,6 +684,40 @@ export type ExcludedTask = {
     task: TaskRow
     /** 除外理由（validStatus.invalidReason） */
     reason: string
+}
+
+/**
+ * 完了予測オプション
+ */
+export interface CompletionForecastOptions {
+    /** 手入力の日あたりPV（優先使用） */
+    dailyPvOverride?: number
+    /** 直近PV平均の計算日数（デフォルト: 7） */
+    lookbackDays?: number
+    /** 計算を打ち切る最大日数（デフォルト: 730 = 2年） */
+    maxForecastDays?: number
+}
+
+/**
+ * 完了予測結果
+ */
+export interface CompletionForecast {
+    /** ETC': 残作業完了に必要な計画工数換算（人日） */
+    etcPrime: number
+    /** 完了予測日 */
+    forecastDate: Date
+    /** 残作業量（BAC - EV） */
+    remainingWork: number
+    /** 使用した日あたりPV */
+    usedDailyPv: number
+    /** 使用したSPI */
+    usedSpi: number
+    /** 日あたり消化量（usedDailyPv × usedSpi） */
+    dailyBurnRate: number
+    /** 予測の信頼性 */
+    confidence: 'high' | 'medium' | 'low'
+    /** 信頼性の理由 */
+    confidenceReason: string
 }
 
 // /**
