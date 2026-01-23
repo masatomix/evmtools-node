@@ -1,8 +1,9 @@
 /**
  * PbevmShowPvUsecase テスト
- * 要件ID: REQ-CLI-002
- * GitHub Issue: #72
+ * 要件ID: REQ-CLI-002, REQ-PV-TODAY-001
+ * GitHub Issue: #72, #86
  */
+import { date2Sn } from 'excel-csv-read-write'
 import { TaskRow } from '../../domain'
 import { dateStr } from '../../common'
 
@@ -12,7 +13,7 @@ describe('PbevmShowPvUsecase CLI出力整形', () => {
      * 実際の変換ロジック（pbevm-show-pv-usecase.ts）と同じ構造
      * 明示的にプロパティを選択することで内部プロパティを除外
      */
-    const convertToDisplayData = (taskRow: TaskRow) => ({
+    const convertToDisplayData = (taskRow: TaskRow, baseDate: Date) => ({
         sharp: taskRow.sharp,
         id: taskRow.id,
         level: taskRow.level,
@@ -30,13 +31,34 @@ describe('PbevmShowPvUsecase CLI出力整形', () => {
         spi: taskRow.spi,
         進捗応当日: dateStr(taskRow.expectedProgressDate),
         delayDays: taskRow.delayDays,
+        remainingDays: taskRow.remainingDays(baseDate),
+        pvToday: taskRow.workloadPerDay,
+        pvTodayActual: taskRow.pvTodayActual(baseDate),
         remarks: taskRow.remarks,
         parentId: taskRow.parentId,
         isLeaf: taskRow.isLeaf,
     })
 
+    // テスト用のplotMapを生成（土日除外）
+    const createPlotMap = (startDate: Date, endDate: Date): Map<number, boolean> => {
+        const plotMap = new Map<number, boolean>()
+        const current = new Date(startDate)
+        while (current <= endDate) {
+            const dayOfWeek = current.getDay()
+            if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                plotMap.set(date2Sn(current), true)
+            }
+            current.setDate(current.getDate() + 1)
+        }
+        return plotMap
+    }
+
     // テスト用のTaskRowを作成
     const createTestTaskRow = (): TaskRow => {
+        const startDate = new Date('2025-01-06') // 月曜日
+        const endDate = new Date('2025-01-10') // 金曜日
+        const plotMap = createPlotMap(startDate, endDate)
+
         return new TaskRow(
             1, // sharp
             101, // id
@@ -44,9 +66,9 @@ describe('PbevmShowPvUsecase CLI出力整形', () => {
             'テストタスク', // name
             '担当者A', // assignee
             5, // workload
-            new Date('2025-01-01'), // startDate
-            new Date('2025-01-10'), // endDate
-            new Date('2025-01-02'), // actualStartDate
+            startDate, // startDate
+            endDate, // endDate
+            new Date('2025-01-06'), // actualStartDate
             undefined, // actualEndDate
             0.5, // progressRate
             5, // scheduledWorkDays
@@ -58,14 +80,17 @@ describe('PbevmShowPvUsecase CLI出力整形', () => {
             'テスト備考', // remarks
             undefined, // parentId
             true, // isLeaf
-            new Map() // plotMap
+            plotMap // plotMap
         )
     }
+
+    // テスト用の基準日
+    const baseDate = new Date('2025-01-08') // 水曜日（タスク期間中央）
 
     describe('T-01: 出力オブジェクトに logger が含まれない', () => {
         it('logger プロパティが存在しないこと', () => {
             const taskRow = createTestTaskRow()
-            const displayData = convertToDisplayData(taskRow)
+            const displayData = convertToDisplayData(taskRow, baseDate)
 
             expect(displayData).not.toHaveProperty('logger')
         })
@@ -74,7 +99,7 @@ describe('PbevmShowPvUsecase CLI出力整形', () => {
     describe('T-02: 出力オブジェクトに calculateSPI が含まれない', () => {
         it('calculateSPI プロパティが存在しないこと', () => {
             const taskRow = createTestTaskRow()
-            const displayData = convertToDisplayData(taskRow)
+            const displayData = convertToDisplayData(taskRow, baseDate)
 
             expect(displayData).not.toHaveProperty('calculateSPI')
         })
@@ -83,7 +108,7 @@ describe('PbevmShowPvUsecase CLI出力整形', () => {
     describe('T-03: 出力オブジェクトに calculateSV が含まれない', () => {
         it('calculateSV プロパティが存在しないこと', () => {
             const taskRow = createTestTaskRow()
-            const displayData = convertToDisplayData(taskRow)
+            const displayData = convertToDisplayData(taskRow, baseDate)
 
             expect(displayData).not.toHaveProperty('calculateSV')
         })
@@ -92,7 +117,7 @@ describe('PbevmShowPvUsecase CLI出力整形', () => {
     describe('T-04: 必要なプロパティは保持される', () => {
         it('id, name, assignee などの主要プロパティが存在すること', () => {
             const taskRow = createTestTaskRow()
-            const displayData = convertToDisplayData(taskRow)
+            const displayData = convertToDisplayData(taskRow, baseDate)
 
             expect(displayData).toHaveProperty('id', 101)
             expect(displayData).toHaveProperty('name', 'テストタスク')
@@ -106,12 +131,49 @@ describe('PbevmShowPvUsecase CLI出力整形', () => {
     describe('その他の除外対象プロパティも含まれない', () => {
         it('calculatePV, calculatePVs, plotMap, checkStartEndDateAndPlotMap が存在しないこと', () => {
             const taskRow = createTestTaskRow()
-            const displayData = convertToDisplayData(taskRow)
+            const displayData = convertToDisplayData(taskRow, baseDate)
 
             expect(displayData).not.toHaveProperty('calculatePV')
             expect(displayData).not.toHaveProperty('calculatePVs')
             expect(displayData).not.toHaveProperty('plotMap')
             expect(displayData).not.toHaveProperty('checkStartEndDateAndPlotMap')
+        })
+    })
+
+    // REQ-PV-TODAY-001 統合テスト (TC-20〜TC-22)
+    describe('TC-20: pvTodayカラムが出力に含まれる', () => {
+        it('workloadPerDayの値が表示される', () => {
+            const taskRow = createTestTaskRow()
+            const displayData = convertToDisplayData(taskRow, baseDate)
+
+            expect(displayData).toHaveProperty('pvToday')
+            expect(displayData.pvToday).toBe(taskRow.workloadPerDay)
+            // workload=5, scheduledWorkDays=5 なので workloadPerDay=1
+            expect(displayData.pvToday).toBe(1)
+        })
+    })
+
+    describe('TC-21: pvTodayActualカラムが出力に含まれる', () => {
+        it('計算値が表示される', () => {
+            const taskRow = createTestTaskRow()
+            const displayData = convertToDisplayData(taskRow, baseDate)
+
+            expect(displayData).toHaveProperty('pvTodayActual')
+            expect(displayData.pvTodayActual).toBe(taskRow.pvTodayActual(baseDate))
+            // 実際の値も確認（残工数2.5を残日数3で割った値）
+            expect(displayData.pvTodayActual).toBeCloseTo(2.5 / 3, 5)
+        })
+    })
+
+    describe('TC-22: remainingDaysカラムが出力に含まれる', () => {
+        it('残日数が表示される', () => {
+            const taskRow = createTestTaskRow()
+            const displayData = convertToDisplayData(taskRow, baseDate)
+
+            expect(displayData).toHaveProperty('remainingDays')
+            expect(displayData.remainingDays).toBe(taskRow.remainingDays(baseDate))
+            // baseDate=1/8（水）、endDate=1/10（金）なので残日数は3（水木金）
+            expect(displayData.remainingDays).toBe(3)
         })
     })
 })
