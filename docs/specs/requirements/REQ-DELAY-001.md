@@ -27,11 +27,15 @@
 
 > **重要**: 遅延日数は `baseDate` と `endDate` から **動的に計算** する。`TaskRow.delayDays`（Excel読み込み値）は使用しない。
 >
-> - **計算式**: `delayDays = baseDate - endDate`（日数）
+> - **計算式**: `delayDays = baseDate - endDate`（カレンダー日数）
+> - **工期ベース**: 遅延日数は「工期」（カレンダー日数）であり、「工数」（人日・作業量）ではない
 > - 既存の `formatRelativeDaysNumber()` を活用（符号を反転して使用）
 > - `Project.baseDate` を基準日として使用
+> - 土日・祝日は考慮せず、単純なカレンダー日数差で計算
 >
 > **理由**: Excel の値に依存せず、任意の基準日で遅延状況を判定できるようにするため。
+>
+> **用語参照**: [GLOSSARY.md](../../GLOSSARY.md) の「工期」「工数」を参照。
 
 ### 1.4 スコープ
 
