@@ -25,7 +25,8 @@ GitHub Issue [#120](https://github.com/masatomix/evmtools-node/issues/120) の�
 | ID | 要件 |
 |----|------|
 | FR-01-1 | fullTaskName（タスクのフルパス名）による部分一致検索ができること |
-| FR-01-2 | 複数のフィルタ条件を組み合わせて使用できること |
+
+> **将来対応**: 複数のフィルタ条件を組み合わせて使用する機能は将来バージョンで対応予定
 
 ### FR-02: 統計情報の算出
 
@@ -33,8 +34,9 @@ GitHub Issue [#120](https://github.com/masatomix/evmtools-node/issues/120) の�
 |----|------|
 | FR-02-1 | フィルタ結果に対する EVM 指標（PV合計, EV合計, SPI）を算出できること |
 | FR-02-2 | ETC'（残作業予測）と完了予測日を算出できること |
-| FR-02-3 | タスク数（総数、リーフタスク数）を算出できること |
-| FR-02-4 | 担当者別の統計（タスク数、PV、EV）を算出できること |
+| FR-02-3 | フィルタ結果のタスク数を算出できること |
+| FR-02-4 | 担当者別の統計（タスク数、PV、EV、ETC'、遅延情報）を算出できること |
+| FR-02-4-1 | フィルタ結果に対しても担当者別統計を算出できること |
 | FR-02-5 | 遅延情報（遅延タスク数、遅延日数）を算出できること |
 
 ### FR-03: 出力形式
@@ -74,14 +76,17 @@ GitHub Issue [#120](https://github.com/masatomix/evmtools-node/issues/120) の�
 | AC-01 | fullTaskName に "認証機能" を含むタスクのみが抽出されること | FR-01-1 |
 | AC-02 | フィルタ結果に対して PV 合計、EV 合計、SPI が正しく算出されること | FR-02-1 |
 | AC-03 | フィルタ結果に対して ETC' と完了予測日が算出されること | FR-02-2 |
-| AC-04 | フィルタ結果のタスク総数とリーフタスク数が正しくカウントされること | FR-02-3 |
-| AC-05 | 担当者別にタスク数、PV、EV が集計されること | FR-02-4 |
+| AC-04 | フィルタ結果のタスク数が正しくカウントされること（統計計算はリーフタスクのみ） | FR-02-3 |
+| AC-05 | 担当者別にタスク数、PV、EV、ETC'、遅延情報が集計されること | FR-02-4 |
+| AC-05-1 | `project.getStatisticsByName({ filter: "認証機能" })` でフィルタ結果の担当者別統計を取得できること | FR-02-4-1 |
+| AC-05-2 | `project.getStatisticsByName(filteredTasks)` で渡された TaskRow[] の担当者別統計を取得できること | FR-02-4-1 |
 | AC-06 | 遅延タスク数と遅延日数の統計が取得できること | FR-02-5 |
 | AC-07 | `project.getStatistics({ filter: "認証機能" })` でフィルタ結果の統計情報を取得できること | FR-03-1 |
 | AC-08 | `project.getStatistics()` を引数なしで呼び出すとプロジェクト全体の統計を返すこと | FR-03-1, NFR-02-3 |
-| AC-09 | `project.filterTasks({ filter: "認証機能" })` でフィルタ結果の TaskRow[] を取得できること（再利用目的） | FR-03-1 |
+| AC-09 | `project.filterTasks({ filter: "認証機能" })` でフィルタ結果の TaskRow[]（親タスク含む）を取得できること | FR-03-1 |
 | AC-10 | `project.getStatistics(filteredTasks)` で渡された TaskRow[] に対する統計を取得できること | FR-03-1 |
-| AC-11 | CLI で `pbevm-filter-stats --filter "認証機能"` が実行できること | FR-03-2 |
+
+> **次回スコープ**: AC-11（CLI で `pbevm-filter-stats --filter "認証機能"` が実行できること）は次回対応予定
 
 ## 関連ドキュメント
 
@@ -95,3 +100,4 @@ GitHub Issue [#120](https://github.com/masatomix/evmtools-node/issues/120) の�
 |------|-----------|---------|
 | 2026-01-24 | 1.0.0 | 初版作成 |
 | 2026-01-24 | 1.1.0 | FR-01-2（親タスクID指定）を削除、API設計を修正（getStatistics にフィルタ引数を追加、TaskRow[]を渡す形式も追加） |
+| 2026-01-25 | 1.2.0 | FR-01-2（複数フィルタ）を将来対応に変更、FR-02-4-1/AC-05-1/AC-05-2（getStatisticsByName フィルタ対応）追加、AC-04/AC-09 修正（filterTasks は親含む全タスクを返す）、AC-11 を次回スコープに変更 |

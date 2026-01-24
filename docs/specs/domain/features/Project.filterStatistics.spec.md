@@ -1,6 +1,6 @@
 # Project.filterStatistics 詳細設計書
 
-**バージョン**: 1.2.0
+**バージョン**: 1.3.0
 **作成日**: 2026-01-24
 **要件ID**: [REQ-FILTER-STATS-001](../../requirements/REQ-FILTER-STATS-001.md)
 **対象クラス**: `src/domain/Project.ts`
@@ -106,13 +106,15 @@ export type ProjectStatistics = {
  * フィルタ条件に基づいてタスクを抽出する
  *
  * @param options フィルタオプション
- * @returns フィルタ結果の TaskRow[]（リーフタスクのみ）
+ * @returns フィルタ結果の TaskRow[]（親タスク含む全タスク）
+ *
+ * @note 統計計算時は内部でリーフタスクのみを使用（二重カウント防止）
  *
  * @example
- * // "認証機能" を含むタスクを取得
+ * // "認証機能" を含むタスクを取得（親タスク含む）
  * const tasks = project.filterTasks({ filter: "認証機能" })
  *
- * // 引数なしは全リーフタスクを返す
+ * // 引数なしは全タスクを返す
  * const allTasks = project.filterTasks()
  */
 filterTasks(options?: TaskFilterOptions): TaskRow[]
@@ -232,25 +234,26 @@ getStatisticsByName(tasks: TaskRow[]): AssigneeStatistics[]
 
 ```
 1. options が undefined または filter が空文字の場合
-   → 全リーフタスクを返す
+   → 全タスク（親含む）を返す
 
 2. filter が指定されている場合
    a. toTaskRows() で全タスクを取得（キャッシュ利用）
-   b. isLeaf === true でフィルタ（リーフタスクのみ）
-   c. getFullTaskName(task) で部分一致チェック
-   d. 一致したタスクのみ返す
+   b. getFullTaskName(task) で部分一致チェック
+   c. 一致したタスクのみ返す（親タスク含む）
+
+※ 統計計算時は _resolveTasks() 内でリーフタスクのみを抽出
 ```
 
 **擬似コード**:
 ```typescript
 filterTasks(options?: TaskFilterOptions): TaskRow[] {
-  const leafTasks = this.toTaskRows().filter(t => t.isLeaf)
+  const allTasks = this.toTaskRows()
 
   if (!options?.filter || options.filter.trim() === '') {
-    return leafTasks
+    return allTasks
   }
 
-  return leafTasks.filter(task => {
+  return allTasks.filter(task => {
     const fullName = this.getFullTaskName(task)
     return fullName.includes(options.filter!)
   })
@@ -275,14 +278,23 @@ getStatistics(optionsOrTasks?: StatisticsOptions | TaskRow[]): ProjectStatistics
   return this._calculateStatistics(tasks)
 }
 
+/**
+ * 引数を解決してリーフタスクのみを返す（統計計算用）
+ * filterTasks() は全タスクを返すが、統計計算はリーフのみで行う
+ */
 private _resolveTasks(optionsOrTasks?: StatisticsOptions | TaskRow[]): TaskRow[] {
+  let tasks: TaskRow[]
+
   if (optionsOrTasks === undefined) {
-    return this.filterTasks()
+    tasks = this.filterTasks()
   } else if (Array.isArray(optionsOrTasks)) {
-    return optionsOrTasks.filter(t => t.isLeaf)
+    tasks = optionsOrTasks
   } else {
-    return this.filterTasks(optionsOrTasks)
+    tasks = this.filterTasks(optionsOrTasks)
   }
+
+  // 統計計算はリーフタスクのみ（二重カウント防止）
+  return tasks.filter(t => t.isLeaf)
 }
 ```
 
@@ -454,13 +466,14 @@ get statisticsByName(): AssigneeStatistics[] {
 
 | TC-ID | テスト内容 | 入力 | 期待結果 |
 |-------|----------|------|----------|
-| TC-01 | 引数なしで全リーフタスクを返す | `filterTasks()` | 全リーフタスク |
-| TC-02 | 空オブジェクトで全リーフタスクを返す | `filterTasks({})` | 全リーフタスク |
-| TC-03 | 空文字フィルタで全リーフタスクを返す | `filterTasks({ filter: "" })` | 全リーフタスク |
-| TC-04 | 部分一致でタスクを抽出 | `filterTasks({ filter: "認証" })` | "認証"を含むタスクのみ |
+| TC-01 | 引数なしで全タスク（親含む）を返す | `filterTasks()` | 全タスク |
+| TC-02 | 空オブジェクトで全タスク（親含む）を返す | `filterTasks({})` | 全タスク |
+| TC-03 | 空文字フィルタで全タスク（親含む）を返す | `filterTasks({ filter: "" })` | 全タスク |
+| TC-04 | 部分一致でタスクを抽出（親含む） | `filterTasks({ filter: "認証" })` | "認証"を含むタスク（親含む） |
 | TC-05 | 親タスク名でも一致 | `filterTasks({ filter: "親タスク名" })` | フルパスに"親タスク名"を含むタスク |
 | TC-06 | 一致するタスクがない場合 | `filterTasks({ filter: "存在しない" })` | 空配列 |
 | TC-07 | 大文字小文字を区別する | `filterTasks({ filter: "API" })` | 完全一致のみ |
+| TC-08 | 親タスクとリーフタスク両方が含まれる | `filterTasks({ filter: "機能" })` | 親タスクとリーフ両方 |
 
 ### 4.2 getStatistics() テストケース
 
@@ -503,17 +516,20 @@ get statisticsByName(): AssigneeStatistics[] {
 
 | 要件ID | 受け入れ基準 | 対応テストケース | 結果 |
 |--------|-------------|-----------------|------|
-| REQ-FILTER-STATS-001 AC-01 | fullTaskName に "認証機能" を含むタスクのみが抽出される | TC-04, TC-05 | ⏳ |
+| REQ-FILTER-STATS-001 AC-01 | fullTaskName に "認証機能" を含むタスクのみが抽出される | TC-04, TC-05, TC-08 | ⏳ |
 | REQ-FILTER-STATS-001 AC-02 | フィルタ結果に対して PV 合計、EV 合計、SPI が正しく算出される | TC-13, TC-17 | ⏳ |
 | REQ-FILTER-STATS-001 AC-03 | フィルタ結果に対して ETC' と完了予測日が算出される | TC-15 | ⏳ |
-| REQ-FILTER-STATS-001 AC-04 | フィルタ結果のタスク総数とリーフタスク数が正しくカウントされる | TC-14 | ⏳ |
-| REQ-FILTER-STATS-001 AC-05 | 担当者別にタスク数、PV、EV が集計される | TC-20, TC-21, TC-22 | ⏳ |
+| REQ-FILTER-STATS-001 AC-04 | フィルタ結果のタスク数が正しくカウントされる（統計計算はリーフのみ） | TC-14 | ⏳ |
+| REQ-FILTER-STATS-001 AC-05 | 担当者別にタスク数、PV、EV、ETC'、遅延情報が集計される | TC-20, TC-23, TC-24 | ⏳ |
+| REQ-FILTER-STATS-001 AC-05-1 | `project.getStatisticsByName({ filter })` でフィルタ結果の担当者別統計を取得できる | TC-21 | ⏳ |
+| REQ-FILTER-STATS-001 AC-05-2 | `project.getStatisticsByName(filteredTasks)` で担当者別統計を取得できる | TC-22, TC-31 | ⏳ |
 | REQ-FILTER-STATS-001 AC-06 | 遅延タスク数と遅延日数の統計が取得できる | TC-16, TC-18, TC-24 | ⏳ |
 | REQ-FILTER-STATS-001 AC-07 | `project.getStatistics({ filter })` でフィルタ結果の統計情報を取得できる | TC-11 | ⏳ |
 | REQ-FILTER-STATS-001 AC-08 | `project.getStatistics()` を引数なしで呼び出すとプロジェクト全体の統計を返す | TC-10, TC-32 | ⏳ |
-| REQ-FILTER-STATS-001 AC-09 | `project.filterTasks({ filter })` でフィルタ結果の TaskRow[] を取得できる | TC-04 | ⏳ |
+| REQ-FILTER-STATS-001 AC-09 | `project.filterTasks({ filter })` でフィルタ結果の TaskRow[]（親含む）を取得できる | TC-04, TC-08 | ⏳ |
 | REQ-FILTER-STATS-001 AC-10 | `project.getStatistics(filteredTasks)` で渡された TaskRow[] に対する統計を取得できる | TC-12, TC-30 | ⏳ |
-| REQ-FILTER-STATS-001 AC-11 | CLI で `pbevm-filter-stats --filter "認証機能"` が実行できる | - | ⏳ |
+
+> **次回スコープ**: AC-11（CLI）は次回対応予定
 
 > **ステータス凡例**:
 > - ⏳: 未実装
@@ -564,3 +580,4 @@ get statisticsByName(): AssigneeStatistics[] {
 | 2026-01-24 | 1.0.0 | 初版作成 |
 | 2026-01-24 | 1.1.0 | ProjectStatistics 型を拡張、ロジック共通化設計 |
 | 2026-01-24 | 1.2.0 | getStatisticsByName() 追加、AssigneeStatistics にも拡張プロパティ追加、ProjectStatistics から assigneeStats を削除 |
+| 2026-01-25 | 1.3.0 | filterTasks() が全タスク（親含む）を返すように変更、統計計算は内部でリーフのみを使用、TC-08 追加、要件トレーサビリティ更新（AC-05-1, AC-05-2 追加、AC-11 次回スコープ） |
