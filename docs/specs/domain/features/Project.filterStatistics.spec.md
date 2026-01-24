@@ -1,6 +1,6 @@
 # Project.filterStatistics 詳細設計書
 
-**バージョン**: 1.1.0
+**バージョン**: 1.2.0
 **作成日**: 2026-01-24
 **要件ID**: [REQ-FILTER-STATS-001](../../requirements/REQ-FILTER-STATS-001.md)
 **対象クラス**: `src/domain/Project.ts`
@@ -19,12 +19,16 @@ Project クラスにタスクフィルタリング機能と統計情報取得機
 | `getStatistics()` | プロジェクト全体の統計情報を返す |
 | `getStatistics(options)` | フィルタ条件を指定して統計情報を返す |
 | `getStatistics(tasks)` | 指定された TaskRow[] の統計情報を返す |
+| `getStatisticsByName()` | 担当者別の統計情報を返す |
+| `getStatisticsByName(options)` | フィルタ条件を指定して担当者別統計を返す |
+| `getStatisticsByName(tasks)` | 指定された TaskRow[] の担当者別統計を返す |
 
 ### 1.2 設計方針
 
-- **既存の型を再利用**: 戻り値は既存の `ProjectStatistics` 型を使用
-- **ロジック共通化**: `statisticsByProject` と `getStatistics()` は内部で同じ計算ロジックを使用
-- **後方互換性**: 既存の `statisticsByProject` getter はそのまま残す
+- **既存の型を拡張**: `ProjectStatistics`, `AssigneeStatistics` に新プロパティを追加
+- **ロジック共通化**: 既存 getter と新メソッドは内部で同じ計算ロジックを使用
+- **API の一貫性**: `statisticsByProject` → `getStatistics()`, `statisticsByName` → `getStatisticsByName()` のパターン
+- **後方互換性**: 既存の getter はそのまま残す
 
 ---
 
@@ -66,31 +70,31 @@ export type Statistics = {
   spi?: number
 }
 
-// 担当者別統計（既存）
-export type AssigneeStatistics = {
-  assignee?: string
-} & Statistics
-
-// プロジェクト統計（拡張）
-export type ProjectStatistics = {
-  projectName?: string
-  startDate: string
-  endDate: string
-
-  // === 新規追加 ===
+// 拡張統計（新規: 共通の拡張プロパティ）
+export interface ExtendedStatistics {
   /** ETC'（残作業予測）。SPI=0の場合は計算不能のためundefined */
   etcPrime?: number
   /** 完了予測日。計算不能な場合はundefined */
   completionForecast?: Date
-  /** 担当者別統計 */
-  assigneeStats: AssigneeStatistics[]
   /** 遅延タスク数 */
   delayedTaskCount: number
   /** 平均遅延日数（遅延タスクがない場合は0） */
   averageDelayDays: number
   /** 最大遅延日数（遅延タスクがない場合は0） */
   maxDelayDays: number
-} & Statistics
+}
+
+// 担当者別統計（拡張）
+export type AssigneeStatistics = {
+  assignee?: string
+} & Statistics & ExtendedStatistics
+
+// プロジェクト統計（拡張）
+export type ProjectStatistics = {
+  projectName?: string
+  startDate: string
+  endDate: string
+} & Statistics & ExtendedStatistics
 ```
 
 ### 2.3 メソッドシグネチャ
@@ -118,7 +122,7 @@ filterTasks(options?: TaskFilterOptions): TaskRow[]
 
 ```typescript
 /**
- * 統計情報を取得する
+ * プロジェクト統計情報を取得する
  *
  * オーバーロード:
  * 1. getStatistics() - プロジェクト全体の統計
@@ -126,7 +130,7 @@ filterTasks(options?: TaskFilterOptions): TaskRow[]
  * 3. getStatistics(TaskRow[]) - 渡されたタスクの統計
  *
  * @param optionsOrTasks フィルタオプションまたはTaskRow配列
- * @returns 統計情報（既存の ProjectStatistics 型）
+ * @returns プロジェクト統計情報
  *
  * @example
  * // 全体の統計
@@ -144,6 +148,36 @@ getStatistics(options: StatisticsOptions): ProjectStatistics
 getStatistics(tasks: TaskRow[]): ProjectStatistics
 ```
 
+#### `getStatisticsByName()` オーバーロード
+
+```typescript
+/**
+ * 担当者別統計情報を取得する
+ *
+ * オーバーロード:
+ * 1. getStatisticsByName() - プロジェクト全体の担当者別統計
+ * 2. getStatisticsByName({ filter }) - フィルタして担当者別統計
+ * 3. getStatisticsByName(TaskRow[]) - 渡されたタスクの担当者別統計
+ *
+ * @param optionsOrTasks フィルタオプションまたはTaskRow配列
+ * @returns 担当者別統計情報の配列
+ *
+ * @example
+ * // 全体の担当者別統計
+ * const stats = project.getStatisticsByName()
+ *
+ * // フィルタして担当者別統計
+ * const stats = project.getStatisticsByName({ filter: "認証機能" })
+ *
+ * // 事前にフィルタしたタスクの担当者別統計
+ * const tasks = project.filterTasks({ filter: "認証機能" })
+ * const stats = project.getStatisticsByName(tasks)
+ */
+getStatisticsByName(): AssigneeStatistics[]
+getStatisticsByName(options: StatisticsOptions): AssigneeStatistics[]
+getStatisticsByName(tasks: TaskRow[]): AssigneeStatistics[]
+```
+
 ---
 
 ## 3. 処理仕様
@@ -151,24 +185,47 @@ getStatistics(tasks: TaskRow[]): ProjectStatistics
 ### 3.1 アーキテクチャ（ロジック共通化）
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                      Project                            │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  get statisticsByProject()                              │
-│      │                                                  │
-│      └──► _calculateStatistics(allLeafTasks) ◄──┐      │
-│                                                  │      │
-│  getStatistics(optionsOrTasks?)                  │      │
-│      │                                           │      │
-│      ├── undefined ──► _calculateStatistics() ───┘      │
-│      ├── TaskRow[] ──► _calculateStatistics(tasks)      │
-│      └── options ────► filterTasks() → _calculateStatistics()
-│                                                         │
-│  filterTasks(options?)                                  │
-│      └── fullTaskName 部分一致フィルタ                   │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────┐
+│                          Project                                  │
+├───────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  filterTasks(options?)                                            │
+│      └── fullTaskName 部分一致フィルタ                             │
+│                                                                   │
+│  ┌─────────────────────────────────────────────────────────────┐  │
+│  │              プロジェクト統計                                 │  │
+│  │                                                             │  │
+│  │  get statisticsByProject()                                  │  │
+│  │      └──► _calculateStatistics(allLeafTasks) ◄──┐          │  │
+│  │                                                  │          │  │
+│  │  getStatistics(optionsOrTasks?)                  │          │  │
+│  │      ├── undefined ──► _calculateStatistics() ───┘          │  │
+│  │      ├── TaskRow[] ──► _calculateStatistics(tasks)          │  │
+│  │      └── options ────► filterTasks() → _calculateStatistics()│  │
+│  └─────────────────────────────────────────────────────────────┘  │
+│                                                                   │
+│  ┌─────────────────────────────────────────────────────────────┐  │
+│  │              担当者別統計                                     │  │
+│  │                                                             │  │
+│  │  get statisticsByName()                                     │  │
+│  │      └──► _calculateAssigneeStats(allLeafTasks) ◄──┐       │  │
+│  │                                                     │       │  │
+│  │  getStatisticsByName(optionsOrTasks?)               │       │  │
+│  │      ├── undefined ──► _calculateAssigneeStats() ───┘       │  │
+│  │      ├── TaskRow[] ──► _calculateAssigneeStats(tasks)       │  │
+│  │      └── options ────► filterTasks() → _calculateAssigneeStats()│
+│  └─────────────────────────────────────────────────────────────┘  │
+│                                                                   │
+│  ┌─────────────────────────────────────────────────────────────┐  │
+│  │              共通ヘルパー                                     │  │
+│  │                                                             │  │
+│  │  _calculateExtendedStats(tasks) → ExtendedStatistics        │  │
+│  │      ├── etcPrime                                           │  │
+│  │      ├── completionForecast                                 │  │
+│  │      └── delayedTaskCount, averageDelayDays, maxDelayDays   │  │
+│  └─────────────────────────────────────────────────────────────┘  │
+│                                                                   │
+└───────────────────────────────────────────────────────────────────┘
 ```
 
 ### 3.2 `filterTasks(options?)` の処理フロー
@@ -214,21 +271,37 @@ filterTasks(options?: TaskFilterOptions): TaskRow[] {
 **擬似コード**:
 ```typescript
 getStatistics(optionsOrTasks?: StatisticsOptions | TaskRow[]): ProjectStatistics {
-  let tasks: TaskRow[]
-
-  if (optionsOrTasks === undefined) {
-    tasks = this.filterTasks()
-  } else if (Array.isArray(optionsOrTasks)) {
-    tasks = optionsOrTasks.filter(t => t.isLeaf)
-  } else {
-    tasks = this.filterTasks(optionsOrTasks)
-  }
-
+  const tasks = this._resolveTasks(optionsOrTasks)
   return this._calculateStatistics(tasks)
+}
+
+private _resolveTasks(optionsOrTasks?: StatisticsOptions | TaskRow[]): TaskRow[] {
+  if (optionsOrTasks === undefined) {
+    return this.filterTasks()
+  } else if (Array.isArray(optionsOrTasks)) {
+    return optionsOrTasks.filter(t => t.isLeaf)
+  } else {
+    return this.filterTasks(optionsOrTasks)
+  }
 }
 ```
 
-### 3.4 `_calculateStatistics(tasks)` 共通ロジック
+### 3.4 `getStatisticsByName(optionsOrTasks?)` の処理フロー
+
+```
+1. 引数の型を判定（getStatistics と同様）
+2. _calculateAssigneeStats(tasks) を呼び出して担当者別統計を計算
+```
+
+**擬似コード**:
+```typescript
+getStatisticsByName(optionsOrTasks?: StatisticsOptions | TaskRow[]): AssigneeStatistics[] {
+  const tasks = this._resolveTasks(optionsOrTasks)
+  return this._calculateAssigneeStats(tasks)
+}
+```
+
+### 3.5 `_calculateStatistics(tasks)` プロジェクト統計
 
 ```typescript
 private _calculateStatistics(tasks: TaskRow[]): ProjectStatistics {
@@ -241,17 +314,8 @@ private _calculateStatistics(tasks: TaskRow[]): ProjectStatistics {
   const spi = calculateSPI(tasks, baseDate)
   const bac = sumWorkload(tasks)
 
-  // ETC'（SPI=0の場合はundefined）
-  const etcPrime = spi && spi > 0 ? (bac - totalEv) / spi : undefined
-
-  // 完了予測日（簡易計算、計算不能な場合はundefined）
-  const completionForecast = this._calculateCompletionForecastForTasks(tasks, spi)
-
-  // 担当者別統計
-  const assigneeStats = this._calculateAssigneeStats(tasks)
-
-  // 遅延情報
-  const { delayedTaskCount, averageDelayDays, maxDelayDays } = this._calculateDelayStats(tasks)
+  // 拡張統計
+  const extendedStats = this._calculateExtendedStats(tasks, spi, bac, totalEv)
 
   return {
     projectName: this._name,
@@ -266,10 +330,68 @@ private _calculateStatistics(tasks: TaskRow[]): ProjectStatistics {
     totalPvCalculated,
     totalEv,
     spi,
-    // === 新規追加 ===
+    ...extendedStats,
+  }
+}
+```
+
+### 3.6 `_calculateAssigneeStats(tasks)` 担当者別統計
+
+```typescript
+private _calculateAssigneeStats(tasks: TaskRow[]): AssigneeStatistics[] {
+  const baseDate = this._baseDate
+  const endDate = this._endDate
+
+  // 担当者ごとにグループ化
+  const grouped = groupBy(tasks, t => t.assignee)
+
+  return Object.entries(grouped).map(([assignee, assigneeTasks]) => {
+    const totalPvCalculated = sumCalculatePVs(assigneeTasks, baseDate)
+    const totalEv = sumEVs(assigneeTasks)
+    const spi = calculateSPI(assigneeTasks, baseDate)
+    const bac = sumWorkload(assigneeTasks)
+
+    // 拡張統計（担当者ごとに計算）
+    const extendedStats = this._calculateExtendedStats(assigneeTasks, spi, bac, totalEv)
+
+    return {
+      assignee: assignee || undefined,
+      totalTasksCount: assigneeTasks.length,
+      totalWorkloadExcel: bac,
+      totalWorkloadCalculated: endDate ? sumCalculatePVs(assigneeTasks, endDate) : undefined,
+      averageWorkload: averageWorkload(assigneeTasks),
+      baseDate: dateStr(baseDate),
+      totalPvExcel: sumPVs(assigneeTasks),
+      totalPvCalculated,
+      totalEv,
+      spi,
+      ...extendedStats,
+    }
+  })
+}
+```
+
+### 3.7 `_calculateExtendedStats(tasks, spi, bac, totalEv)` 拡張統計（共通）
+
+```typescript
+private _calculateExtendedStats(
+  tasks: TaskRow[],
+  spi: number | undefined,
+  bac: number,
+  totalEv: number
+): ExtendedStatistics {
+  // ETC'（SPI=0の場合はundefined）
+  const etcPrime = spi && spi > 0 ? (bac - totalEv) / spi : undefined
+
+  // 完了予測日（計算不能な場合はundefined）
+  const completionForecast = this._calculateCompletionForecastForTasks(tasks, spi)
+
+  // 遅延情報
+  const { delayedTaskCount, averageDelayDays, maxDelayDays } = this._calculateDelayStats(tasks)
+
+  return {
     etcPrime,
     completionForecast,
-    assigneeStats,
     delayedTaskCount,
     averageDelayDays,
     maxDelayDays,
@@ -277,34 +399,7 @@ private _calculateStatistics(tasks: TaskRow[]): ProjectStatistics {
 }
 ```
 
-### 3.5 `_calculateAssigneeStats(tasks)` 担当者別統計
-
-```typescript
-private _calculateAssigneeStats(tasks: TaskRow[]): AssigneeStatistics[] {
-  const baseDate = this._baseDate
-  const endDate = this._endDate
-
-  // 既存の statisticsByName と同様のロジック（対象タスクを指定可能に）
-  return tidy(
-    tasks,
-    groupBy('assignee', [
-      summarize({
-        totalTasksCount: (group) => group.length,
-        totalWorkloadExcel: sumWorkload,
-        totalWorkloadCalculated: (group) => sumCalculatePVs(group, endDate!),
-        averageWorkload: averageWorkload,
-        baseDate: () => dateStr(baseDate),
-        totalPvExcel: sumPVs,
-        totalPvCalculated: (group) => sumCalculatePVs(group, baseDate),
-        totalEv: sumEVs,
-        spi: (group) => calculateSPI(group, baseDate),
-      }),
-    ])
-  )
-}
-```
-
-### 3.6 `_calculateDelayStats(tasks)` 遅延統計
+### 3.8 `_calculateDelayStats(tasks)` 遅延統計
 
 ```typescript
 private _calculateDelayStats(tasks: TaskRow[]): {
@@ -314,7 +409,7 @@ private _calculateDelayStats(tasks: TaskRow[]): {
 } {
   const baseDate = this._baseDate
 
-  // 遅延日数計算（formatRelativeDaysNumber は endDate - baseDate を返すので符号反転）
+  // 遅延日数計算
   const calcDelayDays = (task: TaskRow): number => {
     return -(formatRelativeDaysNumber(baseDate, task.endDate) ?? 0)
   }
@@ -338,19 +433,16 @@ private _calculateDelayStats(tasks: TaskRow[]): {
 }
 ```
 
-### 3.7 既存 getter のリファクタリング
+### 3.9 既存 getter のリファクタリング
 
 ```typescript
 // 既存の getter（内部で共通ロジックを呼び出す）
 get statisticsByProject(): ProjectStatistics[] {
-  const leafTasks = this.toTaskRows().filter(t => t.isLeaf)
-  return [this._calculateStatistics(leafTasks)]
+  return [this.getStatistics()]
 }
 
-// 既存の statisticsByName も _calculateAssigneeStats を使うようリファクタリング可能
 get statisticsByName(): AssigneeStatistics[] {
-  const leafTasks = this.toTaskRows().filter(t => t.isLeaf)
-  return this._calculateAssigneeStats(leafTasks)
+  return this.getStatisticsByName()
 }
 ```
 
@@ -379,21 +471,31 @@ get statisticsByName(): AssigneeStatistics[] {
 | TC-12 | TaskRow[]を渡して統計を返す | `getStatistics(tasks)` | 渡されたタスクの統計 |
 | TC-13 | EVM指標が正しく計算される | `getStatistics()` | totalPvCalculated, totalEv, spi が正しい |
 | TC-14 | タスク数が正しくカウントされる | `getStatistics()` | totalTasksCount が正しい |
-| TC-15 | 担当者別統計が計算される | `getStatistics()` | assigneeStats に担当者ごとの統計 |
+| TC-15 | ETC'が正しく計算される | `getStatistics()` | etcPrime = (BAC - EV) / SPI |
 | TC-16 | 遅延情報が計算される | `getStatistics()` | delayedTaskCount, averageDelayDays, maxDelayDays |
-| TC-17 | ETC'が正しく計算される | `getStatistics()` | etcPrime = (BAC - EV) / SPI |
-| TC-18 | PV=0の場合SPIはundefined | 全タスクPV=0 | spi === undefined, etcPrime === undefined |
-| TC-19 | 遅延タスクがない場合 | 遅延なし | delayedTaskCount=0, averageDelayDays=0, maxDelayDays=0 |
-| TC-20 | 空配列を渡した場合 | `getStatistics([])` | totalTasksCount=0, assigneeStats=[] |
+| TC-17 | PV=0の場合SPIはundefined | 全タスクPV=0 | spi === undefined, etcPrime === undefined |
+| TC-18 | 遅延タスクがない場合 | 遅延なし | delayedTaskCount=0, averageDelayDays=0, maxDelayDays=0 |
+| TC-19 | 空配列を渡した場合 | `getStatistics([])` | totalTasksCount=0 |
 
-### 4.3 統合テストケース（ロジック共通化の検証）
+### 4.3 getStatisticsByName() テストケース
+
+| TC-ID | テスト内容 | 入力 | 期待結果 |
+|-------|----------|------|----------|
+| TC-20 | 引数なしで全体の担当者別統計を返す | `getStatisticsByName()` | 全担当者の統計 |
+| TC-21 | フィルタオプションで担当者別統計を返す | `getStatisticsByName({ filter: "認証" })` | フィルタ結果の担当者別統計 |
+| TC-22 | TaskRow[]を渡して担当者別統計を返す | `getStatisticsByName(tasks)` | 渡されたタスクの担当者別統計 |
+| TC-23 | 担当者ごとにETC'が計算される | `getStatisticsByName()` | 各担当者のetcPrimeが正しい |
+| TC-24 | 担当者ごとに遅延情報が計算される | `getStatisticsByName()` | 各担当者のdelayedTaskCount等が正しい |
+| TC-25 | 担当者未設定のタスクがある場合 | assignee=undefined | assignee=undefinedのエントリが含まれる |
+
+### 4.4 統合テストケース（ロジック共通化の検証）
 
 | TC-ID | テスト内容 | 期待結果 |
 |-------|----------|----------|
 | TC-30 | filterTasks → getStatistics の連携 | フィルタ→統計が正しく動作 |
-| TC-31 | getStatistics() と statisticsByProject[0] の整合性 | 同じ結果を返す |
-| TC-32 | 同じタスクに対して両APIで同じspiを返す | spi値が一致 |
-| TC-33 | assigneeStats と statisticsByName の整合性 | 同じ担当者別統計を返す |
+| TC-31 | filterTasks → getStatisticsByName の連携 | フィルタ→担当者別統計が正しく動作 |
+| TC-32 | getStatistics() と statisticsByProject[0] の整合性 | 同じ結果を返す |
+| TC-33 | getStatisticsByName() と statisticsByName の整合性 | 同じ結果を返す |
 
 ---
 
@@ -402,15 +504,15 @@ get statisticsByName(): AssigneeStatistics[] {
 | 要件ID | 受け入れ基準 | 対応テストケース | 結果 |
 |--------|-------------|-----------------|------|
 | REQ-FILTER-STATS-001 AC-01 | fullTaskName に "認証機能" を含むタスクのみが抽出される | TC-04, TC-05 | ⏳ |
-| REQ-FILTER-STATS-001 AC-02 | フィルタ結果に対して PV 合計、EV 合計、SPI が正しく算出される | TC-13, TC-16 | ⏳ |
-| REQ-FILTER-STATS-001 AC-03 | フィルタ結果に対して ETC' と完了予測日が算出される | TC-13 + 既存メソッド | ⏳ |
+| REQ-FILTER-STATS-001 AC-02 | フィルタ結果に対して PV 合計、EV 合計、SPI が正しく算出される | TC-13, TC-17 | ⏳ |
+| REQ-FILTER-STATS-001 AC-03 | フィルタ結果に対して ETC' と完了予測日が算出される | TC-15 | ⏳ |
 | REQ-FILTER-STATS-001 AC-04 | フィルタ結果のタスク総数とリーフタスク数が正しくカウントされる | TC-14 | ⏳ |
-| REQ-FILTER-STATS-001 AC-05 | 担当者別にタスク数、PV、EV が集計される | TC-15 | ⏳ |
-| REQ-FILTER-STATS-001 AC-06 | 遅延タスク数と遅延日数の統計が取得できる | TC-16, TC-19 | ⏳ |
+| REQ-FILTER-STATS-001 AC-05 | 担当者別にタスク数、PV、EV が集計される | TC-20, TC-21, TC-22 | ⏳ |
+| REQ-FILTER-STATS-001 AC-06 | 遅延タスク数と遅延日数の統計が取得できる | TC-16, TC-18, TC-24 | ⏳ |
 | REQ-FILTER-STATS-001 AC-07 | `project.getStatistics({ filter })` でフィルタ結果の統計情報を取得できる | TC-11 | ⏳ |
-| REQ-FILTER-STATS-001 AC-08 | `project.getStatistics()` を引数なしで呼び出すとプロジェクト全体の統計を返す | TC-10, TC-21 | ⏳ |
+| REQ-FILTER-STATS-001 AC-08 | `project.getStatistics()` を引数なしで呼び出すとプロジェクト全体の統計を返す | TC-10, TC-32 | ⏳ |
 | REQ-FILTER-STATS-001 AC-09 | `project.filterTasks({ filter })` でフィルタ結果の TaskRow[] を取得できる | TC-04 | ⏳ |
-| REQ-FILTER-STATS-001 AC-10 | `project.getStatistics(filteredTasks)` で渡された TaskRow[] に対する統計を取得できる | TC-12, TC-20 | ⏳ |
+| REQ-FILTER-STATS-001 AC-10 | `project.getStatistics(filteredTasks)` で渡された TaskRow[] に対する統計を取得できる | TC-12, TC-30 | ⏳ |
 | REQ-FILTER-STATS-001 AC-11 | CLI で `pbevm-filter-stats --filter "認証機能"` が実行できる | - | ⏳ |
 
 > **ステータス凡例**:
@@ -424,25 +526,22 @@ get statisticsByName(): AssigneeStatistics[] {
 
 ### 6.1 既存APIとの整合性
 
-- `statisticsByProject` getter は内部で `_calculateStatistics()` を呼び出すようリファクタリング
-- `getStatistics()` も同じ `_calculateStatistics()` を使用
-- 戻り値の型は同じ `ProjectStatistics`
+| 既存 getter | 新メソッド | 関係 |
+|------------|-----------|------|
+| `statisticsByProject` | `getStatistics()` | 同じロジック、getter は新メソッドを呼び出す |
+| `statisticsByName` | `getStatisticsByName()` | 同じロジック、getter は新メソッドを呼び出す |
 
-### 6.2 担当者別統計・遅延情報について
+### 6.2 型の拡張
 
-`ProjectStatistics` 型を拡張し、以下を含めることで AC-05, AC-06 を満たす:
+`ProjectStatistics` と `AssigneeStatistics` の両方に以下を追加:
 
-- `assigneeStats: AssigneeStatistics[]` - 担当者別統計
-- `delayedTaskCount: number` - 遅延タスク数
-- `averageDelayDays: number` - 平均遅延日数
-- `maxDelayDays: number` - 最大遅延日数
-
-```typescript
-// フィルタ結果の統計（担当者別・遅延情報を含む）
-const stats = project.getStatistics({ filter: "認証" })
-console.log(stats.assigneeStats)     // 担当者別統計
-console.log(stats.delayedTaskCount)  // 遅延タスク数
-```
+| プロパティ | 型 | 必須/Optional |
+|-----------|-----|:------------:|
+| `etcPrime` | `number` | Optional |
+| `completionForecast` | `Date` | Optional |
+| `delayedTaskCount` | `number` | 必須 |
+| `averageDelayDays` | `number` | 必須 |
+| `maxDelayDays` | `number` | 必須 |
 
 ### 6.3 パフォーマンス
 
@@ -453,7 +552,7 @@ console.log(stats.delayedTaskCount)  // 遅延タスク数
 ### 6.4 イミュータビリティ
 
 - `filterTasks()` は新しい配列を返す
-- `getStatistics()` は新しい `ProjectStatistics` オブジェクトを返す
+- `getStatistics()`, `getStatisticsByName()` は新しいオブジェクトを返す
 - Project インスタンスの状態は変更されない
 
 ---
@@ -463,4 +562,5 @@ console.log(stats.delayedTaskCount)  // 遅延タスク数
 | 日付 | バージョン | 変更内容 |
 |------|-----------|---------|
 | 2026-01-24 | 1.0.0 | 初版作成 |
-| 2026-01-24 | 1.1.0 | ProjectStatistics 型を拡張（etcPrime, completionForecast, assigneeStats, 遅延情報）、ロジック共通化設計 |
+| 2026-01-24 | 1.1.0 | ProjectStatistics 型を拡張、ロジック共通化設計 |
+| 2026-01-24 | 1.2.0 | getStatisticsByName() 追加、AssigneeStatistics にも拡張プロパティ追加、ProjectStatistics から assigneeStats を削除 |
