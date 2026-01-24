@@ -1,6 +1,6 @@
 # TaskRow.pv-today 詳細仕様
 
-**バージョン**: 1.0.0
+**バージョン**: 1.1.0
 **作成日**: 2026-01-23
 **要件ID**: REQ-PV-TODAY-001
 **GitHub Issue**: #86
@@ -259,9 +259,11 @@ TaskRowはProjectに属しており、そのTaskRowの `progressRate` はProject
 
 | TC-ID | テスト内容 | 期待結果 |
 |-------|-----------|---------|
-| TC-20 | pbevm-show-pvコンソール出力にpvTodayカラム | workloadPerDayの値が表示される |
-| TC-21 | pbevm-show-pvコンソール出力にpvTodayActualカラム | 計算値が表示される |
-| TC-22 | pbevm-show-pvのExcel出力に両カラム含まれる | xlsx出力で確認可能 |
+| TC-20 | pbevm-show-pv出力にpvTodayカラム | workloadPerDayの値が表示される |
+| TC-21 | pbevm-show-pv出力にpvTodayActualカラム | 計算値が表示される |
+| TC-22 | pbevm-show-pv出力にremainingDaysカラム | 残日数が表示される |
+
+> **注**: displayDataオブジェクトはコンソール・Excel両方に使用されるため、TC-20〜TC-22でExcel出力もカバーされる。
 
 ---
 
@@ -306,11 +308,14 @@ for (const task of tasks) {
 | REQ-PV-TODAY-001 AC-02 | pvTodayActualで実行PV取得 | TC-11〜TC-14 | ✅ PASS |
 | REQ-PV-TODAY-001 AC-03 | 残日数0でpvTodayActualは0 | TC-16 | ✅ PASS |
 | REQ-PV-TODAY-001 AC-04 | 期間外でremainingDaysは0 | TC-05, TC-06 | ✅ PASS |
-| REQ-PV-TODAY-001 AC-05 | pbevm-show-pv出力（コンソール・Excel両方）にpvTodayカラム | TC-20, TC-22 | ✅ PASS |
-| REQ-PV-TODAY-001 AC-06 | pbevm-show-pv出力（コンソール・Excel両方）にpvTodayActualカラム | TC-21, TC-22 | ✅ PASS |
+| REQ-PV-TODAY-001 AC-05 | pbevm-show-pv出力（コンソール・Excel両方）にpvTodayカラム | TC-20 | ✅ PASS |
+| REQ-PV-TODAY-001 AC-06 | pbevm-show-pv出力（コンソール・Excel両方）にpvTodayActualカラム | TC-21 | ✅ PASS |
+| REQ-PV-TODAY-001 AC-08 | pbevm-show-pv出力（コンソール・Excel両方）にremainingDaysカラム | TC-22 | ✅ PASS |
 | REQ-PV-TODAY-001 AC-07 | 進捗100%でpvTodayActualは0 | TC-15 | ✅ PASS |
 
-**テストファイル**: `src/domain/__tests__/TaskRow.pv-today.test.ts`
+**テストファイル**:
+- `src/domain/__tests__/TaskRow.pv-today.test.ts` - TC-01〜TC-19（単体テスト）
+- `src/usecase/__tests__/pbevm-show-pv-usecase.test.ts` - TC-20〜TC-22（統合テスト）
 
 ---
 
@@ -320,7 +325,8 @@ for (const task of tasks) {
 |---------|---------|
 | `src/domain/TaskRow.ts` | `remainingDays()`, `pvTodayActual()` メソッド追加 |
 | `src/usecase/pbevm-show-pv-usecase.ts` | 出力に `pvToday`, `pvTodayActual` カラム追加 |
-| `src/domain/__tests__/TaskRow.pv-today.test.ts` | 新規テストファイル作成 |
+| `src/domain/__tests__/TaskRow.pv-today.test.ts` | 新規テストファイル作成（TC-01〜TC-19） |
+| `src/usecase/__tests__/pbevm-show-pv-usecase.test.ts` | TC-20〜TC-22 統合テスト追加 |
 
 ---
 
@@ -329,3 +335,4 @@ for (const task of tasks) {
 | バージョン | 日付 | 変更内容 | 要件ID |
 |-----------|------|---------|--------|
 | 1.0.0 | 2026-01-23 | 初版作成 | REQ-PV-TODAY-001 |
+| 1.1.0 | 2026-01-24 | TC-20〜TC-22 統合テストを自動化、TC-22をremainingDaysに変更、AC-08追加 | REQ-PV-TODAY-001 |
