@@ -87,6 +87,7 @@
 | AC-05 | `pbevm-show-pv` 出力（コンソール・Excel両方）に `pvToday` カラムが追加されている |
 | AC-06 | `pbevm-show-pv` 出力（コンソール・Excel両方）に `pvTodayActual` カラムが追加されている |
 | AC-07 | 進捗率100%のタスクは `pvTodayActual` が0になる |
+| AC-08 | `pbevm-show-pv` 出力（コンソール・Excel両方）に `remainingDays` カラムが追加されている |
 
 ## 6. インターフェース設計（案）
 
