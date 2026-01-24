@@ -25,8 +25,7 @@ GitHub Issue [#120](https://github.com/masatomix/evmtools-node/issues/120) の�
 | ID | 要件 |
 |----|------|
 | FR-01-1 | fullTaskName（タスクのフルパス名）による部分一致検索ができること |
-| FR-01-2 | 親タスクID を指定して、その配下のタスクのみを抽出できること |
-| FR-01-3 | 複数のフィルタ条件を組み合わせて使用できること |
+| FR-01-2 | 複数のフィルタ条件を組み合わせて使用できること |
 
 ### FR-02: 統計情報の算出
 
@@ -59,6 +58,7 @@ GitHub Issue [#120](https://github.com/masatomix/evmtools-node/issues/120) の�
 |----|------|
 | NFR-02-1 | 既存の Project, TaskRow API との互換性を維持すること |
 | NFR-02-2 | 既存のテストが全て PASS すること |
+| NFR-02-3 | `project.getStatistics()` を引数なしで呼び出した場合、既存の動作（プロジェクト全体の統計）を維持すること |
 
 ### NFR-03: 保守性
 
@@ -71,16 +71,17 @@ GitHub Issue [#120](https://github.com/masatomix/evmtools-node/issues/120) の�
 
 | AC-ID | 基準 | 対応する機能要件 |
 |-------|------|-----------------|
-| AC-01 | fullTaskName に "API" を含むタスクのみが抽出されること | FR-01-1 |
-| AC-02 | 親タスクID=10 を指定すると、その配下のタスクのみが抽出されること | FR-01-2 |
-| AC-03 | フィルタ結果に対して PV 合計、EV 合計、SPI が正しく算出されること | FR-02-1 |
-| AC-04 | フィルタ結果に対して ETC' と完了予測日が算出されること | FR-02-2 |
-| AC-05 | フィルタ結果のタスク総数とリーフタスク数が正しくカウントされること | FR-02-3 |
-| AC-06 | 担当者別にタスク数、PV、EV が集計されること | FR-02-4 |
-| AC-07 | 遅延タスク数と遅延日数の統計が取得できること | FR-02-5 |
-| AC-08 | `project.filterTasks(options)` でフィルタリングできること | FR-03-1 |
-| AC-09 | `project.getFilteredStatistics(tasks)` で統計情報を取得できること | FR-03-1 |
-| AC-10 | CLI で `pbevm-filter-stats --filter "API"` が実行できること | FR-03-2 |
+| AC-01 | fullTaskName に "認証機能" を含むタスクのみが抽出されること | FR-01-1 |
+| AC-02 | フィルタ結果に対して PV 合計、EV 合計、SPI が正しく算出されること | FR-02-1 |
+| AC-03 | フィルタ結果に対して ETC' と完了予測日が算出されること | FR-02-2 |
+| AC-04 | フィルタ結果のタスク総数とリーフタスク数が正しくカウントされること | FR-02-3 |
+| AC-05 | 担当者別にタスク数、PV、EV が集計されること | FR-02-4 |
+| AC-06 | 遅延タスク数と遅延日数の統計が取得できること | FR-02-5 |
+| AC-07 | `project.getStatistics({ filter: "認証機能" })` でフィルタ結果の統計情報を取得できること | FR-03-1 |
+| AC-08 | `project.getStatistics()` を引数なしで呼び出すとプロジェクト全体の統計を返すこと | FR-03-1, NFR-02-3 |
+| AC-09 | `project.filterTasks({ filter: "認証機能" })` でフィルタ結果の TaskRow[] を取得できること（再利用目的） | FR-03-1 |
+| AC-10 | `project.getStatistics(filteredTasks)` で渡された TaskRow[] に対する統計を取得できること | FR-03-1 |
+| AC-11 | CLI で `pbevm-filter-stats --filter "認証機能"` が実行できること | FR-03-2 |
 
 ## 関連ドキュメント
 
@@ -93,3 +94,4 @@ GitHub Issue [#120](https://github.com/masatomix/evmtools-node/issues/120) の�
 | 日付 | バージョン | 変更内容 |
 |------|-----------|---------|
 | 2026-01-24 | 1.0.0 | 初版作成 |
+| 2026-01-24 | 1.1.0 | FR-01-2（親タスクID指定）を削除、API設計を修正（getStatistics にフィルタ引数を追加、TaskRow[]を渡す形式も追加） |
