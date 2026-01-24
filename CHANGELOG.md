@@ -5,6 +5,30 @@
 フォーマットは [Keep a Changelog](https://keepachangelog.com/ja/1.0.0/) に基づき、
 [セマンティックバージョニング](https://semver.org/lang/ja/) に準拠しています。
 
+## [0.0.24]
+
+### 追加
+- **pv-today機能**: 本日時点のPV算出メソッド (#86)
+  - `TaskRow.pvToday`: 計画ベースの本日PV
+  - `TaskRow.pvTodayActual`: 実績ベースの本日PV（遅れ/前倒し対応）
+  - 要件定義: `docs/specs/requirements/REQ-PV-TODAY-001.md`
+  - 詳細仕様: `docs/specs/domain/features/TaskRow.pv-today.spec.md`
+- **遅延タスク取得機能**: 遅れているタスクを一覧取得 (#115)
+  - `Project.getDelayedTasks()`: 遅延タスクのリストを返す
+  - 要件定義: `docs/specs/requirements/REQ-DELAY-001.md`
+  - 詳細仕様: `docs/specs/domain/features/Project.delayedTasks.spec.md`
+- **EVM指標拡張**: ETC'・完了予測日の算出 (#94)
+  - `Project.etcPrime`: 残作業見積り（実績ベース）
+  - `Project.completionForecast`: 完了予測日
+  - 要件定義: `docs/specs/requirements/REQ-EVM-001.md`
+  - 詳細仕様: `docs/specs/domain/features/Project.completionForecast.spec.md`
+
+### 改善
+- **テストケース拡充**: TC-20〜TC-22 統合テストを追加 (#122)
+- **テスト明確化**: TC-06のテストケースを明確化 (#121)
+- **リファクタリング**: `bac`と`plannedWorkDays`を既存ユーティリティで共通化 (#123)
+- **SDDスキル**: 日本語出力ルールを追加 (#119)
+
 ## [0.0.20]
 
 ### 追加
