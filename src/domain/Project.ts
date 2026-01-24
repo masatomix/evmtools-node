@@ -389,11 +389,13 @@ export class Project {
      * 全リーフタスクの予定工数の合計
      *
      * @returns BAC（人日）。タスクがない場合は0
+     *
+     * @remarks
+     * statisticsByProject.totalWorkloadExcel を再利用
      */
     get bac(): number {
-        return this.toTaskRows()
-            .filter((task) => task.isLeaf)
-            .reduce((sum, task) => sum + (task.workload ?? 0), 0)
+        const stats = this.statisticsByProject[0]
+        return stats?.totalWorkloadExcel ?? 0
     }
 
     /**
@@ -427,19 +429,16 @@ export class Project {
      * プロジェクト開始日から終了日までの、休日を除いた稼働日数
      *
      * @returns 稼働日数。開始日または終了日が未設定の場合は0
+     *
+     * @remarks
+     * generateBaseDates と isHoliday を再利用
      */
     get plannedWorkDays(): number {
         if (!this._startDate || !this._endDate) return 0
 
-        let count = 0
-        const current = new Date(this._startDate)
-        while (current <= this._endDate) {
-            if (!this.isHoliday(current)) {
-                count++
-            }
-            current.setDate(current.getDate() + 1)
-        }
-        return count
+        return generateBaseDates(this._startDate, this._endDate).filter(
+            (date) => !this.isHoliday(date)
+        ).length
     }
 
     /**
