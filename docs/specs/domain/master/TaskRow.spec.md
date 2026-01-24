@@ -1,7 +1,8 @@
 # TaskRow 仕様書
 
-**バージョン**: 1.0.0
+**バージョン**: 1.1.0
 **作成日**: 2025-12-16
+**更新日**: 2026-01-23
 **ソースファイル**: `src/domain/TaskRow.ts`
 
 ---
@@ -490,6 +491,128 @@ static fromNode(node: TaskNode, level: number, parentId?: number): TaskRow
 
 ---
 
+### 5.11 `remainingDays(baseDate: Date): number | undefined`
+
+#### 目的
+基準日から終了日までの残日数を計算する
+
+#### シグネチャ
+```typescript
+remainingDays(baseDate: Date): number | undefined
+```
+
+#### 事前条件
+
+| ID | 条件 | 違反時の動作 |
+|----|------|-------------|
+| PRE-RD-01 | checkStartEndDateAndPlotMap()がtrue | undefined返却 |
+
+#### 事後条件
+
+| ID | 条件 |
+|----|------|
+| POST-RD-01 | 基準日がタスク期間外（startDate〜endDate外）の場合は0を返す |
+| POST-RD-02 | plotMapでプロットされている日のみカウント |
+| POST-RD-03 | startDate, endDate, plotMapが未設定の場合はundefinedを返す |
+
+#### アルゴリズム
+
+```
+1. checkStartEndDateAndPlotMapで事前チェック（false→undefined）
+2. タスク期間外チェック（baseDate < startDate または baseDate > endDate → 0）
+3. plotMapの全エントリをループ
+   - serial >= baseSerial かつ serial <= endSerial かつ value === true をカウント
+4. カウント値を返す
+```
+
+#### 同値クラス・境界値
+
+| ID | 分類 | 入力条件 | 期待結果 |
+|----|------|----------|----------|
+| EQ-RD-001 | 正常系 | 5日タスク、基準日=3日目 | 3（3,4,5日目） |
+| EQ-RD-002 | 正常系 | 5日タスク、基準日=開始日 | 5（全日） |
+| EQ-RD-003 | 正常系 | 5日タスク、基準日=終了日 | 1（最終日のみ） |
+| EQ-RD-004 | 正常系 | 土日を含む7日間、稼働5日 | 稼働日のみカウント |
+| EQ-RD-005 | 境界値 | 基準日 < startDate | 0 |
+| EQ-RD-006 | 境界値 | 基準日 > endDate | 0 |
+| EQ-RD-007 | 異常系 | startDate=undefined | undefined |
+| EQ-RD-008 | 異常系 | endDate=undefined | undefined |
+| EQ-RD-009 | 異常系 | plotMap=undefined | undefined |
+
+#### 要件トレーサビリティ
+
+| 要件ID | 受け入れ基準 |
+|--------|-------------|
+| REQ-PV-TODAY-001 AC-01 | remainingDaysで残日数取得 |
+| REQ-PV-TODAY-001 AC-04 | 期間外でremainingDaysは0 |
+
+---
+
+### 5.12 `pvTodayActual(baseDate: Date): number | undefined`
+
+#### 目的
+実行PV（今日やるべきPV）を計算する
+
+#### シグネチャ
+```typescript
+pvTodayActual(baseDate: Date): number | undefined
+```
+
+#### 事前条件
+
+| ID | 条件 | 違反時の動作 |
+|----|------|-------------|
+| PRE-PTA-01 | remainingDays(baseDate)がundefinedでない | undefined返却 |
+| PRE-PTA-02 | workloadがundefinedでない | undefined返却 |
+
+#### 事後条件
+
+| ID | 条件 |
+|----|------|
+| POST-PTA-01 | 実行PV = 残工数 / 残日数 |
+| POST-PTA-02 | 残工数 = workload × (1 - progressRate) |
+| POST-PTA-03 | 残日数が0の場合は0を返す（ゼロ除算回避） |
+| POST-PTA-04 | progressRateがundefinedの場合は0として扱う |
+
+#### アルゴリズム
+
+```
+1. remainingDays(baseDate)を取得（undefined→undefined、0→0）
+2. workloadチェック（undefined→undefined）
+3. progressRate ?? 0 で進捗率取得
+4. 残工数 = workload × (1 - rate)
+5. 実行PV = 残工数 / 残日数
+6. 値を返す
+```
+
+#### 同値クラス・境界値
+
+| ID | 分類 | 入力条件 | 期待結果 |
+|----|------|----------|----------|
+| EQ-PTA-001 | 正常系 | 工数2.5, 3日予定, 進捗60%, 残1日 | 1.0（遅れ） |
+| EQ-PTA-002 | 正常系 | 工数2.5, 3日予定, 進捗60%, 残2日 | 0.5（前倒し） |
+| EQ-PTA-003 | 正常系 | 工数3.0, 3日予定, 進捗66.7%, 残1日 | 1.0（計画通り） |
+| EQ-PTA-004 | 正常系 | 工数3.0, 3日予定, 進捗0%, 残3日 | 1.0 |
+| EQ-PTA-005 | 境界値 | progressRate=1.0 | 0（残工数0） |
+| EQ-PTA-006 | 境界値 | 基準日 > endDate（残日数0） | 0（ゼロ除算回避） |
+| EQ-PTA-007 | 境界値 | progressRate=undefined | 0%として計算 |
+| EQ-PTA-008 | 異常系 | workload=undefined | undefined |
+| EQ-PTA-009 | 異常系 | remainingDaysがundefined | undefined |
+
+#### 要件トレーサビリティ
+
+| 要件ID | 受け入れ基準 |
+|--------|-------------|
+| REQ-PV-TODAY-001 AC-02 | pvTodayActualで実行PV取得 |
+| REQ-PV-TODAY-001 AC-03 | 残日数0でpvTodayActualは0 |
+| REQ-PV-TODAY-001 AC-07 | 進捗100%でpvTodayActualは0 |
+
+#### 設計上の制約
+
+> **重要**: `progressRate`はProjectの基準日時点のスナップショットである。したがって`pvTodayActual`は**Projectの基準日でのみ正しい値**が得られる。別の日付を渡しても意味のある値にならない。
+
+---
+
 ## 6. テストシナリオ（Given-When-Then形式）
 
 ### 6.1 workloadPerDay
@@ -550,6 +673,46 @@ Scenario: 累積PV計算
   Then  6が返される（3日分 × 2）
 ```
 
+### 6.5 remainingDays
+
+```gherkin
+Scenario: 基準日がタスク期間中央の場合
+  Given 2025-06-09〜2025-06-13の5日間タスク
+  When  remainingDays(2025-06-11)を呼び出す
+  Then  3が返される（水,木,金）
+
+Scenario: 基準日がタスク開始日の場合
+  Given 2025-06-09〜2025-06-13の5日間タスク
+  When  remainingDays(2025-06-09)を呼び出す
+  Then  5が返される（全稼働日）
+
+Scenario: 基準日がタスク終了後の場合
+  Given 2025-06-09〜2025-06-13の5日間タスク
+  When  remainingDays(2025-06-16)を呼び出す
+  Then  0が返される（期間外）
+```
+
+### 6.6 pvTodayActual
+
+```gherkin
+Scenario: 遅れタスクの実行PV
+  Given 工数2.5, 3日予定, 進捗60%のタスク
+  And   基準日=終了日（残1日）
+  When  pvTodayActual(baseDate)を呼び出す
+  Then  1.0が返される（残工数1.0 / 残1日）
+
+Scenario: 前倒しタスクの実行PV
+  Given 工数2.5, 3日予定, 進捗60%のタスク
+  And   基準日=2日目（残2日）
+  When  pvTodayActual(baseDate)を呼び出す
+  Then  0.5が返される（残工数1.0 / 残2日）
+
+Scenario: 進捗100%タスクの実行PV
+  Given 工数3.0, 進捗100%のタスク
+  When  pvTodayActual(baseDate)を呼び出す
+  Then  0が返される（残工数0）
+```
+
 ---
 
 ## 7. 外部依存
@@ -603,7 +766,9 @@ Scenario: 累積PV計算
 | calculateSPI | 4件 | 4件 |
 | calculateSV | 4件 | 4件 |
 | checkStartEndDateAndPlotMap | 2件 | 2件 |
-| **合計** | **40件** | **40件** |
+| remainingDays | 10件 | 10件 |
+| pvTodayActual | 9件 | 9件 |
+| **合計** | **59件** | **59件** |
 
 ---
 
@@ -611,7 +776,15 @@ Scenario: 累積PV計算
 
 > **重要**: このセクションは必須です。grepで検索可能な形式で記載すること。
 
-該当なし（基盤クラスのため特定の要件に紐づかない）
+| 要件ID | 受け入れ基準 | 対応メソッド | 対応テストケース | 結果 |
+|--------|-------------|-------------|-----------------|------|
+| REQ-PV-TODAY-001 AC-01 | remainingDaysで残日数取得 | remainingDays | TC-01〜TC-04 | ✅ PASS |
+| REQ-PV-TODAY-001 AC-02 | pvTodayActualで実行PV取得 | pvTodayActual | TC-11〜TC-14 | ✅ PASS |
+| REQ-PV-TODAY-001 AC-03 | 残日数0でpvTodayActualは0 | pvTodayActual | TC-16 | ✅ PASS |
+| REQ-PV-TODAY-001 AC-04 | 期間外でremainingDaysは0 | remainingDays | TC-05, TC-06 | ✅ PASS |
+| REQ-PV-TODAY-001 AC-07 | 進捗100%でpvTodayActualは0 | pvTodayActual | TC-15 | ✅ PASS |
+
+**詳細仕様書**: [`TaskRow.pv-today.spec.md`](../features/TaskRow.pv-today.spec.md)
 
 ---
 
@@ -621,7 +794,8 @@ Scenario: 累積PV計算
 
 | ファイル | 説明 | テスト数 |
 |---------|------|---------|
-| `src/domain/__tests__/TaskRow.test.ts` | 単体テスト | 40件 |
+| `src/domain/__tests__/TaskRow.test.ts` | 単体テスト（既存） | 40件 |
+| `src/domain/__tests__/TaskRow.pv-today.test.ts` | pv-today機能テスト | 19件 |
 
 ### 11.2 テストフィクスチャ
 
@@ -630,9 +804,9 @@ Scenario: 累積PV計算
 ### 11.3 テスト実行結果
 
 ```
-実行日: 2025-12-16
-Test Suites: 1 passed, 1 total
-Tests:       40 passed, 40 total
+実行日: 2026-01-23
+Test Suites: 2 passed, 2 total
+Tests:       59 passed, 59 total
 ```
 
 ---
@@ -648,3 +822,4 @@ Tests:       40 passed, 40 total
 | バージョン | 日付 | 変更内容 | 要件ID |
 |-----------|------|---------|--------|
 | 1.0.0 | 2025-12-16 | 初版作成 | - |
+| 1.1.0 | 2026-01-23 | `remainingDays`, `pvTodayActual` メソッド追加 | REQ-PV-TODAY-001 |
