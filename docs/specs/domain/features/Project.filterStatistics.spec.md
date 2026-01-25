@@ -522,18 +522,18 @@ get statisticsByName(): AssigneeStatistics[] {
 
 | 要件ID | 受け入れ基準 | 対応テストケース | 結果 |
 |--------|-------------|-----------------|------|
-| REQ-FILTER-STATS-001 AC-01 | fullTaskName に "認証機能" を含むタスクのみが抽出される | TC-04, TC-05, TC-08 | ⏳ |
-| REQ-FILTER-STATS-001 AC-02 | フィルタ結果に対して PV 合計、EV 合計、SPI が正しく算出される | TC-13, TC-17 | ⏳ |
-| REQ-FILTER-STATS-001 AC-03 | フィルタ結果に対して ETC' と完了予測日が算出される | TC-15 | ⏳ |
-| REQ-FILTER-STATS-001 AC-04 | フィルタ結果のタスク数が正しくカウントされる（統計計算はリーフのみ） | TC-14 | ⏳ |
-| REQ-FILTER-STATS-001 AC-05 | 担当者別にタスク数、PV、EV、ETC'、遅延情報が集計される | TC-20, TC-23, TC-24 | ⏳ |
-| REQ-FILTER-STATS-001 AC-05-1 | `project.getStatisticsByName({ filter })` でフィルタ結果の担当者別統計を取得できる | TC-21 | ⏳ |
-| REQ-FILTER-STATS-001 AC-05-2 | `project.getStatisticsByName(filteredTasks)` で担当者別統計を取得できる | TC-22, TC-31 | ⏳ |
-| REQ-FILTER-STATS-001 AC-06 | 遅延タスク数と遅延日数の統計が取得できる | TC-16, TC-18, TC-24 | ⏳ |
-| REQ-FILTER-STATS-001 AC-07 | `project.getStatistics({ filter })` でフィルタ結果の統計情報を取得できる | TC-11 | ⏳ |
-| REQ-FILTER-STATS-001 AC-08 | `project.getStatistics()` を引数なしで呼び出すとプロジェクト全体の統計を返す | TC-10, TC-32 | ⏳ |
-| REQ-FILTER-STATS-001 AC-09 | `project.filterTasks({ filter })` でフィルタ結果の TaskRow[]（親含む）を取得できる | TC-04, TC-08 | ⏳ |
-| REQ-FILTER-STATS-001 AC-10 | `project.getStatistics(filteredTasks)` で渡された TaskRow[] に対する統計を取得できる | TC-12, TC-30 | ⏳ |
+| REQ-FILTER-STATS-001 AC-01 | fullTaskName に "認証機能" を含むタスクのみが抽出される | TC-04, TC-05, TC-08 | ✅ PASS |
+| REQ-FILTER-STATS-001 AC-02 | フィルタ結果に対して PV 合計、EV 合計、SPI が正しく算出される | TC-13, TC-17 | ✅ PASS |
+| REQ-FILTER-STATS-001 AC-03 | フィルタ結果に対して ETC' と完了予測日が算出される | TC-15 | ✅ PASS |
+| REQ-FILTER-STATS-001 AC-04 | フィルタ結果のタスク数が正しくカウントされる（統計計算はリーフのみ） | TC-14 | ✅ PASS |
+| REQ-FILTER-STATS-001 AC-05 | 担当者別にタスク数、PV、EV、ETC'、遅延情報が集計される | TC-20, TC-23, TC-24 | ✅ PASS |
+| REQ-FILTER-STATS-001 AC-05-1 | `project.getStatisticsByName({ filter })` でフィルタ結果の担当者別統計を取得できる | TC-21 | ✅ PASS |
+| REQ-FILTER-STATS-001 AC-05-2 | `project.getStatisticsByName(filteredTasks)` で担当者別統計を取得できる | TC-22, TC-31 | ✅ PASS |
+| REQ-FILTER-STATS-001 AC-06 | 遅延タスク数と遅延日数の統計が取得できる | TC-16, TC-18, TC-24 | ✅ PASS |
+| REQ-FILTER-STATS-001 AC-07 | `project.getStatistics({ filter })` でフィルタ結果の統計情報を取得できる | TC-11 | ✅ PASS |
+| REQ-FILTER-STATS-001 AC-08 | `project.getStatistics()` を引数なしで呼び出すとプロジェクト全体の統計を返す | TC-10, TC-32 | ✅ PASS |
+| REQ-FILTER-STATS-001 AC-09 | `project.filterTasks({ filter })` でフィルタ結果の TaskRow[]（親含む）を取得できる | TC-04, TC-08 | ✅ PASS |
+| REQ-FILTER-STATS-001 AC-10 | `project.getStatistics(filteredTasks)` で渡された TaskRow[] に対する統計を取得できる | TC-12, TC-30 | ✅ PASS |
 
 > **次回スコープ**: AC-11（CLI）は次回対応予定
 
