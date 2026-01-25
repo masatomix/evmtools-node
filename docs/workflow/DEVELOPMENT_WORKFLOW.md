@@ -785,40 +785,95 @@ git fetch --prune origin  # リモートの削除されたブランチを反映
 
 > **注意**: main/develop ブランチは直接 push が禁止されています。全ての変更は PR 経由で行います。
 
+#### 2.5.1 リリースブランチでの作業
+
+release ブランチでは以下の作業を行う:
+
+| # | 作業 | 成果物 |
+|---|------|--------|
+| 1 | バージョン更新 | `package.json` |
+| 2 | リリースノート作成 | `CHANGELOG.md` |
+| 3 | テスト実行 | 全テストPASS確認 |
+
 ```bash
-# 1. developからreleaseブランチを作成
-git checkout develop
-git pull origin develop
-git checkout -b release/0.0.18
+# 1. developからreleaseブランチを作成（--no-track でトラッキングなし）
+git fetch origin
+git checkout -b release/0.0.18 origin/develop --no-track
 
 # 2. バージョン更新
 npm version 0.0.18 --no-git-tag-version
 
-# 3. コミット・プッシュ
-git add package.json
-git commit -m "0.0.18"
-git push -u origin release/0.0.18
+# 3. CHANGELOG.md更新（リリースノート作成）
+# CHANGELOG.md に今回のリリース内容を追記
 
-# 4. mainへのPR作成・マージ
+# 4. テスト実行
+npm test
+
+# 5. コミット・プッシュ
+git add package.json CHANGELOG.md
+git commit -m "chore: bump version to 0.0.18"
+git push -u origin release/0.0.18
+```
+
+##### CHANGELOG.md の記載内容
+
+```markdown
+## [0.0.18]
+
+### 追加
+- **機能名**: 説明 (#Issue番号)
+
+### 改善
+- **改善内容**: 説明 (#Issue番号)
+
+### 修正
+- **バグ修正**: 説明 (#Issue番号)
+```
+
+> **注意**: ドキュメント修正のみのリリースは CHANGELOG に記載不要。
+
+#### 2.5.2 main へのマージとタグ作成
+
+```bash
+# 6. mainへのPR作成・マージ
 gh pr create --base main --title "Release 0.0.18" --body "Release 0.0.18"
 gh pr merge --merge
 
-# 5. タグ作成・プッシュ
+# 7. タグ作成・プッシュ
+git fetch origin
 git checkout main
 git pull origin main
 git tag v0.0.18
 git push origin v0.0.18
+```
 
-# 6. developへの同期（PR経由）
-git checkout -b chore/sync-main-to-develop-v0.0.18
-git push -u origin chore/sync-main-to-develop-v0.0.18
-gh pr create --base develop --title "chore: sync main to develop (v0.0.18)" --body "main の v0.0.18 を develop に同期"
+#### 2.5.3 GitHub Release 作成
+
+タグ作成後、GitHub Release を作成する。CHANGELOG.md の内容を転記する。
+
+```bash
+# 8. GitHub Release作成
+gh release create v0.0.18 --title "v0.0.18" --notes "$(cat <<'EOF'
+## 追加
+- **機能名**: 説明 (#Issue番号)
+
+## 改善
+- **改善内容**: 説明 (#Issue番号)
+EOF
+)"
+```
+
+#### 2.5.4 develop へのマージバック
+
+```bash
+# 9. developへの同期（PR経由）
+gh pr create --base develop --head main --title "chore: sync main to develop (v0.0.18)" --body "main の v0.0.18 を develop に同期"
 gh pr merge --merge --admin  # レビュー不要の場合
 
-# 7. クリーンアップ
+# 10. クリーンアップ
 git checkout develop
 git pull origin develop
-git branch -d release/0.0.18 chore/sync-main-to-develop-v0.0.18
+git branch -d release/0.0.18
 git fetch --prune origin
 ```
 
@@ -972,12 +1027,18 @@ npm pack
 
 ### 6.2 リリース時
 
-- [ ] `develop`から`release/*`ブランチを作成
+#### release ブランチ内での作業
+- [ ] `develop`から`release/*`ブランチを作成（`--no-track`オプション必須）
 - [ ] バージョン番号更新（`-SNAPSHOT` を削除）
-- [ ] CHANGELOG更新
-- [ ] `main`にマージ
-- [ ] タグ作成
-- [ ] `develop`にタグをマージ
+- [ ] CHANGELOG.md 更新（リリースノート作成）
+- [ ] テスト実行・全テストPASS確認
+- [ ] コミット・プッシュ
+
+#### main マージ後の作業
+- [ ] `main`へのPR作成・マージ
+- [ ] タグ作成・プッシュ
+- [ ] **GitHub Release 作成**（CHANGELOG の内容を転記）
+- [ ] `develop`へのマージバック（PR経由）
 - [ ] **developのバージョンを次版SNAPSHOTに更新**（例: `0.0.19-SNAPSHOT`）
 - [ ] npm publish（必要に応じて）
 

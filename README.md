@@ -254,6 +254,9 @@ npm run format        # Prettierチェック
 詳細な開発フローは [DEVELOPMENT_WORKFLOW.md](docs/workflow/DEVELOPMENT_WORKFLOW.md) を参照してください。
 
 ## 改訂履歴
+- 0.0.25 タスクフィルタリングと統計情報機能（filterTasks, getStatistics, getStatisticsByName）、型チェック自動化
+- 0.0.24 pv-today機能、遅延タスク取得機能、EVM指標拡張（ETC'・完了予測日）
+- 0.0.20 タスク管理機能、仕様書テンプレート統一化
 - 0.0.19 CLI出力整形（pbevm-diff, pbevm-show-pvから不要プロパティ除去）、ドキュメント相対リンク化
 - 0.0.18 CsvProjectCreator追加、VersionInfo追加、excludedTasks追加、Jest環境導入、仕様駆動開発導入
 - 0.0.17 正しいデータかを表す「validStatus」プロパティを追加
