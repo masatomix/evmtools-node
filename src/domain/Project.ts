@@ -325,8 +325,8 @@ export class Project {
     private _calculateExtendedStats(
         tasks: TaskRow[],
         spi: number | undefined,
-        bac: number,
-        totalEv: number
+        bac: number | undefined,
+        totalEv: number | undefined
     ): {
         etcPrime?: number
         completionForecast?: Date
@@ -334,8 +334,8 @@ export class Project {
         averageDelayDays: number
         maxDelayDays: number
     } {
-        // ETC'（SPI=0の場合はundefined）
-        const etcPrime = spi && spi > 0 ? (bac - totalEv) / spi : undefined
+        // ETC'（SPI=0またはbac/totalEvがundefinedの場合はundefined）
+        const etcPrime = spi && spi > 0 && bac !== undefined && totalEv !== undefined ? (bac - totalEv) / spi : undefined
 
         // 完了予測日（計算不能な場合はundefined）
         const completionForecast = this._calculateCompletionForecastForTasks(tasks, spi)
@@ -363,6 +363,7 @@ export class Project {
 
         const bac = sumWorkload(tasks)
         const totalEv = sumEVs(tasks)
+        if (bac === undefined || totalEv === undefined) return undefined
         const remainingWork = bac - totalEv
 
         if (remainingWork <= 0) {
