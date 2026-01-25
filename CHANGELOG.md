@@ -5,6 +5,21 @@
 フォーマットは [Keep a Changelog](https://keepachangelog.com/ja/1.0.0/) に基づき、
 [セマンティックバージョニング](https://semver.org/lang/ja/) に準拠しています。
 
+## [0.0.25]
+
+### 追加
+- **タスクフィルタリングと統計情報機能**: フィルタ条件付き統計取得 (#120)
+  - `Project.filterTasks(options?)`: fullTaskName による部分一致フィルタ
+  - `Project.getStatistics()`: プロジェクト全体/フィルタ/TaskRow[] の統計取得
+  - `Project.getStatisticsByName()`: 担当者別統計取得（フィルタ対応）
+  - Statistics 型に拡張プロパティを追加（etcPrime, completionForecast, delayedTaskCount 等）
+  - 要件定義: `docs/specs/requirements/REQ-FILTER-STATS-001.md`
+  - 詳細仕様: `docs/specs/domain/features/Project.filterStatistics.spec.md`
+
+### 改善
+- **型チェックの自動化**: `npm test` 実行時に `tsc --noEmit` を自動実行
+  - `pretest` スクリプトを追加し、型エラーをテスト段階で検出
+
 ## [0.0.24]
 
 ### 追加
