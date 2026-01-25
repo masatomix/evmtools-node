@@ -1,6 +1,6 @@
 # Project 仕様書
 
-**バージョン**: 1.3.0
+**バージョン**: 1.4.0
 **作成日**: 2025-12-16
 **ソースファイル**: `src/domain/Project.ts`
 
@@ -312,10 +312,193 @@ getTaskRows(fromDate: Date, toDate?: Date, assignee?: string): TaskRow[]
 
 ---
 
-### 5.5 `get statisticsByProject: ProjectStatistics[]`
+### 5.5 `filterTasks(options?: TaskFilterOptions): TaskRow[]`
 
 #### 目的
-プロジェクト全体のEVM統計情報を返す。
+フィルタ条件に基づいてタスクを抽出する。
+
+#### シグネチャ
+```typescript
+filterTasks(options?: TaskFilterOptions): TaskRow[]
+```
+
+#### 型定義
+```typescript
+interface TaskFilterOptions {
+  /** fullTaskName による部分一致フィルタ */
+  filter?: string
+}
+```
+
+#### 事前条件
+
+該当なし
+
+#### 事後条件
+
+| ID | 条件 |
+|----|------|
+| POST-FT-01 | 戻り値は`TaskRow[]`型 |
+| POST-FT-02 | 親タスクも含む全タスクを返す（リーフのみではない） |
+| POST-FT-03 | options未指定または空文字の場合、全タスクを返す |
+
+#### アルゴリズム
+
+```
+1. options が undefined または filter が空文字の場合
+   → 全タスク（親含む）を返す
+
+2. filter が指定されている場合
+   a. toTaskRows() で全タスクを取得（キャッシュ利用）
+   b. getFullTaskName(task) で部分一致チェック
+   c. 一致したタスクのみ返す（親タスク含む）
+```
+
+#### ビジネスルール
+
+| ID | ルール | 違反時の動作 |
+|----|--------|-------------|
+| BR-FT-01 | フィルタは大文字小文字を区別する | 完全一致のみ抽出 |
+| BR-FT-02 | 統計計算時は`_resolveTasks()`内でリーフのみを抽出 | 二重カウント防止 |
+
+#### 同値クラス・境界値
+
+| ID | 分類 | 入力条件 | 期待結果 |
+|----|------|----------|----------|
+| EQ-FT-001 | 正常系 | filterTasks() | 全タスク（親含む） |
+| EQ-FT-002 | 正常系 | filterTasks({}) | 全タスク |
+| EQ-FT-003 | 正常系 | filterTasks({ filter: "" }) | 全タスク |
+| EQ-FT-004 | 正常系 | filterTasks({ filter: "認証" }) | "認証"を含むタスク |
+| EQ-FT-005 | 境界値 | filterTasks({ filter: "存在しない" }) | 空配列 |
+| EQ-FT-006 | 境界値 | 大文字小文字の区別 | 完全一致のみ |
+
+---
+
+### 5.6 `getStatistics(): ProjectStatistics`
+
+#### 目的
+プロジェクト統計情報を取得する。オーバーロードで引数なし、フィルタオプション、TaskRow配列を受け付ける。
+
+#### シグネチャ
+```typescript
+getStatistics(): ProjectStatistics
+getStatistics(options: StatisticsOptions): ProjectStatistics
+getStatistics(tasks: TaskRow[]): ProjectStatistics
+```
+
+#### 型定義
+```typescript
+interface StatisticsOptions extends TaskFilterOptions {
+  // 将来の拡張用
+}
+
+// Statistics型（拡張プロパティ含む）
+type Statistics = {
+  totalTasksCount?: number
+  totalWorkloadExcel?: number
+  totalWorkloadCalculated?: number
+  averageWorkload?: number
+  baseDate: string
+  totalPvExcel?: number
+  totalPvCalculated?: number
+  totalEv?: number
+  spi?: number
+  // 拡張プロパティ
+  etcPrime?: number
+  completionForecast?: Date
+  delayedTaskCount: number
+  averageDelayDays: number
+  maxDelayDays: number
+}
+
+type ProjectStatistics = {
+  projectName?: string
+  startDate: string
+  endDate: string
+} & Statistics
+```
+
+#### 事前条件
+
+該当なし
+
+#### 事後条件
+
+| ID | 条件 |
+|----|------|
+| POST-GS-01 | 戻り値は`ProjectStatistics`型 |
+| POST-GS-02 | 統計計算はリーフタスクのみを対象とする |
+| POST-GS-03 | 拡張プロパティ（etcPrime, completionForecast, 遅延情報）が含まれる |
+
+#### アルゴリズム
+
+```
+1. 引数の型を判定
+   - undefined → 全リーフタスク対象
+   - TaskRow[] → 渡されたタスク対象（リーフのみ抽出）
+   - StatisticsOptions → filterTasks() でフィルタ
+
+2. _calculateStatistics(tasks) を呼び出して統計を計算
+```
+
+#### 同値クラス・境界値
+
+| ID | 分類 | 入力条件 | 期待結果 |
+|----|------|----------|----------|
+| EQ-GS-001 | 正常系 | getStatistics() | プロジェクト全体の統計 |
+| EQ-GS-002 | 正常系 | getStatistics({ filter: "認証" }) | フィルタ結果の統計 |
+| EQ-GS-003 | 正常系 | getStatistics(tasks) | 渡されたタスクの統計 |
+| EQ-GS-004 | 境界値 | getStatistics([]) | totalTasksCount=0 |
+| EQ-GS-005 | 境界値 | 全タスクのPV=0 | spi=undefined, etcPrime=undefined |
+
+---
+
+### 5.7 `getStatisticsByName(): AssigneeStatistics[]`
+
+#### 目的
+担当者別統計情報を取得する。オーバーロードで引数なし、フィルタオプション、TaskRow配列を受け付ける。
+
+#### シグネチャ
+```typescript
+getStatisticsByName(): AssigneeStatistics[]
+getStatisticsByName(options: StatisticsOptions): AssigneeStatistics[]
+getStatisticsByName(tasks: TaskRow[]): AssigneeStatistics[]
+```
+
+#### 型定義
+```typescript
+type AssigneeStatistics = {
+  assignee?: string
+} & Statistics
+```
+
+#### 事前条件
+
+該当なし
+
+#### 事後条件
+
+| ID | 条件 |
+|----|------|
+| POST-GSN-01 | 戻り値は`AssigneeStatistics[]`型 |
+| POST-GSN-02 | 担当者未設定のタスクは`assignee=undefined`のエントリに含まれる |
+| POST-GSN-03 | 各担当者の拡張統計（etcPrime, 遅延情報）が含まれる |
+
+#### 同値クラス・境界値
+
+| ID | 分類 | 入力条件 | 期待結果 |
+|----|------|----------|----------|
+| EQ-GSN-001 | 正常系 | getStatisticsByName() | 全担当者の統計 |
+| EQ-GSN-002 | 正常系 | getStatisticsByName({ filter: "認証" }) | フィルタ結果の担当者別統計 |
+| EQ-GSN-003 | 正常系 | getStatisticsByName(tasks) | 渡されたタスクの担当者別統計 |
+| EQ-GSN-004 | 境界値 | assignee=undefined のタスクあり | assignee=undefinedのエントリ |
+
+---
+
+### 5.8 `get statisticsByProject: ProjectStatistics[]`
+
+#### 目的
+プロジェクト全体のEVM統計情報を返す。（後方互換性のためのgetter、内部でgetStatistics()を呼び出す）
 
 #### シグネチャ
 ```typescript
@@ -330,23 +513,8 @@ get statisticsByProject(): ProjectStatistics[]
 
 | ID | 条件 |
 |----|------|
-| POST-SP-01 | 戻り値は`ProjectStatistics[]`型 |
-
-#### アルゴリズム
-
-```
-1. toTaskRows()でフラット化
-2. isLeaf===trueのみフィルタ
-3. summarize()で以下を集計：
-   - totalTasksCount: リーフタスク数
-   - totalWorkloadExcel: workloadの合計
-   - totalWorkloadCalculated: endDate時点のcalculatePVs()合計
-   - averageWorkload: workloadの平均
-   - totalPvExcel: pvの合計
-   - totalPvCalculated: baseDate時点のcalculatePVs()合計
-   - totalEv: evの合計
-   - spi: totalEv / totalPvCalculated
-```
+| POST-SP-01 | 戻り値は`ProjectStatistics[]`型（要素数1） |
+| POST-SP-02 | getStatistics()と同じ結果を返す |
 
 #### ビジネスルール
 
@@ -367,10 +535,10 @@ get statisticsByProject(): ProjectStatistics[]
 
 ---
 
-### 5.6 `get statisticsByName: AssigneeStatistics[]`
+### 5.9 `get statisticsByName: AssigneeStatistics[]`
 
 #### 目的
-担当者別のEVM統計情報を返す。
+担当者別のEVM統計情報を返す。（後方互換性のためのgetter、内部でgetStatisticsByName()を呼び出す）
 
 #### シグネチャ
 ```typescript
@@ -386,6 +554,7 @@ get statisticsByName(): AssigneeStatistics[]
 | ID | 条件 |
 |----|------|
 | POST-SN-01 | 戻り値は`AssigneeStatistics[]`型 |
+| POST-SN-02 | getStatisticsByName()と同じ結果を返す |
 
 #### ビジネスルール
 
@@ -405,7 +574,7 @@ get statisticsByName(): AssigneeStatistics[]
 
 ---
 
-### 5.7 `get pvByName: Record<string, unknown>[]` / `get pvsByName`
+### 5.10 `get pvByName: Record<string, unknown>[]` / `get pvsByName`
 
 #### 目的
 担当者別のPVデータをWide形式（横持ち）で返す。
@@ -439,7 +608,7 @@ get pvsByNameLong(): PvDataLong[]
 
 ---
 
-### 5.8 `isHoliday(date: Date): boolean`
+### 5.11 `isHoliday(date: Date): boolean`
 
 #### 目的
 指定日が祝日（土日または`holidayDatas`に含まれる）かを判定する。
@@ -481,7 +650,7 @@ isHoliday(date: Date): boolean
 
 ---
 
-### 5.9 `get excludedTasks: ExcludedTask[]`
+### 5.12 `get excludedTasks: ExcludedTask[]`
 
 #### 目的
 PV/EV計算から除外されたタスク（無効なタスク）の一覧を取得する。
@@ -532,7 +701,7 @@ get excludedTasks(): ExcludedTask[]
 
 ---
 
-### 5.10 `getDelayedTasks(minDays?: number): TaskRow[]`
+### 5.13 `getDelayedTasks(minDays?: number): TaskRow[]`
 
 #### 目的
 遅延しているタスク（未完了かつ予定終了日を過ぎたリーフタスク）の一覧を取得する。
@@ -599,7 +768,7 @@ getDelayedTasks(minDays?: number): TaskRow[]
 
 ---
 
-### 5.11 `calculateRecentDailyPv(lookbackDays?: number): number`
+### 5.14 `calculateRecentDailyPv(lookbackDays?: number): number`
 
 #### 目的
 直近N日間の平均PV（日あたり消化量）を計算する。完了予測の日あたり消化量として使用。
@@ -640,7 +809,7 @@ calculateRecentDailyPv(lookbackDays?: number): number
 
 ---
 
-### 5.12 `calculateCompletionForecast(options?: CompletionForecastOptions): CompletionForecast | undefined`
+### 5.15 `calculateCompletionForecast(options?: CompletionForecastOptions): CompletionForecast | undefined`
 
 #### 目的
 現在のSPIが続いた場合の完了予測日を計算する。
@@ -1021,6 +1190,18 @@ Scenario: SPI=0で予測不可
 | REQ-EVM-001 AC-05 | SPI=0時はundefined | TC-06, TC-07, TC-25 | ✅ PASS |
 | REQ-EVM-001 AC-06 | 既存テストへの影響なし | 既存テスト全件 | ✅ PASS (143件) |
 | REQ-EVM-001 AC-07 | 完了済み時の動作 | TC-08, TC-12 | ✅ PASS |
+| REQ-FILTER-STATS-001 AC-01 | fullTaskNameに "認証機能" を含むタスクのみが抽出される | TC-04, TC-05, TC-08 | ✅ PASS |
+| REQ-FILTER-STATS-001 AC-02 | フィルタ結果に対してPV合計、EV合計、SPIが正しく算出される | TC-13, TC-17 | ✅ PASS |
+| REQ-FILTER-STATS-001 AC-03 | フィルタ結果に対してETC'と完了予測日が算出される | TC-15 | ✅ PASS |
+| REQ-FILTER-STATS-001 AC-04 | フィルタ結果のタスク数が正しくカウントされる（統計計算はリーフのみ） | TC-14 | ✅ PASS |
+| REQ-FILTER-STATS-001 AC-05 | 担当者別にタスク数、PV、EV、ETC'、遅延情報が集計される | TC-20, TC-23, TC-24 | ✅ PASS |
+| REQ-FILTER-STATS-001 AC-05-1 | getStatisticsByName({ filter })でフィルタ結果の担当者別統計取得 | TC-21 | ✅ PASS |
+| REQ-FILTER-STATS-001 AC-05-2 | getStatisticsByName(filteredTasks)で担当者別統計取得 | TC-22, TC-31 | ✅ PASS |
+| REQ-FILTER-STATS-001 AC-06 | 遅延タスク数と遅延日数の統計が取得できる | TC-16, TC-18, TC-24 | ✅ PASS |
+| REQ-FILTER-STATS-001 AC-07 | getStatistics({ filter })でフィルタ結果の統計情報取得 | TC-11 | ✅ PASS |
+| REQ-FILTER-STATS-001 AC-08 | getStatistics()を引数なしで呼び出すとプロジェクト全体の統計を返す | TC-10, TC-32 | ✅ PASS |
+| REQ-FILTER-STATS-001 AC-09 | filterTasks({ filter })でフィルタ結果のTaskRow[]（親含む）取得 | TC-04, TC-08 | ✅ PASS |
+| REQ-FILTER-STATS-001 AC-10 | getStatistics(filteredTasks)で渡されたTaskRow[]に対する統計取得 | TC-12, TC-30 | ✅ PASS |
 
 > **ステータス凡例**:
 > - ⏳: 未実装
@@ -1038,6 +1219,7 @@ Scenario: SPI=0で予測不可
 | `src/domain/__tests__/Project.test.ts` | 単体テスト | 51件 |
 | `src/domain/__tests__/Project.delayedTasks.test.ts` | getDelayedTasks()テスト | 17件 |
 | `src/domain/__tests__/Project.completionForecast.test.ts` | 完了予測機能テスト | 27件 |
+| `src/domain/__tests__/Project.filterStatistics.test.ts` | タスクフィルタリング・統計テスト | 30件 |
 
 ### 11.2 テストフィクスチャ
 
@@ -1073,3 +1255,4 @@ Tests:       95 passed, 95 total
 | 1.1.1 | 2025-12-24 | 要件トレーサビリティセクション追加 | REQ-TASK-001 |
 | 1.2.0 | 2026-01-23 | getDelayedTasks()メソッド追加（遅延タスク抽出機能） | REQ-DELAY-001 |
 | 1.3.0 | 2026-01-23 | 完了予測機能追加（bac, totalEv, etcPrime, plannedWorkDays, calculateRecentDailyPv, calculateCompletionForecast） | REQ-EVM-001 |
+| 1.4.0 | 2026-01-25 | タスクフィルタリング・統計機能追加（filterTasks, getStatistics, getStatisticsByName）、Statistics型に拡張プロパティ追加（etcPrime, completionForecast, 遅延情報）、既存getter（statisticsByProject, statisticsByName）を新メソッドに委譲するリファクタリング | REQ-FILTER-STATS-001 |

@@ -149,64 +149,276 @@ export class Project {
 
     /**
      * Project単位の統計情報を返す
-     * @param project
-     * @returns
+     * @returns ProjectStatistics配列（要素数1）
      */
     get statisticsByProject(): ProjectStatistics[] {
-        const name = this._name
-        const baseDate = this._baseDate
-        const startDate = this._startDate // Date|undefinedだけど、実際はほぼ確実に、存在する(タスクが0コとか)
-        const endDate = this._endDate // Date|undefinedだけど、実際はほぼ確実に、存在する(タスクが0コとか)
-        const rows = this.toTaskRows()
-        const result: ProjectStatistics[] = tidy(
-            rows,
-            filter((row) => row.isLeaf!), //フォルダの情報は不要
-            summarize({
-                projectName: () => name,
-                startDate: () => dateStr(startDate),
-                endDate: () => dateStr(endDate),
-                totalTasksCount: (group) => group.length,
-                totalWorkloadExcel: sumWorkload, // Excel工数(task#workload) の 足し算
-                totalWorkloadCalculated: (group) => sumCalculatePVs(group, endDate!), // endDate時の、計算、累積pv(したのヤツ) の、足し算
-                averageWorkload: averageWorkload,
-                baseDate: () => dateStr(baseDate),
-                totalPvExcel: sumPVs, // Excel累積pv(TaskRow#pv) の足し算
-                totalPvCalculated: (group) => sumCalculatePVs(group, baseDate), // 計算、累積pv(TaskRow#calculatePVs(baseDate)) の、足し算
-                totalEv: sumEVs, // Excel累積Ev(TaskRow#ev) の足し算
-                spi: (group) => calculateSPI(group, baseDate),
-            })
-        )
-        // console.table(result)
-        return result
+        return [this.getStatistics()]
     }
 
+    /**
+     * 担当者別の統計情報を返す
+     * @returns AssigneeStatistics配列
+     */
     get statisticsByName(): AssigneeStatistics[] {
+        return this.getStatisticsByName()
+    }
+
+    /**
+     * フィルタ条件に基づいてタスクを抽出する
+     *
+     * @param options フィルタオプション
+     * @returns フィルタ結果の TaskRow[]（親タスク含む全タスク）
+     *
+     * @note 統計計算時は内部でリーフタスクのみを使用（二重カウント防止）
+     *
+     * @example
+     * // "認証機能" を含むタスクを取得（親タスク含む）
+     * const tasks = project.filterTasks({ filter: "認証機能" })
+     *
+     * // 引数なしは全タスクを返す
+     * const allTasks = project.filterTasks()
+     */
+    filterTasks(options?: TaskFilterOptions): TaskRow[] {
+        const allTasks = this.toTaskRows()
+
+        if (!options?.filter || options.filter.trim() === '') {
+            return allTasks
+        }
+
+        return allTasks.filter((task) => {
+            const fullName = this.getFullTaskName(task)
+            return fullName.includes(options.filter!)
+        })
+    }
+
+    /**
+     * プロジェクト統計情報を取得する
+     *
+     * オーバーロード:
+     * 1. getStatistics() - プロジェクト全体の統計
+     * 2. getStatistics({ filter }) - フィルタして統計
+     * 3. getStatistics(TaskRow[]) - 渡されたタスクの統計
+     */
+    getStatistics(): ProjectStatistics
+    getStatistics(options: StatisticsOptions): ProjectStatistics
+    getStatistics(tasks: TaskRow[]): ProjectStatistics
+    getStatistics(optionsOrTasks?: StatisticsOptions | TaskRow[]): ProjectStatistics {
+        const tasks = this._resolveTasks(optionsOrTasks)
+        return this._calculateStatistics(tasks)
+    }
+
+    /**
+     * 担当者別統計情報を取得する
+     *
+     * オーバーロード:
+     * 1. getStatisticsByName() - プロジェクト全体の担当者別統計
+     * 2. getStatisticsByName({ filter }) - フィルタして担当者別統計
+     * 3. getStatisticsByName(TaskRow[]) - 渡されたタスクの担当者別統計
+     */
+    getStatisticsByName(): AssigneeStatistics[]
+    getStatisticsByName(options: StatisticsOptions): AssigneeStatistics[]
+    getStatisticsByName(tasks: TaskRow[]): AssigneeStatistics[]
+    getStatisticsByName(optionsOrTasks?: StatisticsOptions | TaskRow[]): AssigneeStatistics[] {
+        const tasks = this._resolveTasks(optionsOrTasks)
+        return this._calculateAssigneeStats(tasks)
+    }
+
+    /**
+     * 引数を解決してリーフタスクのみを返す（統計計算用）
+     * filterTasks() は全タスクを返すが、統計計算はリーフのみで行う
+     */
+    private _resolveTasks(optionsOrTasks?: StatisticsOptions | TaskRow[]): TaskRow[] {
+        let tasks: TaskRow[]
+
+        if (optionsOrTasks === undefined) {
+            tasks = this.filterTasks()
+        } else if (Array.isArray(optionsOrTasks)) {
+            tasks = optionsOrTasks
+        } else {
+            tasks = this.filterTasks(optionsOrTasks)
+        }
+
+        // 統計計算はリーフタスクのみ（二重カウント防止）
+        return tasks.filter((t) => t.isLeaf)
+    }
+
+    /**
+     * プロジェクト統計を計算
+     */
+    private _calculateStatistics(tasks: TaskRow[]): ProjectStatistics {
+        const name = this._name
+        const baseDate = this._baseDate
+        const startDate = this._startDate
+        const endDate = this._endDate
+
+        // 基本統計
+        const totalPvCalculated = sumCalculatePVs(tasks, baseDate)
+        const totalEv = sumEVs(tasks)
+        const spi = calculateSPI(tasks, baseDate)
+        const bac = sumWorkload(tasks)
+
+        // 拡張統計
+        const extendedStats = this._calculateExtendedStats(tasks, spi, bac, totalEv)
+
+        return {
+            projectName: name,
+            startDate: dateStr(startDate),
+            endDate: dateStr(endDate),
+            totalTasksCount: tasks.length,
+            totalWorkloadExcel: bac,
+            totalWorkloadCalculated: endDate ? sumCalculatePVs(tasks, endDate) : undefined,
+            averageWorkload: averageWorkload(tasks),
+            baseDate: dateStr(baseDate),
+            totalPvExcel: sumPVs(tasks),
+            totalPvCalculated,
+            totalEv,
+            spi,
+            ...extendedStats,
+        }
+    }
+
+    /**
+     * 担当者別統計を計算
+     */
+    private _calculateAssigneeStats(tasks: TaskRow[]): AssigneeStatistics[] {
         const baseDate = this._baseDate
         const endDate = this._endDate
-        const rows = this.toTaskRows()
 
-        const result = tidy(
-            rows,
-            // mutate({
-            //     assignee: (row) => row.assignee?.trim() ?? '', // 🔧 trim()を適用
-            //   }),
-            filter((row) => row.isLeaf!), //フォルダの情報は不要
-            groupBy('assignee', [
-                summarize({
-                    totalTasksCount: (group) => group.length,
-                    totalWorkloadExcel: sumWorkload,
-                    totalWorkloadCalculated: (group) => sumCalculatePVs(group, endDate!),
-                    averageWorkload: averageWorkload,
-                    baseDate: () => dateStr(baseDate),
-                    totalPvExcel: sumPVs,
-                    totalPvCalculated: (group) => sumCalculatePVs(group, baseDate),
-                    totalEv: sumEVs,
-                    spi: (group) => calculateSPI(group, baseDate),
-                }),
-            ])
-        )
-        // console.table(result)
-        return result
+        // 担当者ごとにグループ化
+        const grouped = new Map<string | undefined, TaskRow[]>()
+        for (const task of tasks) {
+            const key = task.assignee
+            if (!grouped.has(key)) {
+                grouped.set(key, [])
+            }
+            grouped.get(key)!.push(task)
+        }
+
+        return Array.from(grouped.entries()).map(([assignee, assigneeTasks]) => {
+            const totalPvCalculated = sumCalculatePVs(assigneeTasks, baseDate)
+            const totalEv = sumEVs(assigneeTasks)
+            const spi = calculateSPI(assigneeTasks, baseDate)
+            const bac = sumWorkload(assigneeTasks)
+
+            // 拡張統計（担当者ごとに計算）
+            const extendedStats = this._calculateExtendedStats(assigneeTasks, spi, bac, totalEv)
+
+            return {
+                assignee: assignee || undefined,
+                totalTasksCount: assigneeTasks.length,
+                totalWorkloadExcel: bac,
+                totalWorkloadCalculated: endDate ? sumCalculatePVs(assigneeTasks, endDate) : undefined,
+                averageWorkload: averageWorkload(assigneeTasks),
+                baseDate: dateStr(baseDate),
+                totalPvExcel: sumPVs(assigneeTasks),
+                totalPvCalculated,
+                totalEv,
+                spi,
+                ...extendedStats,
+            }
+        })
+    }
+
+    /**
+     * 拡張統計を計算（共通ヘルパー）
+     */
+    private _calculateExtendedStats(
+        tasks: TaskRow[],
+        spi: number | undefined,
+        bac: number | undefined,
+        totalEv: number | undefined
+    ): {
+        etcPrime?: number
+        completionForecast?: Date
+        delayedTaskCount: number
+        averageDelayDays: number
+        maxDelayDays: number
+    } {
+        // ETC'（SPI=0またはbac/totalEvがundefinedの場合はundefined）
+        const etcPrime = spi && spi > 0 && bac !== undefined && totalEv !== undefined ? (bac - totalEv) / spi : undefined
+
+        // 完了予測日（計算不能な場合はundefined）
+        const completionForecast = this._calculateCompletionForecastForTasks(tasks, spi)
+
+        // 遅延情報
+        const { delayedTaskCount, averageDelayDays, maxDelayDays } = this._calculateDelayStats(tasks)
+
+        return {
+            etcPrime,
+            completionForecast,
+            delayedTaskCount,
+            averageDelayDays,
+            maxDelayDays,
+        }
+    }
+
+    /**
+     * 指定タスクに対する完了予測日を計算
+     */
+    private _calculateCompletionForecastForTasks(
+        tasks: TaskRow[],
+        spi: number | undefined
+    ): Date | undefined {
+        if (!spi || spi <= 0) return undefined
+
+        const bac = sumWorkload(tasks)
+        const totalEv = sumEVs(tasks)
+        if (bac === undefined || totalEv === undefined) return undefined
+        const remainingWork = bac - totalEv
+
+        if (remainingWork <= 0) {
+            return new Date(this._baseDate)
+        }
+
+        // 簡易的な完了予測日計算（日あたりPV = 1 と仮定）
+        const etcPrime = remainingWork / spi
+        const forecastDate = new Date(this._baseDate)
+        let daysAdded = 0
+        let workDaysAdded = 0
+
+        while (workDaysAdded < etcPrime && daysAdded < 730) {
+            forecastDate.setDate(forecastDate.getDate() + 1)
+            daysAdded++
+            if (!this.isHoliday(forecastDate)) {
+                workDaysAdded++
+            }
+        }
+
+        if (workDaysAdded < etcPrime) {
+            return undefined
+        }
+
+        return forecastDate
+    }
+
+    /**
+     * 遅延統計を計算
+     */
+    private _calculateDelayStats(tasks: TaskRow[]): {
+        delayedTaskCount: number
+        averageDelayDays: number
+        maxDelayDays: number
+    } {
+        const baseDate = this._baseDate
+
+        // 遅延日数計算
+        const calcDelayDays = (task: TaskRow): number => {
+            return -(formatRelativeDaysNumber(baseDate, task.endDate) ?? 0)
+        }
+
+        // 遅延タスク抽出（未完了かつ遅延日数 > 0）
+        const delayedTasks = tasks
+            .filter((task) => !task.finished)
+            .filter((task) => task.endDate !== undefined)
+            .filter((task) => calcDelayDays(task) > 0)
+
+        const delayDays = delayedTasks.map(calcDelayDays)
+        const delayedTaskCount = delayedTasks.length
+        const averageDelayDays =
+            delayDays.length > 0 ? delayDays.reduce((a, b) => a + b, 0) / delayDays.length : 0
+        const maxDelayDays = delayDays.length > 0 ? Math.max(...delayDays) : 0
+
+        return { delayedTaskCount, averageDelayDays, maxDelayDays }
     }
 
     /**
@@ -689,6 +901,17 @@ export type Statistics = {
     totalPvCalculated?: number
     totalEv?: number
     spi?: number
+    // 拡張プロパティ（REQ-FILTER-STATS-001）
+    /** ETC'（残作業予測）。SPI=0の場合は計算不能のためundefined */
+    etcPrime?: number
+    /** 完了予測日。計算不能な場合はundefined */
+    completionForecast?: Date
+    /** 遅延タスク数 */
+    delayedTaskCount: number
+    /** 平均遅延日数（遅延タスクがない場合は0） */
+    averageDelayDays: number
+    /** 最大遅延日数（遅延タスクがない場合は0） */
+    maxDelayDays: number
 }
 
 export type ProjectStatistics = {
@@ -705,6 +928,22 @@ export type LongData = {
     assignee: string
     baseDate: string
     value?: number
+}
+
+/**
+ * タスクフィルタオプション
+ */
+export interface TaskFilterOptions {
+    /** fullTaskName による部分一致フィルタ */
+    filter?: string
+}
+
+/**
+ * 統計情報取得オプション
+ * TaskFilterOptions を継承（フィルタ条件を含む）
+ */
+export interface StatisticsOptions extends TaskFilterOptions {
+    // 将来の拡張用（例: includeDelayed, groupBy など）
 }
 
 /**
