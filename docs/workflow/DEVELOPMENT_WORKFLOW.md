@@ -877,6 +877,33 @@ git branch -d release/0.0.18
 git fetch --prune origin
 ```
 
+#### 2.5.5 develop の SNAPSHOT バージョン更新
+
+> **重要**: develop ブランチが保護されている場合、直接プッシュできないため PR 経由で更新する。
+
+```bash
+# 11. SNAPSHOT更新用ブランチを作成
+git fetch origin
+git checkout -b chore/snapshot-version origin/develop --no-track
+
+# 12. バージョンを次版SNAPSHOTに更新
+npm version 0.0.19-SNAPSHOT --no-git-tag-version
+
+# 13. コミット・プッシュ
+git add package.json
+git commit -m "chore: bump version to 0.0.19-SNAPSHOT"
+git push -u origin chore/snapshot-version
+
+# 14. PR作成・マージ
+gh pr create --base develop --title "chore: bump version to 0.0.19-SNAPSHOT" --body "リリース v0.0.18 後の開発版バージョンに更新"
+gh pr merge --merge --admin  # レビュー不要の場合
+
+# 15. クリーンアップ
+git checkout main
+git branch -d chore/snapshot-version
+git fetch --prune origin
+```
+
 ---
 
 ## 3. コミットメッセージ規約
@@ -1040,6 +1067,7 @@ npm pack
 - [ ] **GitHub Release 作成**（CHANGELOG の内容を転記）
 - [ ] `develop`へのマージバック（PR経由）
 - [ ] **developのバージョンを次版SNAPSHOTに更新**（例: `0.0.19-SNAPSHOT`）
+  - ⚠️ develop が保護されている場合は **PR経由** で更新（詳細: 2.5.5 参照）
 - [ ] npm publish（必要に応じて）
 
 ---
