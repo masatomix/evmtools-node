@@ -63,7 +63,8 @@
 
 ### 4. 実装 ⬜
 
-- [ ] 型定義を追加（TaskFilterOptions, StatisticsOptions, ExtendedStatistics）
+- [ ] 型定義を追加（TaskFilterOptions, StatisticsOptions）
+- [ ] Statistics 型に拡張プロパティを追加
 - [ ] filterTasks() メソッドを実装
 - [ ] _resolveTasks() プライベートヘルパーを実装
 - [ ] _calculateExtendedStats() プライベートヘルパーを実装
@@ -98,7 +99,8 @@
 - [ ] Project.spec.md に filterTasks() メソッドを追加
 - [ ] Project.spec.md に getStatistics() メソッドを追加
 - [ ] Project.spec.md に getStatisticsByName() メソッドを追加
-- [ ] 型定義セクションを更新（TaskFilterOptions, StatisticsOptions, ExtendedStatistics）
+- [ ] 型定義セクションを更新（TaskFilterOptions, StatisticsOptions）
+- [ ] Statistics 型に拡張プロパティを追加
 - [ ] ProjectStatistics, AssigneeStatistics の拡張を反映
 - [ ] 変更履歴を更新
 

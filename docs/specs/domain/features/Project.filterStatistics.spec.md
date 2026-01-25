@@ -1,6 +1,6 @@
 # Project.filterStatistics 詳細設計書
 
-**バージョン**: 1.3.0
+**バージョン**: 1.4.0
 **作成日**: 2026-01-24
 **要件ID**: [REQ-FILTER-STATS-001](../../requirements/REQ-FILTER-STATS-001.md)
 **対象クラス**: `src/domain/Project.ts`
@@ -26,8 +26,11 @@ Project クラスにタスクフィルタリング機能と統計情報取得機
 ### 1.2 設計方針
 
 - **既存の型を拡張**: `ProjectStatistics`, `AssigneeStatistics` に新プロパティを追加
-- **ロジック共通化**: 既存 getter と新メソッドは内部で同じ計算ロジックを使用
+
+  **ロジック共通化**: 既存 getter と新メソッドは内部で同じ計算ロジックを使用
+
 - **API の一貫性**: `statisticsByProject` → `getStatistics()`, `statisticsByName` → `getStatisticsByName()` のパターン
+
 - **後方互換性**: 既存の getter はそのまま残す
 
 ---
@@ -57,7 +60,7 @@ export interface StatisticsOptions extends TaskFilterOptions {
 ### 2.2 既存型の拡張
 
 ```typescript
-// 基底型（既存）
+// 基底型（既存 + 今回追加プロパティ）
 export type Statistics = {
   totalTasksCount?: number
   totalWorkloadExcel?: number
@@ -68,10 +71,7 @@ export type Statistics = {
   totalPvCalculated?: number
   totalEv?: number
   spi?: number
-}
-
-// 拡張統計（新規: 共通の拡張プロパティ）
-export interface ExtendedStatistics {
+  // 今回追加
   /** ETC'（残作業予測）。SPI=0の場合は計算不能のためundefined */
   etcPrime?: number
   /** 完了予測日。計算不能な場合はundefined */
@@ -84,17 +84,17 @@ export interface ExtendedStatistics {
   maxDelayDays: number
 }
 
-// 担当者別統計（拡張）
+// 担当者別統計（既存、Statistics を継承しているため自動的に新プロパティも含む）
 export type AssigneeStatistics = {
   assignee?: string
-} & Statistics & ExtendedStatistics
+} & Statistics
 
-// プロジェクト統計（拡張）
+// プロジェクト統計（既存、Statistics を継承しているため自動的に新プロパティも含む）
 export type ProjectStatistics = {
   projectName?: string
   startDate: string
   endDate: string
-} & Statistics & ExtendedStatistics
+} & Statistics
 ```
 
 ### 2.3 メソッドシグネチャ
@@ -221,7 +221,7 @@ getStatisticsByName(tasks: TaskRow[]): AssigneeStatistics[]
 │  ┌─────────────────────────────────────────────────────────────┐  │
 │  │              共通ヘルパー                                     │  │
 │  │                                                             │  │
-│  │  _calculateExtendedStats(tasks) → ExtendedStatistics        │  │
+│  │  _calculateExtendedStats(tasks) → 拡張プロパティ             │  │
 │  │      ├── etcPrime                                           │  │
 │  │      ├── completionForecast                                 │  │
 │  │      └── delayedTaskCount, averageDelayDays, maxDelayDays   │  │
@@ -391,7 +391,13 @@ private _calculateExtendedStats(
   spi: number | undefined,
   bac: number,
   totalEv: number
-): ExtendedStatistics {
+): {
+  etcPrime?: number
+  completionForecast?: Date
+  delayedTaskCount: number
+  averageDelayDays: number
+  maxDelayDays: number
+} {
   // ETC'（SPI=0の場合はundefined）
   const etcPrime = spi && spi > 0 ? (bac - totalEv) / spi : undefined
 
@@ -549,7 +555,7 @@ get statisticsByName(): AssigneeStatistics[] {
 
 ### 6.2 型の拡張
 
-`ProjectStatistics` と `AssigneeStatistics` の両方に以下を追加:
+`Statistics` 型に以下のプロパティを追加（`ProjectStatistics`, `AssigneeStatistics` は `Statistics` を継承しているため自動的に含まれる）:
 
 | プロパティ | 型 | 必須/Optional |
 |-----------|-----|:------------:|
@@ -581,3 +587,4 @@ get statisticsByName(): AssigneeStatistics[] {
 | 2026-01-24 | 1.1.0 | ProjectStatistics 型を拡張、ロジック共通化設計 |
 | 2026-01-24 | 1.2.0 | getStatisticsByName() 追加、AssigneeStatistics にも拡張プロパティ追加、ProjectStatistics から assigneeStats を削除 |
 | 2026-01-25 | 1.3.0 | filterTasks() が全タスク（親含む）を返すように変更、統計計算は内部でリーフのみを使用、TC-08 追加、要件トレーサビリティ更新（AC-05-1, AC-05-2 追加、AC-11 次回スコープ） |
+| 2026-01-25 | 1.4.0 | ExtendedStatistics を廃止、Statistics に直接プロパティを追加するシンプルな設計に変更 |
