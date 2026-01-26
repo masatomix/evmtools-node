@@ -247,14 +247,14 @@ interface CompletionForecast {
 
 | 要件ID | 受け入れ基準 | 対応テストケース | 結果 |
 |--------|-------------|-----------------|------|
-| REQ-REFACTOR-002 AC-01 | `_calculateBasicStats()` が spi, totalEv, bac を正しく計算すること | TC-01, TC-02, TC-03 | ⏳ |
-| REQ-REFACTOR-002 AC-02 | `calculateCompletionForecast()` がフィルタ対応していること | TC-05, TC-06 | ⏳ |
-| REQ-REFACTOR-002 AC-03 | `calculateCompletionForecast(tasks, options)` が動作すること | TC-07, TC-08 | ⏳ |
-| REQ-REFACTOR-002 AC-04 | `getStatistics()` の `completionForecast` が従来と同じ結果を返すこと | TC-09, TC-12 | ⏳ |
-| REQ-REFACTOR-002 AC-05 | `getStatistics()` の `etcPrime` が従来と同じ結果を返すこと | TC-10, TC-12 | ⏳ |
-| REQ-REFACTOR-002 AC-06 | `_calculateCompletionForecastForTasks()` が削除されていること | TC-13 | ⏳ |
-| REQ-REFACTOR-002 AC-07 | 高性能版呼び出し時に簡易版の計算が走らないこと | TC-14 | ⏳ |
-| REQ-REFACTOR-002 AC-08 | 既存テストが全てPASSすること | TC-20 | ⏳ |
+| REQ-REFACTOR-002 AC-01 | `_calculateBasicStats()` が spi, totalEv, bac を正しく計算すること | TC-01, TC-02, TC-03 | ✅ PASS |
+| REQ-REFACTOR-002 AC-02 | `calculateCompletionForecast()` がフィルタ対応していること | TC-05, TC-06 | ✅ PASS |
+| REQ-REFACTOR-002 AC-03 | `calculateCompletionForecast(tasks, options)` が動作すること | TC-07, TC-08 | ✅ PASS |
+| REQ-REFACTOR-002 AC-04 | `getStatistics()` の `completionForecast` が従来と同じ結果を返すこと | TC-09, TC-12 | ✅ PASS |
+| REQ-REFACTOR-002 AC-05 | `getStatistics()` の `etcPrime` が従来と同じ結果を返すこと | TC-10, TC-12 | ✅ PASS |
+| REQ-REFACTOR-002 AC-06 | `_calculateCompletionForecastForTasks()` が削除されていること | TC-13 | ✅ PASS |
+| REQ-REFACTOR-002 AC-07 | 高性能版呼び出し時に簡易版の計算が走らないこと | TC-14 | ✅ PASS |
+| REQ-REFACTOR-002 AC-08 | 既存テストが全てPASSすること | TC-20 | ✅ PASS (221件) |
 
 ---
 
@@ -283,3 +283,4 @@ interface CompletionForecast {
 | バージョン | 日付 | 変更内容 | 担当 |
 |-----------|------|---------|------|
 | 1.0.0 | 2026-01-26 | 初版作成 | Claude |
+| 1.1.0 | 2026-01-26 | 実装完了、トレーサビリティ更新 | Claude |
