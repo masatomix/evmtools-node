@@ -1,6 +1,6 @@
 # Project 仕様書
 
-**バージョン**: 1.5.0
+**バージョン**: 1.6.0
 **作成日**: 2025-12-16
 **ソースファイル**: `src/domain/Project.ts`
 
@@ -806,19 +806,44 @@ calculateRecentDailyPv(lookbackDays?: number): number
 
 ---
 
-### 5.15 `calculateCompletionForecast(options?: CompletionForecastOptions): CompletionForecast | undefined`
+### 5.15 `calculateCompletionForecast(): CompletionForecast | undefined`
 
 #### 目的
-現在のSPIが続いた場合の完了予測日を計算する。
+現在のSPIが続いた場合の完了予測日を計算する。オーバーロードでフィルタオプション、TaskRow配列を受け付ける。
 
 #### シグネチャ
 ```typescript
-calculateCompletionForecast(options?: CompletionForecastOptions): CompletionForecast | undefined
+// 引数なし: プロジェクト全体
+calculateCompletionForecast(): CompletionForecast | undefined
+
+// オプション指定: フィルタ + 予測オプション
+calculateCompletionForecast(
+  options: CompletionForecastOptions & StatisticsOptions
+): CompletionForecast | undefined
+
+// タスク配列渡し: 任意のタスク配列に対して計算
+calculateCompletionForecast(
+  tasks: TaskRow[],
+  options?: CompletionForecastOptions
+): CompletionForecast | undefined
 ```
 
 #### 型定義
 
 ```typescript
+/**
+ * 基本統計（循環参照回避用）
+ * _calculateBasicStats() の戻り値
+ */
+interface BasicStats {
+  /** 総EV（出来高） */
+  totalEv: number | undefined
+  /** SPI（スケジュール効率） */
+  spi: number | undefined
+  /** BAC（総工数） */
+  bac: number | undefined
+}
+
 interface CompletionForecastOptions {
   /** 手入力の日あたりPV（優先使用） */
   dailyPvOverride?: number
@@ -864,17 +889,27 @@ interface CompletionForecast {
 #### アルゴリズム
 
 ```
-1. SPIを取得（statisticsByProject[0].spi）
-2. SPI=0またはundefinedならundefinedを返す
-3. 残作業量 = BAC - EV
-4. 残作業量 <= 0 の場合、完了済みとして結果を返す
-5. dailyPv = dailyPvOverride ?? calculateRecentDailyPv(lookbackDays)
-6. dailyPv = 0 ならundefinedを返す
-7. dailyBurnRate = dailyPv × SPI
-8. baseDateから稼働日ごとにdailyBurnRateを消化
-9. 残作業量 <= 0 になった日 = 完了予測日
-10. maxForecastDays超過で収束しなければundefined
-11. 信頼性を判定（determineConfidence）
+1. 引数の型を判定:
+   - undefined → 全リーフタスク対象
+   - TaskRow[] → 渡されたタスク対象（リーフのみ抽出）
+   - StatisticsOptions含む → filterTasks() でフィルタ
+
+2. リーフタスクを取得
+   tasks = _resolveTasks(optionsOrTasks)
+
+3. 基本統計を計算（循環参照を避けるため _calculateBasicStats() を使用）
+   { spi, totalEv, bac } = _calculateBasicStats(tasks)
+
+4. SPI=0またはundefinedならundefinedを返す
+5. 残作業量 = BAC - EV
+6. 残作業量 <= 0 の場合、完了済みとして結果を返す
+7. dailyPv = dailyPvOverride ?? calculateRecentDailyPv(lookbackDays)
+8. dailyPv = 0 ならundefinedを返す
+9. dailyBurnRate = dailyPv × SPI
+10. baseDateから稼働日ごとにdailyBurnRateを消化
+11. 残作業量 <= 0 になった日 = 完了予測日
+12. maxForecastDays超過で収束しなければundefined
+13. 信頼性を判定（determineConfidence）
 ```
 
 #### ビジネスルール
@@ -899,6 +934,12 @@ interface CompletionForecast {
 | EQ-CF-008 | 正常系 | SPI=0.8（高信頼性） | confidence='high' |
 | EQ-CF-009 | 正常系 | SPI=0.6（中信頼性） | confidence='medium' |
 | EQ-CF-010 | 正常系 | SPI=0.3（低信頼性） | confidence='low' |
+| EQ-CF-011 | 正常系 | calculateCompletionForecast() 引数なし | プロジェクト全体の予測 |
+| EQ-CF-012 | 正常系 | calculateCompletionForecast({ filter: "認証" }) | フィルタ結果の予測 |
+| EQ-CF-013 | 正常系 | calculateCompletionForecast({ filter: "認証", dailyPvOverride: 2.0 }) | フィルタ + 指定PVで予測 |
+| EQ-CF-014 | 正常系 | calculateCompletionForecast(tasks, {}) | 渡されたタスクの予測 |
+| EQ-CF-015 | 正常系 | calculateCompletionForecast(tasks, { lookbackDays: 14 }) | 渡されたタスク + オプションで予測 |
+| EQ-CF-016 | 境界値 | calculateCompletionForecast({ filter: "存在しない" }) | undefined（フィルタ結果が空） |
 
 ---
 
@@ -1144,8 +1185,8 @@ Scenario: SPI=0で予測不可
 | getDelayedTasks() | 17件 | 17件 |
 | plannedWorkDays | 3件 | 3件 |
 | calculateRecentDailyPv() | 4件 | 4件 |
-| calculateCompletionForecast() | 11件 | 11件 |
-| **合計** | **86件** | **86件** |
+| calculateCompletionForecast() | 17件 | 17件 |
+| **合計** | **92件** | **92件** |
 
 ---
 
@@ -1188,6 +1229,14 @@ Scenario: SPI=0で予測不可
 | REQ-REFACTOR-001 AC-04 | `statisticsByProject` が正常に動作すること | TC-04〜TC-06 | ✅ PASS |
 | REQ-REFACTOR-001 AC-05 | 既存テストが全てPASSすること | TC-08 | ✅ PASS (203件) |
 | REQ-REFACTOR-001 AC-06 | 仕様書が更新されていること | ドキュメント確認 | ✅ PASS |
+| REQ-REFACTOR-002 AC-01 | `_calculateBasicStats()` が spi, totalEv, bac を正しく計算すること | TC-01〜TC-03 | ✅ PASS |
+| REQ-REFACTOR-002 AC-02 | `calculateCompletionForecast()` がフィルタ対応していること | TC-05, TC-06 | ✅ PASS |
+| REQ-REFACTOR-002 AC-03 | `calculateCompletionForecast(tasks, options)` が動作すること | TC-07, TC-08 | ✅ PASS |
+| REQ-REFACTOR-002 AC-04 | `getStatistics()` の `completionForecast` が従来と同じ結果を返すこと | TC-09, TC-12 | ✅ PASS |
+| REQ-REFACTOR-002 AC-05 | `getStatistics()` の `etcPrime` が従来と同じ結果を返すこと | TC-10, TC-12 | ✅ PASS |
+| REQ-REFACTOR-002 AC-06 | `_calculateCompletionForecastForTasks()` が削除されていること | TC-13 | ✅ PASS |
+| REQ-REFACTOR-002 AC-07 | 高性能版呼び出し時に簡易版の計算が走らないこと | TC-14 | ✅ PASS |
+| REQ-REFACTOR-002 AC-08 | 既存テストが全てPASSすること | TC-20 | ✅ PASS (221件) |
 
 > **ステータス凡例**:
 > - ⏳: 未実装
@@ -1204,7 +1253,7 @@ Scenario: SPI=0で予測不可
 |---------|------|---------|
 | `src/domain/__tests__/Project.test.ts` | 単体テスト | 51件 |
 | `src/domain/__tests__/Project.delayedTasks.test.ts` | getDelayedTasks()テスト | 17件 |
-| `src/domain/__tests__/Project.completionForecast.test.ts` | 完了予測機能テスト | 27件 |
+| `src/domain/__tests__/Project.completionForecast.test.ts` | 完了予測機能テスト（REQ-REFACTOR-002 含む） | 45件 |
 | `src/domain/__tests__/Project.filterStatistics.test.ts` | タスクフィルタリング・統計テスト | 30件 |
 
 ### 11.2 テストフィクスチャ
@@ -1214,9 +1263,9 @@ Scenario: SPI=0で予測不可
 ### 11.3 テスト実行結果
 
 ```
-実行日: 2026-01-23
-Test Suites: 3 passed, 3 total
-Tests:       95 passed, 95 total
+実行日: 2026-01-26
+Test Suites: 8 passed, 8 total
+Tests:       221 passed, 221 total
 ```
 
 ---
@@ -1243,3 +1292,4 @@ Tests:       95 passed, 95 total
 | 1.3.0 | 2026-01-23 | 完了予測機能追加（bac, totalEv, etcPrime, plannedWorkDays, calculateRecentDailyPv, calculateCompletionForecast） | REQ-EVM-001 |
 | 1.4.0 | 2026-01-25 | タスクフィルタリング・統計機能追加（filterTasks, getStatistics, getStatisticsByName）、Statistics型に拡張プロパティ追加（etcPrime, completionForecast, 遅延情報）、既存getter（statisticsByProject, statisticsByName）を新メソッドに委譲するリファクタリング | REQ-FILTER-STATS-001 |
 | 1.5.0 | 2026-01-26 | 重複アクセサ（bac, totalEv, etcPrime）を削除。統計情報は `statisticsByProject` / `getStatistics()` に集約 | REQ-REFACTOR-001 |
+| 1.6.0 | 2026-01-26 | 完了予測機能を高性能版に統一。`calculateCompletionForecast()` にオーバーロード追加（フィルタ対応、タスク配列渡し対応）。`_calculateBasicStats()` 内部メソッド追加（循環参照回避）。`_calculateCompletionForecastForTasks()` 削除 | REQ-REFACTOR-002 |
