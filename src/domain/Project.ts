@@ -321,7 +321,9 @@ export class Project {
 
     /**
      * 拡張統計を計算（共通ヘルパー）
-     * REQ-REFACTOR-002: 高性能版を dailyPvOverride: 1.0 で呼び出す
+     * REQ-REFACTOR-002: 高性能版を使用
+     * Issue #145: dailyPvOverride: 1.0 を削除し、REQ-EVM-001 AC-03 に準拠
+     *             （直近N日平均を使用）
      */
     private _calculateExtendedStats(
         tasks: TaskRow[],
@@ -335,8 +337,8 @@ export class Project {
         averageDelayDays: number
         maxDelayDays: number
     } {
-        // 高性能版を簡易モード（PV=1.0固定）で呼び出し
-        const forecast = this.calculateCompletionForecast(tasks, { dailyPvOverride: 1.0 })
+        // 高性能版を呼び出し（dailyPvOverride なし → calculateRecentDailyPv() を使用）
+        const forecast = this.calculateCompletionForecast(tasks)
 
         // 遅延情報
         const { delayedTaskCount, averageDelayDays, maxDelayDays } = this._calculateDelayStats(tasks)
