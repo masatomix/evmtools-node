@@ -1,6 +1,6 @@
 # Project 仕様書
 
-**バージョン**: 1.6.0
+**バージョン**: 1.6.1
 **作成日**: 2025-12-16
 **ソースファイル**: `src/domain/Project.ts`
 
@@ -1279,6 +1279,36 @@ Tests:       221 passed, 221 total
 | pvByNameの例外 | Errorをthrow | Result型またはOption型で表現 |
 | キャッシュ無効化なし | 生成後の変更想定なし | 明示的にimmutableを表明（readonly） |
 
+### 12.1 設計方針: Statistics と CompletionForecast の役割分担
+
+**Issue #145 で整理**
+
+#### 概要
+
+| 型 | 役割 | SPI | 備考 |
+|----|------|-----|------|
+| `Statistics` | 従来のEVM指標（累積ベース） | 累積SPI | そのまま使える値 |
+| `CompletionForecast` | 予測計算（直近トレンドベース） | 直近N日SPI（※） | 計算コンテキスト込み |
+
+※ 現状は累積SPIを使用。将来的に直近N日SPIに変更予定。
+
+#### 詳細
+
+| 指標 | 使用するSPI | 使用するdailyPv | 備考 |
+|------|------------|-----------------|------|
+| `Statistics.spi` | 累積SPI | - | 従来のEVM指標 |
+| `Statistics.etcPrime` | 累積SPI | - | `remainingWork / 累積SPI` |
+| `CompletionForecast.etcPrime` | 累積SPI（※） | - | `remainingWork / usedSpi` |
+| `CompletionForecast.forecastDate` | 累積SPI（※） | 直近7日平均PV | `dailyPv × SPI` で消化 |
+
+※ 将来的に `spiLookbackDays` オプションで直近N日SPIを使用可能にする拡張を検討
+
+#### 設計意図
+
+1. **Statistics は累積値で統一**: 従来のEVM指標として一貫性を保つ。`spi` と `etcPrime` が同じ累積SPIベース
+2. **CompletionForecast は予測に特化**: 「今のペースが続いたら」という予測のため、直近トレンドを反映
+3. **etcPrime は Statistics に直接載せない検討もあった**: コンテキスト（usedSpi）と一緒に使うべき値だが、現状は累積SPIで統一されているため Statistics にも含める
+
 ---
 
 ## 13. 変更履歴
@@ -1293,3 +1323,4 @@ Tests:       221 passed, 221 total
 | 1.4.0 | 2026-01-25 | タスクフィルタリング・統計機能追加（filterTasks, getStatistics, getStatisticsByName）、Statistics型に拡張プロパティ追加（etcPrime, completionForecast, 遅延情報）、既存getter（statisticsByProject, statisticsByName）を新メソッドに委譲するリファクタリング | REQ-FILTER-STATS-001 |
 | 1.5.0 | 2026-01-26 | 重複アクセサ（bac, totalEv, etcPrime）を削除。統計情報は `statisticsByProject` / `getStatistics()` に集約 | REQ-REFACTOR-001 |
 | 1.6.0 | 2026-01-26 | 完了予測機能を高性能版に統一。`calculateCompletionForecast()` にオーバーロード追加（フィルタ対応、タスク配列渡し対応）。`_calculateBasicStats()` 内部メソッド追加（循環参照回避）。`_calculateCompletionForecastForTasks()` 削除 | REQ-REFACTOR-002 |
+| 1.6.1 | 2026-01-26 | `_calculateExtendedStats()` の `dailyPvOverride: 1.0` を削除（REQ-EVM-001 AC-03準拠）。設計方針セクション追加（Statistics と CompletionForecast の役割分担） | Issue #145 |
