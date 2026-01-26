@@ -1130,3 +1130,103 @@ describe('Project.completionForecast リファクタリング (REQ-REFACTOR-002)
         })
     })
 })
+
+/**
+ * REQ-EVM-001 AC-03 受け入れテスト
+ * 「日あたりPVは手入力が指定されていればそれを使用し、なければ直近N日平均を使用する」
+ *
+ * Issue #145: Statistics.completionForecast が dailyPvOverride: 1.0 を使用していた問題の修正
+ */
+describe('REQ-EVM-001 AC-03: Statistics.completionForecast uses calculateRecentDailyPv()', () => {
+    it('Statistics.completionForecast.usedDailyPv が直近N日平均を使用する（1.0固定ではない）', () => {
+        // 1週間以上の期間を持つタスクを作成（直近7日のPV平均を計算可能にする）
+        const tasks = [
+            createTaskNode({
+                id: 1,
+                name: 'タスク1',
+                workload: 20,
+                ev: 10,
+                startDate: new Date('2025-01-06'), // 月曜
+                endDate: new Date('2025-01-17'), // 金曜
+                scheduledWorkDays: 10,
+                plotMap: createPlotMap(new Date('2025-01-06'), new Date('2025-01-17')),
+                isLeaf: true,
+            }),
+            createTaskNode({
+                id: 2,
+                name: 'タスク2',
+                workload: 15,
+                ev: 5,
+                startDate: new Date('2025-01-06'),
+                endDate: new Date('2025-01-17'),
+                scheduledWorkDays: 10,
+                plotMap: createPlotMap(new Date('2025-01-06'), new Date('2025-01-17')),
+                isLeaf: true,
+            }),
+        ]
+
+        const baseDate = new Date('2025-01-15') // 水曜日
+        const project = createTestProject(tasks, {
+            baseDate,
+            startDate: new Date('2025-01-06'),
+            endDate: new Date('2025-01-17'),
+        })
+
+        // calculateRecentDailyPv() の結果を取得
+        const expectedDailyPv = project.calculateRecentDailyPv()
+
+        // getStatistics() で completionForecast を取得
+        const stats = project.getStatistics()
+
+        // completionForecast が存在すること
+        expect(stats.completionForecast).toBeDefined()
+
+        // usedDailyPv が 1.0 固定ではなく、calculateRecentDailyPv() の結果と一致すること
+        if (stats.completionForecast) {
+            // 直接比較: calculateCompletionForecast() の結果と比較
+            const directForecast = project.calculateCompletionForecast()
+            expect(directForecast).toBeDefined()
+
+            if (directForecast) {
+                // getStatistics().completionForecast と calculateCompletionForecast() が同じ usedDailyPv を使用
+                expect(stats.completionForecast.toDateString()).toBe(
+                    directForecast.forecastDate.toDateString()
+                )
+            }
+
+            // usedDailyPv が 1.0 ではないことを確認（バグ修正の検証）
+            // 注: expectedDailyPv が 1.0 より大きい場合、1.0 固定はバグ
+            if (expectedDailyPv > 1.0) {
+                // calculateCompletionForecast() の usedDailyPv を検証
+                expect(directForecast?.usedDailyPv).toBeGreaterThan(1.0)
+                expect(directForecast?.usedDailyPv).toBeCloseTo(expectedDailyPv, 5)
+            }
+        }
+    })
+
+    it('dailyPvOverride を指定した場合はその値が優先される（AC-03の優先度1）', () => {
+        const task = createTaskNode({
+            id: 1,
+            name: 'タスク1',
+            workload: 20,
+            ev: 10,
+            startDate: new Date('2025-01-06'),
+            endDate: new Date('2025-01-17'),
+            scheduledWorkDays: 10,
+            plotMap: createPlotMap(new Date('2025-01-06'), new Date('2025-01-17')),
+            isLeaf: true,
+        })
+
+        const project = createTestProject([task], {
+            baseDate: new Date('2025-01-15'),
+        })
+
+        // dailyPvOverride を明示的に指定
+        const forecast = project.calculateCompletionForecast({ dailyPvOverride: 5.0 })
+
+        expect(forecast).toBeDefined()
+        if (forecast) {
+            expect(forecast.usedDailyPv).toBe(5.0)
+        }
+    })
+})
