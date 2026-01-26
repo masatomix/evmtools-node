@@ -597,46 +597,6 @@ export class Project {
     }
 
     /**
-     * プロジェクト全体のBAC（Budget at Completion）
-     * 全リーフタスクの予定工数の合計
-     *
-     * @returns BAC（人日）。タスクがない場合は0
-     *
-     * @remarks
-     * statisticsByProject.totalWorkloadExcel を再利用
-     */
-    get bac(): number {
-        const stats = this.statisticsByProject[0]
-        return stats?.totalWorkloadExcel ?? 0
-    }
-
-    /**
-     * プロジェクト全体の累積EV
-     * 全リーフタスクのEVの合計
-     *
-     * @returns 累積EV（人日）
-     */
-    get totalEv(): number {
-        const stats = this.statisticsByProject[0]
-        return stats?.totalEv ?? 0
-    }
-
-    /**
-     * プロジェクト全体のETC'（SPI版）
-     * (BAC - 累積EV) / SPI
-     *
-     * @returns ETC'（人日）。SPI=0またはSPI未定義の場合はundefined
-     */
-    get etcPrime(): number | undefined {
-        const stats = this.statisticsByProject[0]
-        const spi = stats?.spi
-        if (spi === undefined || spi === null || spi === 0) return undefined
-
-        const ev = this.totalEv
-        return (this.bac - ev) / spi
-    }
-
-    /**
      * 計画稼働日数を取得
      * プロジェクト開始日から終了日までの、休日を除いた稼働日数
      *
@@ -703,9 +663,9 @@ export class Project {
             return undefined
         }
 
-        // 残作業量を計算
-        const ev = this.totalEv
-        const bac = this.bac
+        // 残作業量を計算（statisticsByProjectから取得）
+        const ev = stats?.totalEv ?? 0
+        const bac = stats?.totalWorkloadExcel ?? 0
         const remainingWork = bac - ev
 
         // 完了済みの場合
