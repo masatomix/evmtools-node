@@ -183,12 +183,12 @@ const etcPrime = stats?.etcPrime
 
 | 要件ID | 受け入れ基準 | 対応テストケース | 結果 |
 |--------|-------------|-----------------|------|
-| REQ-REFACTOR-001 AC-01 | `bac` プロパティが削除されていること | TC-01 | ⬜ 未実施 |
-| REQ-REFACTOR-001 AC-02 | `totalEv` プロパティが削除されていること | TC-02 | ⬜ 未実施 |
-| REQ-REFACTOR-001 AC-03 | `etcPrime` プロパティが削除されていること | TC-03 | ⬜ 未実施 |
-| REQ-REFACTOR-001 AC-04 | `statisticsByProject` が正常に動作すること | TC-04〜TC-06 | ⬜ 未実施 |
-| REQ-REFACTOR-001 AC-05 | 既存テストが全てPASSすること | TC-08 | ⬜ 未実施 |
-| REQ-REFACTOR-001 AC-06 | 仕様書が更新されていること | ドキュメント確認 | ⬜ 未実施 |
+| REQ-REFACTOR-001 AC-01 | `bac` プロパティが削除されていること | TC-01 | ✅ PASS |
+| REQ-REFACTOR-001 AC-02 | `totalEv` プロパティが削除されていること | TC-02 | ✅ PASS |
+| REQ-REFACTOR-001 AC-03 | `etcPrime` プロパティが削除されていること | TC-03 | ✅ PASS |
+| REQ-REFACTOR-001 AC-04 | `statisticsByProject` が正常に動作すること | TC-04〜TC-06 | ✅ PASS |
+| REQ-REFACTOR-001 AC-05 | 既存テストが全てPASSすること | TC-08 | ✅ PASS (203件) |
+| REQ-REFACTOR-001 AC-06 | 仕様書が更新されていること | ドキュメント確認 | ✅ PASS |
 
 **テストファイル**: `src/domain/__tests__/Project.completionForecast.test.ts`
 

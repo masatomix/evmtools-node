@@ -140,7 +140,8 @@ describe('Project.completionForecast', () => {
                 ]
 
                 const project = createTestProject(tasks)
-                expect(project.bac).toBe(60)
+                const stats = project.statisticsByProject[0]
+                expect(stats?.totalWorkloadExcel).toBe(60)
             })
         })
 
@@ -168,14 +169,16 @@ describe('Project.completionForecast', () => {
                 ]
 
                 const project = createTestProject(tasks)
-                expect(project.bac).toBe(10)
+                const stats = project.statisticsByProject[0]
+                expect(stats?.totalWorkloadExcel).toBe(10)
             })
         })
 
         describe('TC-03: タスクなし', () => {
             it('空のタスク配列 → BAC = 0', () => {
                 const project = createTestProject([])
-                expect(project.bac).toBe(0)
+                const stats = project.statisticsByProject[0]
+                expect(stats?.totalWorkloadExcel ?? 0).toBe(0)
             })
         })
 
@@ -213,7 +216,8 @@ describe('Project.completionForecast', () => {
                 })
 
                 const project = createTestProject([parent])
-                expect(project.bac).toBe(10) // 子のみ: 5 + 5 = 10
+                const stats = project.statisticsByProject[0]
+                expect(stats?.totalWorkloadExcel).toBe(10) // 子のみ: 5 + 5 = 10
             })
         })
     })
@@ -235,8 +239,9 @@ describe('Project.completionForecast', () => {
                 })
 
                 const project = createTestProject([task])
+                const stats = project.statisticsByProject[0]
                 // etcPrime の型チェック
-                expect(project.etcPrime === undefined || typeof project.etcPrime === 'number').toBe(
+                expect(stats?.etcPrime === undefined || typeof stats?.etcPrime === 'number').toBe(
                     true
                 )
             })
@@ -247,15 +252,17 @@ describe('Project.completionForecast', () => {
                 // SPIが0の場合、etcPrimeはundefinedを返すことを確認
                 // statisticsByProjectでSPI=0になるケースをシミュレート
                 const project = createTestProject([])
+                const stats = project.statisticsByProject[0]
                 // タスクがない場合、SPIは計算できないのでundefined
-                expect(project.etcPrime).toBeUndefined()
+                expect(stats?.etcPrime).toBeUndefined()
             })
         })
 
         describe('TC-07: SPI未定義', () => {
             it('SPI=undefined → undefined', () => {
                 const project = createTestProject([])
-                expect(project.etcPrime).toBeUndefined()
+                const stats = project.statisticsByProject[0]
+                expect(stats?.etcPrime).toBeUndefined()
             })
         })
 
@@ -621,7 +628,8 @@ describe('Project.completionForecast', () => {
                 })
 
                 const project = createTestProject([invalidTask])
-                expect(project.bac).toBe(0)
+                const stats = project.statisticsByProject[0]
+                expect(stats?.totalWorkloadExcel ?? 0).toBe(0)
             })
         })
     })
@@ -658,7 +666,7 @@ describe('Project.completionForecast', () => {
         })
     })
 
-    describe('totalEv', () => {
+    describe('totalEv（statisticsByProject経由）', () => {
         it('statisticsByProjectからtotalEvを取得する', () => {
             const task = createTaskNode({
                 id: 1,
@@ -672,7 +680,8 @@ describe('Project.completionForecast', () => {
             })
 
             const project = createTestProject([task])
-            expect(typeof project.totalEv).toBe('number')
+            const stats = project.statisticsByProject[0]
+            expect(typeof stats?.totalEv).toBe('number')
         })
     })
 })

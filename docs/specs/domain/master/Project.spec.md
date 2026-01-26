@@ -1,6 +1,6 @@
 # Project 仕様書
 
-**バージョン**: 1.4.0
+**バージョン**: 1.5.0
 **作成日**: 2025-12-16
 **ソースファイル**: `src/domain/Project.ts`
 
@@ -87,9 +87,6 @@
 | `holidayDatas` | `HolidayData[]` | 祝日データ |
 | `length` | `number` | タスク総数（`toTaskRows().length`） |
 | `excludedTasks` | `ExcludedTask[]` | 計算から除外されたタスク一覧 |
-| `bac` | `number` | プロジェクト全体のBAC（Budget at Completion）。全リーフタスクの予定工数合計 |
-| `totalEv` | `number` | プロジェクト全体の累積EV。全リーフタスクのEV合計 |
-| `etcPrime` | `number \| undefined` | ETC'（SPI版）。(BAC - EV) / SPI。SPI=0またはSPI未定義の場合はundefined |
 | `plannedWorkDays` | `number` | 計画稼働日数（開始日〜終了日の稼働日数）。開始日または終了日が未設定の場合は0 |
 
 ### 3.3 内部キャッシュ
@@ -1054,23 +1051,7 @@ Scenario: getFullTaskName()と組み合わせて使用可能
   Then  "親/子" が返される
 ```
 
-### 6.7 bac/totalEv/etcPrime テスト
-
-```gherkin
-Scenario: BACは全リーフタスクのworkload合計
-  Given 3つのリーフタスク（workload: 10, 20, 30人日）
-  When  bac を取得する
-  Then  60 が返される
-```
-
-```gherkin
-Scenario: SPI=0の場合etcPrimeはundefined
-  Given SPIが0のプロジェクト
-  When  etcPrime を取得する
-  Then  undefined が返される
-```
-
-### 6.8 calculateCompletionForecast() テスト
+### 6.7 calculateCompletionForecast() テスト
 
 ```gherkin
 Scenario: 基本的な完了予測
@@ -1161,11 +1142,10 @@ Scenario: SPI=0で予測不可
 | isHoliday() | 5件 | 5件 |
 | excludedTasks | 6件 | 6件 |
 | getDelayedTasks() | 17件 | 17件 |
-| bac/totalEv/etcPrime | 9件 | 9件 |
 | plannedWorkDays | 3件 | 3件 |
 | calculateRecentDailyPv() | 4件 | 4件 |
 | calculateCompletionForecast() | 11件 | 11件 |
-| **合計** | **95件** | **95件** |
+| **合計** | **86件** | **86件** |
 
 ---
 
@@ -1202,6 +1182,12 @@ Scenario: SPI=0で予測不可
 | REQ-FILTER-STATS-001 AC-08 | getStatistics()を引数なしで呼び出すとプロジェクト全体の統計を返す | TC-10, TC-32 | ✅ PASS |
 | REQ-FILTER-STATS-001 AC-09 | filterTasks({ filter })でフィルタ結果のTaskRow[]（親含む）取得 | TC-04, TC-08 | ✅ PASS |
 | REQ-FILTER-STATS-001 AC-10 | getStatistics(filteredTasks)で渡されたTaskRow[]に対する統計取得 | TC-12, TC-30 | ✅ PASS |
+| REQ-REFACTOR-001 AC-01 | `bac` プロパティが削除されていること | TC-01 | ✅ PASS |
+| REQ-REFACTOR-001 AC-02 | `totalEv` プロパティが削除されていること | TC-02 | ✅ PASS |
+| REQ-REFACTOR-001 AC-03 | `etcPrime` プロパティが削除されていること | TC-03 | ✅ PASS |
+| REQ-REFACTOR-001 AC-04 | `statisticsByProject` が正常に動作すること | TC-04〜TC-06 | ✅ PASS |
+| REQ-REFACTOR-001 AC-05 | 既存テストが全てPASSすること | TC-08 | ✅ PASS (203件) |
+| REQ-REFACTOR-001 AC-06 | 仕様書が更新されていること | ドキュメント確認 | ✅ PASS |
 
 > **ステータス凡例**:
 > - ⏳: 未実装
@@ -1256,3 +1242,4 @@ Tests:       95 passed, 95 total
 | 1.2.0 | 2026-01-23 | getDelayedTasks()メソッド追加（遅延タスク抽出機能） | REQ-DELAY-001 |
 | 1.3.0 | 2026-01-23 | 完了予測機能追加（bac, totalEv, etcPrime, plannedWorkDays, calculateRecentDailyPv, calculateCompletionForecast） | REQ-EVM-001 |
 | 1.4.0 | 2026-01-25 | タスクフィルタリング・統計機能追加（filterTasks, getStatistics, getStatisticsByName）、Statistics型に拡張プロパティ追加（etcPrime, completionForecast, 遅延情報）、既存getter（statisticsByProject, statisticsByName）を新メソッドに委譲するリファクタリング | REQ-FILTER-STATS-001 |
+| 1.5.0 | 2026-01-26 | 重複アクセサ（bac, totalEv, etcPrime）を削除。統計情報は `statisticsByProject` / `getStatistics()` に集約 | REQ-REFACTOR-001 |
