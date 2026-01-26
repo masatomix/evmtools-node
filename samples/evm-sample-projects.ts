@@ -9,7 +9,10 @@
  * - 基準日: 3日目（2025-08-05、中間地点）
  * - 日々のPV: 1.0人日（理想的な状態）
  *
- * 実行: npx ts-node samples/evm-sample-projects.ts
+ * 実行方法（リポジトリルートから）:
+ *   npx ts-node samples/evm-sample-projects.ts
+ *
+ * 注意: node_modulesが必要なため、worktreeからではなくメインリポジトリから実行すること
  */
 
 import { date2Sn } from 'excel-csv-read-write'
