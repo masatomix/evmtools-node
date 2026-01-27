@@ -851,6 +851,12 @@ interface CompletionForecastOptions {
   lookbackDays?: number
   /** 計算を打ち切る最大日数（デフォルト: 730 = 2年） */
   maxForecastDays?: number
+  /**
+   * 外部から指定するSPI（優先使用）
+   * ProjectService.calculateRecentSpi() で計算した直近N日SPIを指定可能
+   * REQ-SPI-002
+   */
+  spiOverride?: number
 }
 
 interface CompletionForecast {
@@ -940,6 +946,11 @@ interface CompletionForecast {
 | EQ-CF-014 | 正常系 | calculateCompletionForecast(tasks, {}) | 渡されたタスクの予測 |
 | EQ-CF-015 | 正常系 | calculateCompletionForecast(tasks, { lookbackDays: 14 }) | 渡されたタスク + オプションで予測 |
 | EQ-CF-016 | 境界値 | calculateCompletionForecast({ filter: "存在しない" }) | undefined（フィルタ結果が空） |
+| EQ-CF-017 | 正常系 | spiOverride指定 | usedSpi=指定値、confidence='high' |
+| EQ-CF-018 | 正常系 | spiOverride + dailyPvOverride併用 | 両方が使用される |
+| EQ-CF-019 | 正常系 | spiOverride + filter併用 | フィルタ結果に対してspiOverride使用 |
+| EQ-CF-020 | 境界値 | spiOverride: 0 | undefined（0除算回避） |
+| EQ-CF-021 | 境界値 | spiOverride: 負の値 | undefined（無効な値） |
 
 ---
 
@@ -1324,3 +1335,4 @@ Tests:       221 passed, 221 total
 | 1.5.0 | 2026-01-26 | 重複アクセサ（bac, totalEv, etcPrime）を削除。統計情報は `statisticsByProject` / `getStatistics()` に集約 | REQ-REFACTOR-001 |
 | 1.6.0 | 2026-01-26 | 完了予測機能を高性能版に統一。`calculateCompletionForecast()` にオーバーロード追加（フィルタ対応、タスク配列渡し対応）。`_calculateBasicStats()` 内部メソッド追加（循環参照回避）。`_calculateCompletionForecastForTasks()` 削除 | REQ-REFACTOR-002 |
 | 1.6.1 | 2026-01-26 | `_calculateExtendedStats()` の `dailyPvOverride: 1.0` を削除（REQ-EVM-001 AC-03準拠）。設計方針セクション追加（Statistics と CompletionForecast の役割分担） | Issue #145 |
+| 1.7.0 | 2026-01-28 | `CompletionForecastOptions` に `spiOverride` オプション追加。`calculateCompletionForecast()` で外部指定SPIを使用可能に | REQ-SPI-002 |

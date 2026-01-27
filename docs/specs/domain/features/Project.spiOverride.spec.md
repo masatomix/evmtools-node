@@ -294,16 +294,16 @@ calculateCompletionForecast(options)
 
 | 要件ID | 受け入れ基準 | 対応テストケース | 結果 |
 |--------|-------------|-----------------|------|
-| REQ-SPI-002 AC-01 | `spiOverride?: number` が追加されている | TC-01 | ⏳ |
-| REQ-SPI-002 AC-02 | ETC' が `remainingWork / spiOverride` で計算される | TC-05 | ⏳ |
-| REQ-SPI-002 AC-03 | `dailyBurnRate` が `dailyPv × spiOverride` で計算される | TC-06 | ⏳ |
-| REQ-SPI-002 AC-04 | `usedSpi` が指定値を返す | TC-01 | ⏳ |
-| REQ-SPI-002 AC-05 | `confidence: 'high'` が返される | TC-02, TC-07 | ⏳ |
-| REQ-SPI-002 AC-06 | `spiOverride: 0` で `undefined` | TC-09 | ⏳ |
-| REQ-SPI-002 AC-07 | 未指定時は累積SPIを使用 | TC-12 | ⏳ |
-| REQ-SPI-002 AC-08 | マスター設計書が更新されている | ドキュメント確認 | ⏳ |
-| REQ-SPI-002 AC-09 | 単体テストが全てPASS | TC-01〜TC-13 | ⏳ |
-| REQ-SPI-002 AC-10 | 既存テストが全てPASS | TC-13 | ⏳ |
+| REQ-SPI-002 AC-01 | `spiOverride?: number` が追加されている | TC-01 | ✅ PASS |
+| REQ-SPI-002 AC-02 | ETC' が `remainingWork / spiOverride` で計算される | TC-05 | ✅ PASS |
+| REQ-SPI-002 AC-03 | `dailyBurnRate` が `dailyPv × spiOverride` で計算される | TC-06 | ✅ PASS |
+| REQ-SPI-002 AC-04 | `usedSpi` が指定値を返す | TC-01 | ✅ PASS |
+| REQ-SPI-002 AC-05 | `confidence: 'high'` が返される | TC-02, TC-07 | ✅ PASS |
+| REQ-SPI-002 AC-06 | `spiOverride: 0` で `undefined` | TC-09 | ✅ PASS |
+| REQ-SPI-002 AC-07 | 未指定時は累積SPIを使用 | TC-12 | ✅ PASS |
+| REQ-SPI-002 AC-08 | マスター設計書が更新されている | ドキュメント確認 | ✅ PASS |
+| REQ-SPI-002 AC-09 | 単体テストが全てPASS | TC-01〜TC-13 | ✅ PASS (13件) |
+| REQ-SPI-002 AC-10 | 既存テストが全てPASS | TC-13 | ✅ PASS (248件) |
 
 > **ステータス凡例**:
 > - ⏳: 未実装
