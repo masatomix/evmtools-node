@@ -1,9 +1,76 @@
 import { tidy, groupBy, summarize } from '@tidyjs/tidy'
-import { Project, ProjectStatistics } from './Project'
+import { Project, ProjectStatistics, TaskFilterOptions } from './Project'
 import { TaskRow } from './TaskRow'
 import { dateStr, formatRelativeDays, formatRelativeDaysNumber, sum } from '../common'
+import { getLogger } from '../logger'
+
+const logger = getLogger('ProjectService')
+
+/**
+ * 期間SPI計算オプション
+ */
+export interface RecentSpiOptions extends TaskFilterOptions {
+    /**
+     * 期間警告の閾値（日数）
+     * この日数を超えると警告ログを出力
+     * @default 30
+     */
+    warnThresholdDays?: number
+}
 
 export class ProjectService {
+    /**
+     * 複数のProjectスナップショットから期間SPIを計算する
+     * 渡されたProject群の累積SPIの平均を返す
+     *
+     * @param projects Project配列
+     * @param options オプション（フィルタ条件、警告閾値）
+     * @returns 期間SPI。計算不能な場合はundefined
+     */
+    calculateRecentSpi(projects: Project[], options?: RecentSpiOptions): number | undefined {
+        // 1. 空配列チェック
+        if (projects.length === 0) return undefined
+
+        // 2. 期間チェックと警告
+        this._warnIfPeriodTooLong(projects, options?.warnThresholdDays ?? 30)
+
+        // 3. 各ProjectのSPIを取得
+        const spis = projects
+            .map((p) => p.getStatistics(options ?? {}).spi)
+            .filter((spi): spi is number => spi !== undefined)
+
+        // 4. 全てundefinedなら計算不能
+        if (spis.length === 0) return undefined
+
+        // 5. 平均を返す
+        return spis.reduce((a, b) => a + b, 0) / spis.length
+    }
+
+    /**
+     * 期間が閾値を超えている場合に警告ログを出力
+     * @param projects Project配列
+     * @param thresholdDays 閾値（日数）
+     */
+    private _warnIfPeriodTooLong(projects: Project[], thresholdDays: number): void {
+        if (projects.length < 2) return
+
+        // baseDateでソートして最古と最新を取得
+        const sorted = [...projects].sort((a, b) => a.baseDate.getTime() - b.baseDate.getTime())
+        const oldest = sorted[0].baseDate
+        const newest = sorted[sorted.length - 1].baseDate
+
+        // 日数差を計算
+        const diffMs = newest.getTime() - oldest.getTime()
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+        if (diffDays > thresholdDays) {
+            logger.warn(
+                `calculateRecentSpi: 期間が ${diffDays} 日と長いです。` +
+                    `直近SPIとしては不適切な可能性があります（閾値: ${thresholdDays} 日）`
+            )
+        }
+    }
+
     calculateTaskDiffs(now: Project, prev: Project): TaskDiff[] {
         const prevTasks = prev.toTaskRows()
         // key:TaskRow#id, value: TaskRow のMap

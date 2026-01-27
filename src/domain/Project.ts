@@ -321,6 +321,9 @@ export class Project {
 
     /**
      * 拡張統計を計算（共通ヘルパー）
+     * REQ-REFACTOR-002: 高性能版を使用
+     * Issue #145: dailyPvOverride: 1.0 を削除し、REQ-EVM-001 AC-03 に準拠
+     *             （直近N日平均を使用）
      */
     private _calculateExtendedStats(
         tasks: TaskRow[],
@@ -334,61 +337,19 @@ export class Project {
         averageDelayDays: number
         maxDelayDays: number
     } {
-        // ETC'（SPI=0またはbac/totalEvがundefinedの場合はundefined）
-        const etcPrime = spi && spi > 0 && bac !== undefined && totalEv !== undefined ? (bac - totalEv) / spi : undefined
-
-        // 完了予測日（計算不能な場合はundefined）
-        const completionForecast = this._calculateCompletionForecastForTasks(tasks, spi)
+        // 高性能版を呼び出し（dailyPvOverride なし → calculateRecentDailyPv() を使用）
+        const forecast = this.calculateCompletionForecast(tasks)
 
         // 遅延情報
         const { delayedTaskCount, averageDelayDays, maxDelayDays } = this._calculateDelayStats(tasks)
 
         return {
-            etcPrime,
-            completionForecast,
+            etcPrime: forecast?.etcPrime,
+            completionForecast: forecast?.forecastDate,
             delayedTaskCount,
             averageDelayDays,
             maxDelayDays,
         }
-    }
-
-    /**
-     * 指定タスクに対する完了予測日を計算
-     */
-    private _calculateCompletionForecastForTasks(
-        tasks: TaskRow[],
-        spi: number | undefined
-    ): Date | undefined {
-        if (!spi || spi <= 0) return undefined
-
-        const bac = sumWorkload(tasks)
-        const totalEv = sumEVs(tasks)
-        if (bac === undefined || totalEv === undefined) return undefined
-        const remainingWork = bac - totalEv
-
-        if (remainingWork <= 0) {
-            return new Date(this._baseDate)
-        }
-
-        // 簡易的な完了予測日計算（日あたりPV = 1 と仮定）
-        const etcPrime = remainingWork / spi
-        const forecastDate = new Date(this._baseDate)
-        let daysAdded = 0
-        let workDaysAdded = 0
-
-        while (workDaysAdded < etcPrime && daysAdded < 730) {
-            forecastDate.setDate(forecastDate.getDate() + 1)
-            daysAdded++
-            if (!this.isHoliday(forecastDate)) {
-                workDaysAdded++
-            }
-        }
-
-        if (workDaysAdded < etcPrime) {
-            return undefined
-        }
-
-        return forecastDate
     }
 
     /**
@@ -419,6 +380,21 @@ export class Project {
         const maxDelayDays = delayDays.length > 0 ? Math.max(...delayDays) : 0
 
         return { delayedTaskCount, averageDelayDays, maxDelayDays }
+    }
+
+    /**
+     * 基本統計のみを計算（循環参照回避用）
+     * REQ-REFACTOR-002
+     *
+     * @param tasks リーフタスクの配列
+     * @returns BasicStats
+     */
+    private _calculateBasicStats(tasks: TaskRow[]): BasicStats {
+        return {
+            totalEv: sumEVs(tasks),
+            spi: calculateSPI(tasks, this._baseDate),
+            bac: sumWorkload(tasks),
+        }
     }
 
     /**
@@ -597,46 +573,6 @@ export class Project {
     }
 
     /**
-     * プロジェクト全体のBAC（Budget at Completion）
-     * 全リーフタスクの予定工数の合計
-     *
-     * @returns BAC（人日）。タスクがない場合は0
-     *
-     * @remarks
-     * statisticsByProject.totalWorkloadExcel を再利用
-     */
-    get bac(): number {
-        const stats = this.statisticsByProject[0]
-        return stats?.totalWorkloadExcel ?? 0
-    }
-
-    /**
-     * プロジェクト全体の累積EV
-     * 全リーフタスクのEVの合計
-     *
-     * @returns 累積EV（人日）
-     */
-    get totalEv(): number {
-        const stats = this.statisticsByProject[0]
-        return stats?.totalEv ?? 0
-    }
-
-    /**
-     * プロジェクト全体のETC'（SPI版）
-     * (BAC - 累積EV) / SPI
-     *
-     * @returns ETC'（人日）。SPI=0またはSPI未定義の場合はundefined
-     */
-    get etcPrime(): number | undefined {
-        const stats = this.statisticsByProject[0]
-        const spi = stats?.spi
-        if (spi === undefined || spi === null || spi === 0) return undefined
-
-        const ev = this.totalEv
-        return (this.bac - ev) / spi
-    }
-
-    /**
      * 計画稼働日数を取得
      * プロジェクト開始日から終了日までの、休日を除いた稼働日数
      *
@@ -686,26 +622,56 @@ export class Project {
 
     /**
      * 完了予測を計算
+     * REQ-REFACTOR-002: オーバーロード対応
      *
-     * @param options 予測オプション
-     * @returns 完了予測結果。計算不能な場合はundefined
+     * オーバーロード:
+     * 1. calculateCompletionForecast() - プロジェクト全体
+     * 2. calculateCompletionForecast(options) - フィルタ + 予測オプション
+     * 3. calculateCompletionForecast(tasks, options?) - タスク配列指定
      */
+    calculateCompletionForecast(): CompletionForecast | undefined
     calculateCompletionForecast(
+        options: CompletionForecastOptions & StatisticsOptions
+    ): CompletionForecast | undefined
+    calculateCompletionForecast(
+        tasks: TaskRow[],
         options?: CompletionForecastOptions
+    ): CompletionForecast | undefined
+    calculateCompletionForecast(
+        optionsOrTasks?: (CompletionForecastOptions & StatisticsOptions) | TaskRow[],
+        maybeOptions?: CompletionForecastOptions
     ): CompletionForecast | undefined {
+        // 引数の型を判定してタスクとオプションを解決
+        let tasks: TaskRow[]
+        let options: CompletionForecastOptions | undefined
+
+        if (optionsOrTasks === undefined) {
+            // 引数なし: プロジェクト全体
+            tasks = this._resolveTasks()
+            options = undefined
+        } else if (Array.isArray(optionsOrTasks)) {
+            // TaskRow[] が渡された場合
+            tasks = optionsOrTasks.filter((t) => t.isLeaf)
+            options = maybeOptions
+        } else {
+            // StatisticsOptions & CompletionForecastOptions が渡された場合
+            tasks = this._resolveTasks(optionsOrTasks)
+            options = optionsOrTasks
+        }
+
         const lookbackDays = options?.lookbackDays ?? 7
         const maxForecastDays = options?.maxForecastDays ?? 730
 
-        // SPI を取得
-        const stats = this.statisticsByProject[0]
-        const spi = stats?.spi
+        // 基本統計を計算（循環参照を避けるため _calculateBasicStats を使用）
+        const basicStats = this._calculateBasicStats(tasks)
+        const spi = basicStats.spi
         if (spi === undefined || spi === null || spi === 0) {
             return undefined
         }
 
         // 残作業量を計算
-        const ev = this.totalEv
-        const bac = this.bac
+        const ev = basicStats.totalEv ?? 0
+        const bac = basicStats.bac ?? 0
         const remainingWork = bac - ev
 
         // 完了済みの場合
@@ -966,6 +932,19 @@ export interface CompletionForecastOptions {
     lookbackDays?: number
     /** 計算を打ち切る最大日数（デフォルト: 730 = 2年） */
     maxForecastDays?: number
+}
+
+/**
+ * 基本統計（循環参照回避用）
+ * REQ-REFACTOR-002
+ */
+export interface BasicStats {
+    /** 総EV（出来高） */
+    totalEv: number | undefined
+    /** SPI（スケジュール効率） */
+    spi: number | undefined
+    /** BAC（総工数） */
+    bac: number | undefined
 }
 
 /**

@@ -1,6 +1,6 @@
 # Project 仕様書
 
-**バージョン**: 1.4.0
+**バージョン**: 1.6.1
 **作成日**: 2025-12-16
 **ソースファイル**: `src/domain/Project.ts`
 
@@ -87,9 +87,6 @@
 | `holidayDatas` | `HolidayData[]` | 祝日データ |
 | `length` | `number` | タスク総数（`toTaskRows().length`） |
 | `excludedTasks` | `ExcludedTask[]` | 計算から除外されたタスク一覧 |
-| `bac` | `number` | プロジェクト全体のBAC（Budget at Completion）。全リーフタスクの予定工数合計 |
-| `totalEv` | `number` | プロジェクト全体の累積EV。全リーフタスクのEV合計 |
-| `etcPrime` | `number \| undefined` | ETC'（SPI版）。(BAC - EV) / SPI。SPI=0またはSPI未定義の場合はundefined |
 | `plannedWorkDays` | `number` | 計画稼働日数（開始日〜終了日の稼働日数）。開始日または終了日が未設定の場合は0 |
 
 ### 3.3 内部キャッシュ
@@ -809,19 +806,44 @@ calculateRecentDailyPv(lookbackDays?: number): number
 
 ---
 
-### 5.15 `calculateCompletionForecast(options?: CompletionForecastOptions): CompletionForecast | undefined`
+### 5.15 `calculateCompletionForecast(): CompletionForecast | undefined`
 
 #### 目的
-現在のSPIが続いた場合の完了予測日を計算する。
+現在のSPIが続いた場合の完了予測日を計算する。オーバーロードでフィルタオプション、TaskRow配列を受け付ける。
 
 #### シグネチャ
 ```typescript
-calculateCompletionForecast(options?: CompletionForecastOptions): CompletionForecast | undefined
+// 引数なし: プロジェクト全体
+calculateCompletionForecast(): CompletionForecast | undefined
+
+// オプション指定: フィルタ + 予測オプション
+calculateCompletionForecast(
+  options: CompletionForecastOptions & StatisticsOptions
+): CompletionForecast | undefined
+
+// タスク配列渡し: 任意のタスク配列に対して計算
+calculateCompletionForecast(
+  tasks: TaskRow[],
+  options?: CompletionForecastOptions
+): CompletionForecast | undefined
 ```
 
 #### 型定義
 
 ```typescript
+/**
+ * 基本統計（循環参照回避用）
+ * _calculateBasicStats() の戻り値
+ */
+interface BasicStats {
+  /** 総EV（出来高） */
+  totalEv: number | undefined
+  /** SPI（スケジュール効率） */
+  spi: number | undefined
+  /** BAC（総工数） */
+  bac: number | undefined
+}
+
 interface CompletionForecastOptions {
   /** 手入力の日あたりPV（優先使用） */
   dailyPvOverride?: number
@@ -867,17 +889,27 @@ interface CompletionForecast {
 #### アルゴリズム
 
 ```
-1. SPIを取得（statisticsByProject[0].spi）
-2. SPI=0またはundefinedならundefinedを返す
-3. 残作業量 = BAC - EV
-4. 残作業量 <= 0 の場合、完了済みとして結果を返す
-5. dailyPv = dailyPvOverride ?? calculateRecentDailyPv(lookbackDays)
-6. dailyPv = 0 ならundefinedを返す
-7. dailyBurnRate = dailyPv × SPI
-8. baseDateから稼働日ごとにdailyBurnRateを消化
-9. 残作業量 <= 0 になった日 = 完了予測日
-10. maxForecastDays超過で収束しなければundefined
-11. 信頼性を判定（determineConfidence）
+1. 引数の型を判定:
+   - undefined → 全リーフタスク対象
+   - TaskRow[] → 渡されたタスク対象（リーフのみ抽出）
+   - StatisticsOptions含む → filterTasks() でフィルタ
+
+2. リーフタスクを取得
+   tasks = _resolveTasks(optionsOrTasks)
+
+3. 基本統計を計算（循環参照を避けるため _calculateBasicStats() を使用）
+   { spi, totalEv, bac } = _calculateBasicStats(tasks)
+
+4. SPI=0またはundefinedならundefinedを返す
+5. 残作業量 = BAC - EV
+6. 残作業量 <= 0 の場合、完了済みとして結果を返す
+7. dailyPv = dailyPvOverride ?? calculateRecentDailyPv(lookbackDays)
+8. dailyPv = 0 ならundefinedを返す
+9. dailyBurnRate = dailyPv × SPI
+10. baseDateから稼働日ごとにdailyBurnRateを消化
+11. 残作業量 <= 0 になった日 = 完了予測日
+12. maxForecastDays超過で収束しなければundefined
+13. 信頼性を判定（determineConfidence）
 ```
 
 #### ビジネスルール
@@ -902,6 +934,12 @@ interface CompletionForecast {
 | EQ-CF-008 | 正常系 | SPI=0.8（高信頼性） | confidence='high' |
 | EQ-CF-009 | 正常系 | SPI=0.6（中信頼性） | confidence='medium' |
 | EQ-CF-010 | 正常系 | SPI=0.3（低信頼性） | confidence='low' |
+| EQ-CF-011 | 正常系 | calculateCompletionForecast() 引数なし | プロジェクト全体の予測 |
+| EQ-CF-012 | 正常系 | calculateCompletionForecast({ filter: "認証" }) | フィルタ結果の予測 |
+| EQ-CF-013 | 正常系 | calculateCompletionForecast({ filter: "認証", dailyPvOverride: 2.0 }) | フィルタ + 指定PVで予測 |
+| EQ-CF-014 | 正常系 | calculateCompletionForecast(tasks, {}) | 渡されたタスクの予測 |
+| EQ-CF-015 | 正常系 | calculateCompletionForecast(tasks, { lookbackDays: 14 }) | 渡されたタスク + オプションで予測 |
+| EQ-CF-016 | 境界値 | calculateCompletionForecast({ filter: "存在しない" }) | undefined（フィルタ結果が空） |
 
 ---
 
@@ -1054,23 +1092,7 @@ Scenario: getFullTaskName()と組み合わせて使用可能
   Then  "親/子" が返される
 ```
 
-### 6.7 bac/totalEv/etcPrime テスト
-
-```gherkin
-Scenario: BACは全リーフタスクのworkload合計
-  Given 3つのリーフタスク（workload: 10, 20, 30人日）
-  When  bac を取得する
-  Then  60 が返される
-```
-
-```gherkin
-Scenario: SPI=0の場合etcPrimeはundefined
-  Given SPIが0のプロジェクト
-  When  etcPrime を取得する
-  Then  undefined が返される
-```
-
-### 6.8 calculateCompletionForecast() テスト
+### 6.7 calculateCompletionForecast() テスト
 
 ```gherkin
 Scenario: 基本的な完了予測
@@ -1161,11 +1183,10 @@ Scenario: SPI=0で予測不可
 | isHoliday() | 5件 | 5件 |
 | excludedTasks | 6件 | 6件 |
 | getDelayedTasks() | 17件 | 17件 |
-| bac/totalEv/etcPrime | 9件 | 9件 |
 | plannedWorkDays | 3件 | 3件 |
 | calculateRecentDailyPv() | 4件 | 4件 |
-| calculateCompletionForecast() | 11件 | 11件 |
-| **合計** | **95件** | **95件** |
+| calculateCompletionForecast() | 17件 | 17件 |
+| **合計** | **92件** | **92件** |
 
 ---
 
@@ -1202,6 +1223,20 @@ Scenario: SPI=0で予測不可
 | REQ-FILTER-STATS-001 AC-08 | getStatistics()を引数なしで呼び出すとプロジェクト全体の統計を返す | TC-10, TC-32 | ✅ PASS |
 | REQ-FILTER-STATS-001 AC-09 | filterTasks({ filter })でフィルタ結果のTaskRow[]（親含む）取得 | TC-04, TC-08 | ✅ PASS |
 | REQ-FILTER-STATS-001 AC-10 | getStatistics(filteredTasks)で渡されたTaskRow[]に対する統計取得 | TC-12, TC-30 | ✅ PASS |
+| REQ-REFACTOR-001 AC-01 | `bac` プロパティが削除されていること | TC-01 | ✅ PASS |
+| REQ-REFACTOR-001 AC-02 | `totalEv` プロパティが削除されていること | TC-02 | ✅ PASS |
+| REQ-REFACTOR-001 AC-03 | `etcPrime` プロパティが削除されていること | TC-03 | ✅ PASS |
+| REQ-REFACTOR-001 AC-04 | `statisticsByProject` が正常に動作すること | TC-04〜TC-06 | ✅ PASS |
+| REQ-REFACTOR-001 AC-05 | 既存テストが全てPASSすること | TC-08 | ✅ PASS (203件) |
+| REQ-REFACTOR-001 AC-06 | 仕様書が更新されていること | ドキュメント確認 | ✅ PASS |
+| REQ-REFACTOR-002 AC-01 | `_calculateBasicStats()` が spi, totalEv, bac を正しく計算すること | TC-01〜TC-03 | ✅ PASS |
+| REQ-REFACTOR-002 AC-02 | `calculateCompletionForecast()` がフィルタ対応していること | TC-05, TC-06 | ✅ PASS |
+| REQ-REFACTOR-002 AC-03 | `calculateCompletionForecast(tasks, options)` が動作すること | TC-07, TC-08 | ✅ PASS |
+| REQ-REFACTOR-002 AC-04 | `getStatistics()` の `completionForecast` が従来と同じ結果を返すこと | TC-09, TC-12 | ✅ PASS |
+| REQ-REFACTOR-002 AC-05 | `getStatistics()` の `etcPrime` が従来と同じ結果を返すこと | TC-10, TC-12 | ✅ PASS |
+| REQ-REFACTOR-002 AC-06 | `_calculateCompletionForecastForTasks()` が削除されていること | TC-13 | ✅ PASS |
+| REQ-REFACTOR-002 AC-07 | 高性能版呼び出し時に簡易版の計算が走らないこと | TC-14 | ✅ PASS |
+| REQ-REFACTOR-002 AC-08 | 既存テストが全てPASSすること | TC-20 | ✅ PASS (221件) |
 
 > **ステータス凡例**:
 > - ⏳: 未実装
@@ -1218,7 +1253,7 @@ Scenario: SPI=0で予測不可
 |---------|------|---------|
 | `src/domain/__tests__/Project.test.ts` | 単体テスト | 51件 |
 | `src/domain/__tests__/Project.delayedTasks.test.ts` | getDelayedTasks()テスト | 17件 |
-| `src/domain/__tests__/Project.completionForecast.test.ts` | 完了予測機能テスト | 27件 |
+| `src/domain/__tests__/Project.completionForecast.test.ts` | 完了予測機能テスト（REQ-REFACTOR-002 含む） | 45件 |
 | `src/domain/__tests__/Project.filterStatistics.test.ts` | タスクフィルタリング・統計テスト | 30件 |
 
 ### 11.2 テストフィクスチャ
@@ -1228,9 +1263,9 @@ Scenario: SPI=0で予測不可
 ### 11.3 テスト実行結果
 
 ```
-実行日: 2026-01-23
-Test Suites: 3 passed, 3 total
-Tests:       95 passed, 95 total
+実行日: 2026-01-26
+Test Suites: 8 passed, 8 total
+Tests:       221 passed, 221 total
 ```
 
 ---
@@ -1244,6 +1279,36 @@ Tests:       95 passed, 95 total
 | pvByNameの例外 | Errorをthrow | Result型またはOption型で表現 |
 | キャッシュ無効化なし | 生成後の変更想定なし | 明示的にimmutableを表明（readonly） |
 
+### 12.1 設計方針: Statistics と CompletionForecast の役割分担
+
+**Issue #145 で整理**
+
+#### 概要
+
+| 型 | 役割 | SPI | 備考 |
+|----|------|-----|------|
+| `Statistics` | 従来のEVM指標（累積ベース） | 累積SPI | そのまま使える値 |
+| `CompletionForecast` | 予測計算（直近トレンドベース） | 直近N日SPI（※） | 計算コンテキスト込み |
+
+※ 現状は累積SPIを使用。将来的に直近N日SPIに変更予定。
+
+#### 詳細
+
+| 指標 | 使用するSPI | 使用するdailyPv | 備考 |
+|------|------------|-----------------|------|
+| `Statistics.spi` | 累積SPI | - | 従来のEVM指標 |
+| `Statistics.etcPrime` | 累積SPI | - | `remainingWork / 累積SPI` |
+| `CompletionForecast.etcPrime` | 累積SPI（※） | - | `remainingWork / usedSpi` |
+| `CompletionForecast.forecastDate` | 累積SPI（※） | 直近7日平均PV | `dailyPv × SPI` で消化 |
+
+※ 将来的に `spiLookbackDays` オプションで直近N日SPIを使用可能にする拡張を検討
+
+#### 設計意図
+
+1. **Statistics は累積値で統一**: 従来のEVM指標として一貫性を保つ。`spi` と `etcPrime` が同じ累積SPIベース
+2. **CompletionForecast は予測に特化**: 「今のペースが続いたら」という予測のため、直近トレンドを反映
+3. **etcPrime は Statistics に直接載せない検討もあった**: コンテキスト（usedSpi）と一緒に使うべき値だが、現状は累積SPIで統一されているため Statistics にも含める
+
 ---
 
 ## 13. 変更履歴
@@ -1256,3 +1321,6 @@ Tests:       95 passed, 95 total
 | 1.2.0 | 2026-01-23 | getDelayedTasks()メソッド追加（遅延タスク抽出機能） | REQ-DELAY-001 |
 | 1.3.0 | 2026-01-23 | 完了予測機能追加（bac, totalEv, etcPrime, plannedWorkDays, calculateRecentDailyPv, calculateCompletionForecast） | REQ-EVM-001 |
 | 1.4.0 | 2026-01-25 | タスクフィルタリング・統計機能追加（filterTasks, getStatistics, getStatisticsByName）、Statistics型に拡張プロパティ追加（etcPrime, completionForecast, 遅延情報）、既存getter（statisticsByProject, statisticsByName）を新メソッドに委譲するリファクタリング | REQ-FILTER-STATS-001 |
+| 1.5.0 | 2026-01-26 | 重複アクセサ（bac, totalEv, etcPrime）を削除。統計情報は `statisticsByProject` / `getStatistics()` に集約 | REQ-REFACTOR-001 |
+| 1.6.0 | 2026-01-26 | 完了予測機能を高性能版に統一。`calculateCompletionForecast()` にオーバーロード追加（フィルタ対応、タスク配列渡し対応）。`_calculateBasicStats()` 内部メソッド追加（循環参照回避）。`_calculateCompletionForecastForTasks()` 削除 | REQ-REFACTOR-002 |
+| 1.6.1 | 2026-01-26 | `_calculateExtendedStats()` の `dailyPvOverride: 1.0` を削除（REQ-EVM-001 AC-03準拠）。設計方針セクション追加（Statistics と CompletionForecast の役割分担） | Issue #145 |
