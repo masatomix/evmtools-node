@@ -5,6 +5,32 @@
 フォーマットは [Keep a Changelog](https://keepachangelog.com/ja/1.0.0/) に基づき、
 [セマンティックバージョニング](https://semver.org/lang/ja/) に準拠しています。
 
+## [0.0.26]
+
+### 追加
+- **直近N日SPI計算機能**: 期間指定でのSPI算出 (#139)
+  - `ProjectService.calculateRecentSpi()`: 複数Projectから期間SPIを計算
+  - `RecentSpiOptions`: フィルタ条件と警告閾値のオプション
+  - 要件定義: `docs/specs/requirements/REQ-SPI-001.md`
+  - 詳細仕様: `docs/specs/domain/features/ProjectService.calculateRecentSpi.spec.md`
+- **EVM進捗管理ガイド**: 実践的なEVM運用ドキュメント (#137)
+  - `docs/guides/evm-management-guide.md`: EVM指標の解説と運用ガイド
+  - サンプルスクリプト: `scripts/evm-sample.ts`
+
+### 改善
+- **完了予測機能リファクタリング**: 高性能版に統一 (#140)
+  - `Project.completionForecast`と`Project.completionForecastWithFullTaskName`を高性能版に統一
+  - 重複計算の排除によるパフォーマンス改善
+  - 要件定義: `docs/specs/requirements/REQ-REFACTOR-002.md`
+- **重複アクセサ削除**: コード品質改善 (#142)
+  - `bac`, `totalEv`, `etcPrime`の重複アクセサを削除
+  - 要件定義: `docs/specs/requirements/REQ-REFACTOR-001.md`
+
+### 修正
+- **Statistics.completionForecast**: 直近N日平均PVを使用するよう修正 (#145)
+  - dailyPvOverride=1.0 のバグを修正
+  - 仕様変更: Statistics使用時は常に直近N日平均PVで完了予測を計算
+
 ## [0.0.25]
 
 ### 追加
