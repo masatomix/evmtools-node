@@ -1,7 +1,8 @@
 # ProjectService 仕様書
 
-**バージョン**: 1.0.0
+**バージョン**: 1.1.0
 **作成日**: 2025-12-16
+**更新日**: 2026-01-27
 **ソースファイル**: `src/domain/ProjectService.ts`
 
 ---
@@ -27,6 +28,8 @@
 | 担当者差分 | `AssigneeDiff` | タスク差分を担当者別に集約した結果 |
 | 差分タイプ | `DiffType` | 'modified' / 'added' / 'removed' / 'none' |
 | プロジェクト統計 | `ProjectStatistics` | 基準日ごとのプロジェクト統計情報 |
+| 期間SPI | `RecentSpi` | 複数Projectスナップショットの累積SPIの平均 |
+| 期間SPIオプション | `RecentSpiOptions` | 期間SPI計算のオプション（フィルタ、警告閾値） |
 
 ### 1.3 境界づけられたコンテキスト（所属ドメイン）
 
@@ -40,6 +43,7 @@
 │  │  calculateTaskDiffs(): (now, prev) → TaskDiff[]      │   │
 │  │  calculateProjectDiffs(): TaskDiff[] → ProjectDiff[] │   │
 │  │  calculateAssigneeDiffs(): TaskDiff[] → AssigneeDiff[]│   │
+│  │  calculateRecentSpi(): Project[] → 期間SPI           │   │
 │  │  mergeProjectStatistics(): マージ処理                 │   │
 │  │  fillMissingDates(): 欠落日補間                       │   │
 │  └─────────────────────────────────────────────────────┘   │
@@ -125,6 +129,24 @@ type DiffType = 'modified' | 'added' | 'removed' | 'none'
 | `hasDiff` | `boolean` | 差分があるか |
 | `finished` | `boolean` | 全て完了か |
 | `assignee` | `string?` | 担当者（AssigneeDiffのみ） |
+
+#### RecentSpiOptions
+
+```typescript
+interface RecentSpiOptions extends TaskFilterOptions {
+  /**
+   * 期間警告の閾値（日数）
+   * この日数を超えると警告ログを出力
+   * @default 30
+   */
+  warnThresholdDays?: number
+}
+```
+
+| プロパティ | 型 | 説明 |
+|-----------|-----|------|
+| `filter` | `string?` | タスク名フィルタ（TaskFilterOptionsから継承） |
+| `warnThresholdDays` | `number?` | 期間警告の閾値（デフォルト: 30日） |
 
 ---
 
@@ -340,6 +362,75 @@ fillMissingDates(projectStatisticsArray: ProjectStatistics[]): ProjectStatistics
 
 ---
 
+### 5.6 `calculateRecentSpi(projects: Project[], options?: RecentSpiOptions): number | undefined`
+
+#### 目的
+複数のProjectスナップショットから期間SPI（直近N日間のSPI）を計算する
+
+#### シグネチャ
+```typescript
+calculateRecentSpi(projects: Project[], options?: RecentSpiOptions): number | undefined
+```
+
+#### 事前条件
+
+該当なし（空配列も許容）
+
+#### 事後条件
+
+| ID | 条件 |
+|----|------|
+| POST-RS-01 | 空配列の場合はundefinedを返す |
+| POST-RS-02 | 全ProjectのSPIがundefinedの場合はundefinedを返す |
+| POST-RS-03 | 有効なSPIの平均を返す |
+| POST-RS-04 | 期間が閾値を超えた場合は警告ログを出力（計算は続行） |
+
+#### アルゴリズム
+
+```
+1. projects.length === 0 → return undefined
+2. _warnIfPeriodTooLong(projects, threshold)
+3. spis = projects.map(p => p.getStatistics(options).spi).filter(defined)
+4. spis.length === 0 → return undefined
+5. return average(spis)
+```
+
+#### 内部メソッド: `_warnIfPeriodTooLong(projects, thresholdDays)`
+
+```
+1. projects.length < 2 → return（チェック不要）
+2. baseDateでソートして最古・最新を取得
+3. 日数差 = (newest - oldest) / (1000 * 60 * 60 * 24)
+4. 日数差 > threshold → logger.warn()
+```
+
+#### ビジネスルール
+
+| ID | ルール | 説明 |
+|----|--------|------|
+| BR-RS-01 | 常に平均を返す | 1点でも2点でもN点でも同じロジック |
+| BR-RS-02 | undefinedは除外して平均 | 一部がundefinedでも有効な値で計算 |
+| BR-RS-03 | 警告は計算を中断しない | 長期間でも計算は成功する |
+
+#### 同値クラス・境界値
+
+| ID | 分類 | 入力条件 | 期待結果 |
+|----|------|----------|----------|
+| EQ-RS-001 | 正常系 | 1点渡し (SPI=0.8) | 0.8 |
+| EQ-RS-002 | 正常系 | 2点渡し (SPI=0.8, 1.0) | 0.9 |
+| EQ-RS-003 | 正常系 | N点渡し (SPI=0.8, 0.9, 1.0) | 0.9 |
+| EQ-RS-004 | 正常系 | フィルタ付き | フィルタ結果のSPI平均 |
+| EQ-RS-005 | 境界値 | 空配列 | undefined |
+| EQ-RS-006 | 境界値 | 全SPIがundefined | undefined |
+| EQ-RS-007 | 境界値 | 一部SPIがundefined | 有効なSPIのみで平均 |
+| EQ-RS-008 | 境界値 | SPI=0のProject | 0も有効な値として計算 |
+| EQ-RS-009 | 警告 | 期間30日以内 | 警告なし |
+| EQ-RS-010 | 警告 | 期間30日超 | 警告あり、計算成功 |
+| EQ-RS-011 | 警告 | 閾値カスタム | 指定閾値で警告判定 |
+| EQ-RS-012 | 警告 | 1点のみ | 警告チェック対象外 |
+
+---
+
 ## 6. テストシナリオ（Given-When-Then形式）
 
 ### 6.1 calculateTaskDiffs
@@ -395,6 +486,36 @@ Scenario: 欠落している日付を前日データで補間する
   And   06/10, 06/11のpvは10（06/09のデータで補間）
 ```
 
+### 6.4 calculateRecentSpi
+
+```gherkin
+Scenario: 1点渡しでそのProjectの累積SPIを返す
+  Given project (SPI=0.8)
+  When  calculateRecentSpi([project])を呼び出す
+  Then  0.8が返される
+
+Scenario: 2点渡しで2つの累積SPIの平均を返す
+  Given p1 (SPI=0.8), p2 (SPI=1.0)
+  When  calculateRecentSpi([p1, p2])を呼び出す
+  Then  0.9が返される（(0.8+1.0)/2）
+
+Scenario: フィルタ付きでフィルタ結果のSPI平均を返す
+  Given p1, p2（各3タスク、うち2タスクが"認証"に該当）
+  When  calculateRecentSpi([p1, p2], { filter: '認証' })を呼び出す
+  Then  "認証"タスクのみのSPI平均が返される
+
+Scenario: 空配列でundefinedを返す
+  Given 空配列
+  When  calculateRecentSpi([])を呼び出す
+  Then  undefinedが返される
+
+Scenario: 期間30日超で警告が出るが計算は成功する
+  Given p1 (baseDate=06/01), p2 (baseDate=07/16) // 45日差
+  When  calculateRecentSpi([p1, p2])を呼び出す
+  Then  logger.warn()が呼ばれる
+  And   正しいSPI平均が返される
+```
+
 ---
 
 ## 7. 外部依存
@@ -438,15 +559,31 @@ Scenario: 欠落している日付を前日データで補間する
 | calculateTaskDiffs | 5件 | 5件 |
 | calculateProjectDiffs | 2件 | 2件 |
 | calculateAssigneeDiffs | 2件 | 2件 |
+| calculateRecentSpi | 12件 | 12件 |
 | mergeProjectStatistics | 3件 | 3件 |
 | fillMissingDates | 3件 | 3件 |
-| **合計** | **15件** | **15件** |
+| **合計** | **27件** | **27件** |
 
 ---
 
 ## 10. 要件トレーサビリティ
 
 > **重要**: このセクションは必須です。grepで検索可能な形式で記載すること。
+
+### 10.1 calculateRecentSpi (REQ-SPI-001)
+
+| 要件ID | 受け入れ基準 | 対応テストケース | 結果 |
+|--------|-------------|-----------------|------|
+| REQ-SPI-001 AC-01 | メソッドが追加されている | TC-01〜TC-04 | ✅ PASS |
+| REQ-SPI-001 AC-02 | 累積SPIの平均を返す | TC-01, TC-02, TC-03 | ✅ PASS |
+| REQ-SPI-001 AC-03 | 1点渡しで累積SPIを返す | TC-01 | ✅ PASS |
+| REQ-SPI-001 AC-04 | フィルタ条件を指定できる | TC-04 | ✅ PASS |
+| REQ-SPI-001 AC-05 | 全SPIがundefinedならundefined | TC-05, TC-06 | ✅ PASS |
+| REQ-SPI-001 AC-06 | 期間超過で警告、計算続行 | TC-09, TC-10, TC-11 | ✅ PASS |
+| REQ-SPI-001 AC-07 | 既存テストに影響なし | 全235件PASS | ✅ PASS |
+| REQ-SPI-001 AC-08 | 単体テストが全てPASS | TC-01〜TC-12 | ✅ PASS |
+
+### 10.2 その他のメソッド
 
 該当なし（基盤サービスのため特定の要件に紐づかない）
 
@@ -458,7 +595,8 @@ Scenario: 欠落している日付を前日データで補間する
 
 | ファイル | 説明 | テスト数 |
 |---------|------|---------|
-| `src/domain/__tests__/ProjectService.test.ts` | 単体テスト | 15件 |
+| `src/domain/__tests__/ProjectService.test.ts` | 差分計算・マージ等の単体テスト | 15件 |
+| `src/domain/__tests__/ProjectService.recent-spi.test.ts` | calculateRecentSpi単体テスト | 12件 |
 
 ### 11.2 テストフィクスチャ
 
@@ -467,9 +605,9 @@ Scenario: 欠落している日付を前日データで補間する
 ### 11.3 テスト実行結果
 
 ```
-実行日: 2025-12-16
-Test Suites: 1 passed, 1 total
-Tests:       15 passed, 15 total
+実行日: 2026-01-27
+Test Suites: 2 passed, 2 total
+Tests:       27 passed, 27 total
 ```
 
 ---
@@ -485,3 +623,4 @@ Tests:       15 passed, 15 total
 | バージョン | 日付 | 変更内容 | 要件ID |
 |-----------|------|---------|--------|
 | 1.0.0 | 2025-12-16 | 初版作成 | - |
+| 1.1.0 | 2026-01-27 | calculateRecentSpi()メソッド追加 | REQ-SPI-001 |
