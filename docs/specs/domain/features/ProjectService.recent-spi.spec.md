@@ -200,14 +200,14 @@ calculateRecentSpi(projects, options)
 
 | 要件ID | 受け入れ基準 | 対応テストケース | 結果 |
 |--------|-------------|-----------------|------|
-| REQ-SPI-001 AC-01 | メソッドが追加されている | TC-01〜TC-04 | ⏳ |
-| REQ-SPI-001 AC-02 | 累積SPIの平均を返す | TC-01, TC-02, TC-03 | ⏳ |
-| REQ-SPI-001 AC-03 | 1点渡しで累積SPIを返す | TC-01 | ⏳ |
-| REQ-SPI-001 AC-04 | フィルタ条件を指定できる | TC-04 | ⏳ |
-| REQ-SPI-001 AC-05 | 全SPIがundefinedならundefined | TC-05, TC-06 | ⏳ |
-| REQ-SPI-001 AC-06 | 期間超過で警告、計算続行 | TC-09, TC-10, TC-11 | ⏳ |
-| REQ-SPI-001 AC-07 | 既存テストに影響なし | TC-13 | ⏳ |
-| REQ-SPI-001 AC-08 | 単体テストが全てPASS | TC-01〜TC-13 | ⏳ |
+| REQ-SPI-001 AC-01 | メソッドが追加されている | TC-01〜TC-04 | ✅ PASS |
+| REQ-SPI-001 AC-02 | 累積SPIの平均を返す | TC-01, TC-02, TC-03 | ✅ PASS |
+| REQ-SPI-001 AC-03 | 1点渡しで累積SPIを返す | TC-01 | ✅ PASS |
+| REQ-SPI-001 AC-04 | フィルタ条件を指定できる | TC-04 | ✅ PASS |
+| REQ-SPI-001 AC-05 | 全SPIがundefinedならundefined | TC-05, TC-06 | ✅ PASS |
+| REQ-SPI-001 AC-06 | 期間超過で警告、計算続行 | TC-09, TC-10, TC-11 | ✅ PASS |
+| REQ-SPI-001 AC-07 | 既存テストに影響なし | 全235件PASS | ✅ PASS |
+| REQ-SPI-001 AC-08 | 単体テストが全てPASS | TC-01〜TC-12 | ✅ PASS |
 
 ---
 
@@ -278,3 +278,4 @@ const spi = service.calculateRecentSpi(
 | バージョン | 日付 | 変更内容 | 担当 |
 |-----------|------|---------|------|
 | 1.0.0 | 2026-01-27 | 初版作成 | Claude Code |
+| 1.1.0 | 2026-01-27 | 実装完了、要件トレーサビリティ更新 | Claude Code |
