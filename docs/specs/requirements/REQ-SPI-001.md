@@ -52,34 +52,27 @@
 
 #### FR-01: 複数Projectからの期間SPI計算
 
-**入力**: Project配列（古い順）+ オプションのフィルタ条件
+**入力**: Project配列 + オプションのフィルタ条件
 **出力**: 期間SPI（number | undefined）
+**計算方法**: 渡されたProjectの累積SPIの平均
 
-| 渡す数 | 計算方法 | 説明 |
-|:------:|---------|------|
-| 1点 | 累積SPI | `project.getStatistics(filter).spi` |
-| 2点 | 期間SPI | `deltaEV / deltaPV` |
-| N点 | 各点SPIの平均 | `average(spi_0, spi_1, ..., spi_N)` |
+```
+各ProjectのSPIを取得: spi_0, spi_1, ..., spi_N
+期間SPI = average(spi_0, spi_1, ..., spi_N)
+```
+
+| 渡す数 | 結果 |
+|:------:|------|
+| 1点 | 1つの平均 = そのProject の累積SPI |
+| 2点 | 2つの累積SPI の平均 |
+| N点 | N個の累積SPI の平均 |
+
+**場合分け不要。常に平均。**
 
 #### FR-02: フィルタ対応
 
 - 各Projectに対してフィルタを適用し、対象タスクの統計を取得
 - フィルタなしの場合はプロジェクト全体を対象
-
-#### FR-03: 2点間の期間SPI計算
-
-```
-deltaPV = stats_new.totalPvCalculated - stats_old.totalPvCalculated
-deltaEV = stats_new.totalEv - stats_old.totalEv
-期間SPI = deltaEV / deltaPV
-```
-
-#### FR-04: N点の平均SPI計算
-
-```
-各Projectの累積SPIを取得: spi_0, spi_1, ..., spi_N
-期間SPI = average(spi_0, spi_1, ..., spi_N)
-```
 
 ### 3.2 スコープ外
 
@@ -105,95 +98,78 @@ deltaEV = stats_new.totalEv - stats_old.totalEv
 
 | AC-ID | 受け入れ基準 |
 |-------|-------------|
-| AC-01 | `calculateRecentSpi(projects, filter?)` 関数が追加されている |
-| AC-02 | 1点渡し: その Project の累積SPI を返す |
-| AC-03 | 2点渡し: deltaEV / deltaPV で期間SPI を計算する |
-| AC-04 | N点渡し: 各点の累積SPI の平均を返す |
-| AC-05 | フィルタ条件を指定できる |
-| AC-06 | deltaPV = 0 の場合、undefined を返す |
-| AC-07 | 既存の累積SPI計算に影響がない（既存テストが全てPASS） |
-| AC-08 | 単体テストが実装され、全てPASSしている |
+| AC-01 | `ProjectService.calculateRecentSpi(projects, filter?)` メソッドが追加されている |
+| AC-02 | 渡されたProject群の累積SPIの平均を返す |
+| AC-03 | 1点渡し: そのProjectの累積SPIを返す（1つの平均 = そのまま） |
+| AC-04 | フィルタ条件を指定できる |
+| AC-05 | 全ProjectのSPIがundefinedの場合、undefinedを返す |
+| AC-06 | 既存の累積SPI計算に影響がない（既存テストが全てPASS） |
+| AC-07 | 単体テストが実装され、全てPASSしている |
 
 ---
 
 ## 6. インターフェース設計（案）
 
-### 6.1 関数シグネチャ
+### 6.1 配置場所
+
+**ProjectService** に追加（既存の `getDifference()` と同じ場所）
+
+### 6.2 メソッドシグネチャ
 
 ```typescript
-/**
- * 複数のProjectスナップショットから期間SPIを計算する
- *
- * @param projects Project配列（古い順に並べる）
- * @param filter フィルタ条件（省略可）
- * @returns 期間SPI。計算不能な場合はundefined
- *
- * @example
- * // 1点: 累積SPI
- * calculateRecentSpi([projectNow])
- *
- * // 2点: 期間SPI（deltaEV / deltaPV）
- * calculateRecentSpi([project7DaysAgo, projectNow])
- *
- * // N点: 各点SPIの平均
- * calculateRecentSpi([day7, day6, day5, day4, day3, day2, day1, now])
- *
- * // フィルタ付き
- * calculateRecentSpi([prev, now], { filter: "認証機能" })
- */
-function calculateRecentSpi(
-  projects: Project[],
-  filter?: TaskFilterOptions
-): number | undefined
+class ProjectService {
+  // 既存メソッド...
+  getDifference(prev: Project, now: Project): TaskDiff[]
+
+  /**
+   * 複数のProjectスナップショットから期間SPIを計算する
+   * 渡されたProject群の累積SPIの平均を返す
+   *
+   * @param projects Project配列
+   * @param filter フィルタ条件（省略可）
+   * @returns 期間SPI。計算不能な場合はundefined
+   *
+   * @example
+   * // 1点: そのProjectの累積SPI
+   * service.calculateRecentSpi([projectNow])
+   *
+   * // 2点: 2つの累積SPIの平均
+   * service.calculateRecentSpi([project7DaysAgo, projectNow])
+   *
+   * // N点: N個の累積SPIの平均
+   * service.calculateRecentSpi([day7, day6, ..., now])
+   *
+   * // フィルタ付き
+   * service.calculateRecentSpi([prev, now], { filter: "認証機能" })
+   */
+  calculateRecentSpi(
+    projects: Project[],
+    filter?: TaskFilterOptions
+  ): number | undefined
+}
 ```
-
-### 6.2 配置場所
-
-| オプション | 説明 |
-|-----------|------|
-| A. ProjectService | 既存の差分計算と同じ場所 |
-| B. スタンドアロン関数 | `src/domain/calculateRecentSpi.ts` |
-| C. 新サービス | `SpiService` クラス |
-
-**推奨**: A. ProjectService（既存の `getDifference()` と同じ場所）
 
 ### 6.3 計算ロジック（擬似コード）
 
 ```typescript
-function calculateRecentSpi(
+calculateRecentSpi(
   projects: Project[],
   filter?: TaskFilterOptions
 ): number | undefined {
-  if (projects.length === 0) return undefined
-
-  // 1点: 累積SPI
-  if (projects.length === 1) {
-    const stats = projects[0].getStatistics(filter ?? {})
-    return stats.spi
-  }
-
-  // 2点: 期間SPI
-  if (projects.length === 2) {
-    const [older, newer] = projects
-    const statsOld = older.getStatistics(filter ?? {})
-    const statsNew = newer.getStatistics(filter ?? {})
-
-    const deltaPV = (statsNew.totalPvCalculated ?? 0) - (statsOld.totalPvCalculated ?? 0)
-    const deltaEV = (statsNew.totalEv ?? 0) - (statsOld.totalEv ?? 0)
-
-    if (deltaPV === 0) return undefined
-    return deltaEV / deltaPV
-  }
-
-  // N点: 各点SPIの平均
+  // 各ProjectのSPIを取得
   const spis = projects
     .map(p => p.getStatistics(filter ?? {}).spi)
     .filter((spi): spi is number => spi !== undefined)
 
+  // 全てundefinedなら計算不能
   if (spis.length === 0) return undefined
+
+  // 平均を返す
   return spis.reduce((a, b) => a + b, 0) / spis.length
 }
 ```
+
+**シンプル。場合分けなし。**
 
 ---
 
@@ -202,19 +178,20 @@ function calculateRecentSpi(
 ### 7.1 基本的な使い方
 
 ```typescript
-import { ExcelProjectCreator } from 'evmtools-node/infrastructure'
-import { calculateRecentSpi } from 'evmtools-node/domain'
+import { ExcelProjectCreator, ProjectService } from 'evmtools-node/infrastructure'
+
+const service = new ProjectService()
 
 // 各基準日のProjectを作成
 const projectNow = await new ExcelProjectCreator('now.xlsx').createProject()
 const project7DaysAgo = await new ExcelProjectCreator('prev_7days.xlsx').createProject()
 
-// 2点間の期間SPI
-const periodSpi = calculateRecentSpi([project7DaysAgo, projectNow])
-console.log(`直近7日のSPI: ${periodSpi}`)
+// 2点の平均SPI
+const recentSpi = service.calculateRecentSpi([project7DaysAgo, projectNow])
+console.log(`直近7日のSPI: ${recentSpi}`)
 
 // フィルタ付き
-const filteredSpi = calculateRecentSpi(
+const filteredSpi = service.calculateRecentSpi(
   [project7DaysAgo, projectNow],
   { filter: "認証機能" }
 )
@@ -224,7 +201,7 @@ console.log(`認証機能の直近7日SPI: ${filteredSpi}`)
 ### 7.2 毎日のスナップショットがある場合
 
 ```typescript
-// 8日分のProjectを作成（古い順）
+// 8日分のProjectを作成
 const projects = await Promise.all([
   new ExcelProjectCreator('day7.xlsx').createProject(),
   new ExcelProjectCreator('day6.xlsx').createProject(),
@@ -237,14 +214,14 @@ const projects = await Promise.all([
 ])
 
 // 8点の平均SPI（凸凹を踏まえた精緻な値）
-const preciseSpi = calculateRecentSpi(projects)
+const preciseSpi = service.calculateRecentSpi(projects)
 ```
 
 ### 7.3 1点のみの場合（フォールバック）
 
 ```typescript
-// 過去データがない場合は累積SPIを返す
-const spi = calculateRecentSpi([projectNow])
+// 過去データがない場合 → 1つの平均 = そのProjectの累積SPI
+const spi = service.calculateRecentSpi([projectNow])
 // → projectNow.getStatistics().spi と同じ
 ```
 
@@ -267,3 +244,4 @@ const spi = calculateRecentSpi([projectNow])
 |-----------|------|---------|------|
 | 1.0.0 | 2026-01-27 | 初版作成 | Claude Code |
 | 1.1.0 | 2026-01-27 | 設計変更: 複数Project渡しに変更、フィルタ対応追加 | Claude Code |
+| 1.2.0 | 2026-01-27 | 計算方法を「常に平均」に統一（場合分け廃止）、配置場所をProjectServiceに決定 | Claude Code |
