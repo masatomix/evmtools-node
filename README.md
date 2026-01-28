@@ -29,6 +29,13 @@ npm install evmtools-node
 > **注記**: `npm install evmtools-node` せずに直接実行する場合は、`npx -p evmtools-node <command>` の形式で実行できます。
 > 例: `npx -p evmtools-node pbevm-show-project --path ./now.xlsm`
 
+## サンプル集
+
+ライブラリの使い方は [サンプル集](docs/examples/README.md) を参照してください。
+
+- [基本的な使い方](docs/examples/01-basic-usage.md) - Excel読込、タスク一覧、EVM指標
+- [プロジェクト統計](docs/examples/02-project-statistics.md) - BAC/PV/EV/SPI、担当者別統計
+- [完了予測](docs/examples/04-completion-forecast.md) - spiOverride、シナリオ分析
 
 ## コマンド
 
