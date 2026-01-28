@@ -285,6 +285,6 @@ main()
 
 ## 次のステップ
 
-- [CSV インポート](./06-csv-import.md) - CSVファイルからの読み込み
+- [CLI コマンド](./06-cli-commands.md) - コマンドラインからの実行
 - [完了予測](./04-completion-forecast.md) - 直近SPIでの予測
 - [プロジェクト統計](./02-project-statistics.md) - 担当者別統計
