@@ -160,8 +160,9 @@ describe('PbevmShowPvUsecase CLI出力整形', () => {
 
             expect(displayData).toHaveProperty('pvTodayActual')
             expect(displayData.pvTodayActual).toBe(taskRow.pvTodayActual(baseDate))
-            // 実際の値も確認（残工数2.5を残日数3で割った値）
-            expect(displayData.pvTodayActual).toBeCloseTo(2.5 / 3, 5)
+            // 実際の値も確認（残工数2.5を残日数2で割った値）
+            // ※基準日含まない: baseDate=1/8（水）の翌日〜endDate=1/10（金）なので残日数は2（木金）
+            expect(displayData.pvTodayActual).toBeCloseTo(2.5 / 2, 5)
         })
     })
 
@@ -172,8 +173,8 @@ describe('PbevmShowPvUsecase CLI出力整形', () => {
 
             expect(displayData).toHaveProperty('remainingDays')
             expect(displayData.remainingDays).toBe(taskRow.remainingDays(baseDate))
-            // baseDate=1/8（水）、endDate=1/10（金）なので残日数は3（水木金）
-            expect(displayData.remainingDays).toBe(3)
+            // baseDate=1/8（水）の翌日〜endDate=1/10（金）なので残日数は2（木金）※基準日含まない
+            expect(displayData.remainingDays).toBe(2)
         })
     })
 })
