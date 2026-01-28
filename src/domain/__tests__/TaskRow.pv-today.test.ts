@@ -102,12 +102,12 @@ describe('TaskRow pv-today feature (REQ-PV-TODAY-001)', () => {
                 scheduledWorkDays: 5,
             })
 
-            // 基準日=2025-06-11(水) → 残り3日(水,木,金)
+            // 基準日=2025-06-11(水) → 残り2日(木,金) ※基準日含まない
             const baseDate = new Date('2025-06-11')
-            expect(task.remainingDays(baseDate)).toBe(3)
+            expect(task.remainingDays(baseDate)).toBe(2)
         })
 
-        it('TC-02: 基準日がタスク開始日の場合、全稼働日数を返す', () => {
+        it('TC-02: 基準日がタスク開始日の場合、翌日以降の稼働日数を返す', () => {
             const startDate = new Date('2025-06-09')
             const endDate = new Date('2025-06-13')
             const plotMap = createPlotMap(startDate, endDate)
@@ -120,12 +120,12 @@ describe('TaskRow pv-today feature (REQ-PV-TODAY-001)', () => {
                 scheduledWorkDays: 5,
             })
 
-            // 基準日=開始日 → 残り5日
+            // 基準日=開始日 → 残り4日(火,水,木,金) ※基準日含まない
             const baseDate = new Date('2025-06-09')
-            expect(task.remainingDays(baseDate)).toBe(5)
+            expect(task.remainingDays(baseDate)).toBe(4)
         })
 
-        it('TC-03: 基準日がタスク終了日の場合、1日を返す', () => {
+        it('TC-03: 基準日がタスク終了日の場合、0を返す', () => {
             const startDate = new Date('2025-06-09')
             const endDate = new Date('2025-06-13')
             const plotMap = createPlotMap(startDate, endDate)
@@ -138,9 +138,9 @@ describe('TaskRow pv-today feature (REQ-PV-TODAY-001)', () => {
                 scheduledWorkDays: 5,
             })
 
-            // 基準日=終了日 → 残り1日
+            // 基準日=終了日 → 残り0日（残日数なし）※基準日含まない
             const baseDate = new Date('2025-06-13')
-            expect(task.remainingDays(baseDate)).toBe(1)
+            expect(task.remainingDays(baseDate)).toBe(0)
         })
 
         it('TC-04: 土日を含む期間でも稼働日のみカウントする', () => {
@@ -157,9 +157,9 @@ describe('TaskRow pv-today feature (REQ-PV-TODAY-001)', () => {
                 scheduledWorkDays: 7,
             })
 
-            // 基準日=2025-06-12(木) → 残り4日(木,金,月,火)
+            // 基準日=2025-06-12(木) → 残り3日(金,月,火) ※基準日含まない
             const baseDate = new Date('2025-06-12')
-            expect(task.remainingDays(baseDate)).toBe(4)
+            expect(task.remainingDays(baseDate)).toBe(3)
         })
     })
 
@@ -203,7 +203,7 @@ describe('TaskRow pv-today feature (REQ-PV-TODAY-001)', () => {
             expect(task.remainingDays(baseDate)).toBe(0)
         })
 
-        it('TC-07: 残日数が1日の場合', () => {
+        it('TC-07: 基準日が終了日の場合は0を返す', () => {
             const startDate = new Date('2025-06-09')
             const endDate = new Date('2025-06-13')
             const plotMap = createPlotMap(startDate, endDate)
@@ -216,9 +216,9 @@ describe('TaskRow pv-today feature (REQ-PV-TODAY-001)', () => {
                 scheduledWorkDays: 5,
             })
 
-            // 基準日=終了日
+            // 基準日=終了日 → 残り0日（残日数なし）※基準日含まない
             const baseDate = new Date('2025-06-13')
-            expect(task.remainingDays(baseDate)).toBe(1)
+            expect(task.remainingDays(baseDate)).toBe(0)
         })
     })
 
@@ -289,18 +289,18 @@ describe('TaskRow pv-today feature (REQ-PV-TODAY-001)', () => {
                 progressRate: 0.6,
             })
 
-            // 基準日=終了日（残1日）
-            const baseDate = new Date('2025-06-11')
+            // 基準日=2日目（残1日=水のみ）※基準日含まない
+            const baseDate = new Date('2025-06-10')
             expect(task.pvTodayActual(baseDate)).toBeCloseTo(1.0, 5)
         })
 
         it('TC-12: 前倒しタスク（実行PV < 計画PV）', () => {
-            // 工数2.5, 3日予定, 進捗60%, 残2日
-            // 計画PV = 2.5 / 3 = 0.833
+            // 工数2.5, 5日予定, 進捗60%, 残2日
+            // 計画PV = 2.5 / 5 = 0.5
             // 残工数 = 2.5 × 0.4 = 1.0
             // 実行PV = 1.0 / 2 = 0.5
             const startDate = new Date('2025-06-09')
-            const endDate = new Date('2025-06-11')
+            const endDate = new Date('2025-06-13') // 月〜金の5日
             const plotMap = createPlotMap(startDate, endDate)
 
             const task = createTaskRow({
@@ -308,12 +308,12 @@ describe('TaskRow pv-today feature (REQ-PV-TODAY-001)', () => {
                 endDate,
                 plotMap,
                 workload: 2.5,
-                scheduledWorkDays: 3,
+                scheduledWorkDays: 5,
                 progressRate: 0.6,
             })
 
-            // 基準日=2日目（残2日）
-            const baseDate = new Date('2025-06-10')
+            // 基準日=3日目（残2日=木金）※基準日含まない
+            const baseDate = new Date('2025-06-11')
             expect(task.pvTodayActual(baseDate)).toBeCloseTo(0.5, 5)
         })
 
@@ -335,17 +335,17 @@ describe('TaskRow pv-today feature (REQ-PV-TODAY-001)', () => {
                 progressRate: 2 / 3, // 約66.7%
             })
 
-            // 基準日=終了日（残1日）
-            const baseDate = new Date('2025-06-11')
+            // 基準日=2日目（残1日=水のみ）※基準日含まない
+            const baseDate = new Date('2025-06-10')
             expect(task.pvTodayActual(baseDate)).toBeCloseTo(1.0, 5)
         })
 
         it('TC-14: 進捗0%のタスク', () => {
-            // 工数3.0, 3日予定, 進捗0%, 残3日
+            // 工数3.0, 4日予定, 進捗0%, 残3日
             // 残工数 = 3.0 × 1.0 = 3.0
             // 実行PV = 3.0 / 3 = 1.0
             const startDate = new Date('2025-06-09')
-            const endDate = new Date('2025-06-11')
+            const endDate = new Date('2025-06-12') // 月〜木の4日
             const plotMap = createPlotMap(startDate, endDate)
 
             const task = createTaskRow({
@@ -353,11 +353,11 @@ describe('TaskRow pv-today feature (REQ-PV-TODAY-001)', () => {
                 endDate,
                 plotMap,
                 workload: 3.0,
-                scheduledWorkDays: 3,
+                scheduledWorkDays: 4,
                 progressRate: 0,
             })
 
-            // 基準日=開始日（残3日）
+            // 基準日=開始日（残3日=火水木）※基準日含まない
             const baseDate = new Date('2025-06-09')
             expect(task.pvTodayActual(baseDate)).toBeCloseTo(1.0, 5)
         })
@@ -406,7 +406,7 @@ describe('TaskRow pv-today feature (REQ-PV-TODAY-001)', () => {
 
         it('TC-17: progressRateがundefinedの場合は0%として計算する', () => {
             const startDate = new Date('2025-06-09')
-            const endDate = new Date('2025-06-11')
+            const endDate = new Date('2025-06-12') // 月〜木の4日
             const plotMap = createPlotMap(startDate, endDate)
 
             const task = createTaskRow({
@@ -414,13 +414,13 @@ describe('TaskRow pv-today feature (REQ-PV-TODAY-001)', () => {
                 endDate,
                 plotMap,
                 workload: 3.0,
-                scheduledWorkDays: 3,
+                scheduledWorkDays: 4,
                 // progressRate: undefined
             })
 
             // progressRate = 0として計算
             // 残工数 = 3.0 × 1.0 = 3.0
-            // 基準日=開始日 → 残3日
+            // 基準日=開始日 → 残3日（火水木）※基準日含まない
             // 実行PV = 3.0 / 3 = 1.0
             const baseDate = new Date('2025-06-09')
             expect(task.pvTodayActual(baseDate)).toBeCloseTo(1.0, 5)

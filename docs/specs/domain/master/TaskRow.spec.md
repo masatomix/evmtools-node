@@ -1,8 +1,8 @@
 # TaskRow 仕様書
 
-**バージョン**: 1.1.0
+**バージョン**: 1.1.1
 **作成日**: 2025-12-16
-**更新日**: 2026-01-23
+**更新日**: 2026-01-28
 **ソースファイル**: `src/domain/TaskRow.ts`
 
 ---
@@ -494,7 +494,7 @@ static fromNode(node: TaskNode, level: number, parentId?: number): TaskRow
 ### 5.11 `remainingDays(baseDate: Date): number | undefined`
 
 #### 目的
-基準日から終了日までの残日数を計算する
+基準日の翌日から終了日までの残日数を計算する（基準日はExcelデータの「その日終了時点」を表すため、基準日自体は含まない）
 
 #### シグネチャ
 ```typescript
@@ -521,7 +521,8 @@ remainingDays(baseDate: Date): number | undefined
 1. checkStartEndDateAndPlotMapで事前チェック（false→undefined）
 2. タスク期間外チェック（baseDate < startDate または baseDate > endDate → 0）
 3. plotMapの全エントリをループ
-   - serial >= baseSerial かつ serial <= endSerial かつ value === true をカウント
+   - serial > baseSerial かつ serial <= endSerial かつ value === true をカウント
+   - ※基準日自体は含まない（基準日終了時点の解釈）
 4. カウント値を返す
 ```
 
@@ -529,10 +530,10 @@ remainingDays(baseDate: Date): number | undefined
 
 | ID | 分類 | 入力条件 | 期待結果 |
 |----|------|----------|----------|
-| EQ-RD-001 | 正常系 | 5日タスク、基準日=3日目 | 3（3,4,5日目） |
-| EQ-RD-002 | 正常系 | 5日タスク、基準日=開始日 | 5（全日） |
-| EQ-RD-003 | 正常系 | 5日タスク、基準日=終了日 | 1（最終日のみ） |
-| EQ-RD-004 | 正常系 | 土日を含む7日間、稼働5日 | 稼働日のみカウント |
+| EQ-RD-001 | 正常系 | 5日タスク、基準日=3日目 | 2（4,5日目）※基準日含まない |
+| EQ-RD-002 | 正常系 | 5日タスク、基準日=開始日 | 4（2,3,4,5日目）※基準日含まない |
+| EQ-RD-003 | 正常系 | 5日タスク、基準日=終了日 | 0（残日数なし）※基準日含まない |
+| EQ-RD-004 | 正常系 | 土日を含む7日間、稼働5日 | 稼働日のみカウント（基準日除く） |
 | EQ-RD-005 | 境界値 | 基準日 < startDate | 0 |
 | EQ-RD-006 | 境界値 | 基準日 > endDate | 0 |
 | EQ-RD-007 | 異常系 | startDate=undefined | undefined |
@@ -679,12 +680,17 @@ Scenario: 累積PV計算
 Scenario: 基準日がタスク期間中央の場合
   Given 2025-06-09〜2025-06-13の5日間タスク
   When  remainingDays(2025-06-11)を呼び出す
-  Then  3が返される（水,木,金）
+  Then  2が返される（木,金）※基準日含まない
 
 Scenario: 基準日がタスク開始日の場合
   Given 2025-06-09〜2025-06-13の5日間タスク
   When  remainingDays(2025-06-09)を呼び出す
-  Then  5が返される（全稼働日）
+  Then  4が返される（火,水,木,金）※基準日含まない
+
+Scenario: 基準日がタスク終了日の場合
+  Given 2025-06-09〜2025-06-13の5日間タスク
+  When  remainingDays(2025-06-13)を呼び出す
+  Then  0が返される（残日数なし）※基準日含まない
 
 Scenario: 基準日がタスク終了後の場合
   Given 2025-06-09〜2025-06-13の5日間タスク
@@ -697,13 +703,13 @@ Scenario: 基準日がタスク終了後の場合
 ```gherkin
 Scenario: 遅れタスクの実行PV
   Given 工数2.5, 3日予定, 進捗60%のタスク
-  And   基準日=終了日（残1日）
+  And   基準日=2日目（残1日=水のみ）※基準日含まない
   When  pvTodayActual(baseDate)を呼び出す
   Then  1.0が返される（残工数1.0 / 残1日）
 
 Scenario: 前倒しタスクの実行PV
-  Given 工数2.5, 3日予定, 進捗60%のタスク
-  And   基準日=2日目（残2日）
+  Given 工数2.5, 5日予定, 進捗60%のタスク
+  And   基準日=3日目（残2日=木金）※基準日含まない
   When  pvTodayActual(baseDate)を呼び出す
   Then  0.5が返される（残工数1.0 / 残2日）
 
@@ -823,3 +829,4 @@ Tests:       59 passed, 59 total
 |-----------|------|---------|--------|
 | 1.0.0 | 2025-12-16 | 初版作成 | - |
 | 1.1.0 | 2026-01-23 | `remainingDays`, `pvTodayActual` メソッド追加 | REQ-PV-TODAY-001 |
+| 1.1.1 | 2026-01-28 | `remainingDays` 定義修正: 基準日を含まない（基準日終了時点の解釈）#156 | REQ-PV-TODAY-001 |

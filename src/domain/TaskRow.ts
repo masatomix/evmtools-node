@@ -276,8 +276,9 @@ export class TaskRow {
     }
 
     /**
-     * 基準日から終了日までの残日数を計算する。
+     * 基準日の翌日から終了日までの残日数を計算する。
      * plotMapでプロットされている日のみカウント。
+     * ※基準日はExcelデータの「その日終了時点」を表すため、基準日自体は含まない。
      *
      * @param baseDate 基準日（Project.baseDateを渡す）
      * @returns 残日数。計算不能な場合は undefined
@@ -304,10 +305,11 @@ export class TaskRow {
             return 0
         }
 
-        // 残日数カウント: 基準日〜終了日で plotMap が true の日数
+        // 残日数カウント: 基準日の翌日〜終了日で plotMap が true の日数
+        // ※基準日自体は含まない（基準日終了時点の解釈）
         let count = 0
         for (const [serial, value] of plotMap.entries()) {
-            if (value === true && serial >= baseSerial && serial <= endSerial) {
+            if (value === true && serial > baseSerial && serial <= endSerial) {
                 count++
             }
         }
