@@ -95,7 +95,8 @@ async function example5_evmIndicators() {
     console.log('| id | name | pv | ev | spi |')
     console.log('|----|------|-----|-----|-----|')
 
-    for (const task of tasks.filter((t: TaskRow) => t.pv && t.pv > 0)) {
+    // リーフタスクかつ PV > 0 のタスクのみ表示（親タスクを含めると工数がダブルカウントになる）
+    for (const task of tasks.filter((t: TaskRow) => t.isLeaf && t.pv && t.pv > 0)) {
         const spi = task.spi?.toFixed(2) ?? '-'
         console.log(`| ${task.id} | ${task.name} | ${task.pv} | ${task.ev} | ${spi} |`)
     }

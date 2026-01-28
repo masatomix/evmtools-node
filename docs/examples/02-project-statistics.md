@@ -2,6 +2,8 @@
 
 プロジェクト全体の EVM 指標を取得する方法を説明します。
 
+> **完了予測について**: 完了予測日の計算方法やオプションの詳細は [完了予測](./04-completion-forecast.md) を参照してください。
+
 ## プロジェクト統計を取得する
 
 ### コード例
@@ -44,124 +46,6 @@ main()
 
 ---
 
-## 完了予測を取得する
-
-### コード例
-
-```typescript
-import { ExcelProjectCreator } from 'evmtools-node/infrastructure'
-
-async function main() {
-    const creator = new ExcelProjectCreator('./now.xlsm')
-    const project = await creator.createProject()
-
-    // 完了予測を計算
-    const forecast = project.calculateCompletionForecast()
-
-    if (forecast) {
-        // 遅延日数を計算
-        const scheduledEnd = project.endDate
-        const forecastEnd = forecast.forecastDate
-        const delayDays = scheduledEnd && forecastEnd
-            ? Math.ceil((forecastEnd.getTime() - scheduledEnd.getTime()) / (1000 * 60 * 60 * 24))
-            : undefined
-
-        console.log('| 項目 | 値 |')
-        console.log('|------|-----|')
-        console.log(`| 使用SPI | ${forecast.usedSpi?.toFixed(3)} |`)
-        console.log(`| 残作業量 (BAC - EV) | ${forecast.remainingWork?.toFixed(1)}人日 |`)
-        console.log(`| ETC' | ${forecast.etcPrime?.toFixed(1)}人日 |`)
-        console.log(`| 完了予測日 | ${forecast.forecastDate?.toLocaleDateString('ja-JP')} |`)
-        console.log(`| 予定終了日 | ${project.endDate?.toLocaleDateString('ja-JP')} |`)
-        console.log(`| 遅延日数 | ${delayDays}日 |`)
-        console.log(`| 信頼度 | ${forecast.confidence} |`)
-        console.log(`| 信頼度理由 | ${forecast.confidenceReason} |`)
-    }
-}
-
-main()
-```
-
-### 出力例
-
-```
-基準日: 2025/7/25
-
-| 項目 | 値 |
-|------|-----|
-| 使用SPI | 0.779 |
-| 残作業量 (BAC - EV) | 39.5人日 |
-| ETC' | 50.7人日 |
-| 完了予測日 | 2025/8/21 |
-| 予定終了日 | 2025/8/26 |
-| 遅延日数 | -5日 |
-| 信頼度 | medium |
-| 信頼度理由 | やや遅れ気味（SPI: 0.5-0.8） |
-```
-
-> 遅延日数がマイナスの場合、予定より早く完了する見込みです。
-
----
-
-## 外部指定の SPI で完了予測する
-
-直近 N 日の SPI など、外部で計算した SPI を使って完了予測ができます。
-
-### コード例
-
-```typescript
-import { ExcelProjectCreator } from 'evmtools-node/infrastructure'
-
-async function main() {
-    const creator = new ExcelProjectCreator('./now.xlsm')
-    const project = await creator.createProject()
-
-    // 累積SPIでの予測
-    const forecastCumulative = project.calculateCompletionForecast()
-
-    // 直近SPIを外部指定して予測（例: 0.5）
-    const customSpi = 0.5
-    const forecastCustom = project.calculateCompletionForecast({
-        spiOverride: customSpi,
-    })
-
-    // 遅延日数を計算するヘルパー
-    const calcDelayDays = (forecastDate: Date | undefined) => {
-        const scheduledEnd = project.endDate
-        if (!scheduledEnd || !forecastDate) return undefined
-        return Math.ceil((forecastDate.getTime() - scheduledEnd.getTime()) / (1000 * 60 * 60 * 24))
-    }
-
-    console.log('| 項目 | 累積SPI | 外部指定SPI |')
-    console.log('|------|---------|------------|')
-    console.log(`| 使用SPI | ${forecastCumulative?.usedSpi?.toFixed(3)} | ${forecastCustom?.usedSpi?.toFixed(3)} |`)
-    console.log(`| 完了予測日 | ${forecastCumulative?.forecastDate?.toLocaleDateString('ja-JP')} | ${forecastCustom?.forecastDate?.toLocaleDateString('ja-JP')} |`)
-    console.log(`| 遅延日数 | ${calcDelayDays(forecastCumulative?.forecastDate)}日 | ${calcDelayDays(forecastCustom?.forecastDate)}日 |`)
-    console.log(`| 信頼度 | ${forecastCumulative?.confidence} | ${forecastCustom?.confidence} |`)
-}
-
-main()
-```
-
-### 出力例
-
-```
-基準日: 2025/7/25
-
-外部指定SPI: 0.5
-
-| 項目 | 累積SPI | 外部指定SPI |
-|------|---------|------------|
-| 使用SPI | 0.779 | 0.500 |
-| 完了予測日 | 2025/8/21 | 2025/9/5 |
-| 遅延日数 | -5日 | 10日 |
-| 信頼度 | medium | high |
-```
-
-> **Note**: `spiOverride` を指定すると `confidence: 'high'` になります（ユーザーが明示的に SPI を指定したため）
-
----
-
 ## フィルタして統計を取得する
 
 特定のタスクに絞って統計を取得できます。
@@ -174,6 +58,8 @@ import { ExcelProjectCreator } from 'evmtools-node/infrastructure'
 async function main() {
     const creator = new ExcelProjectCreator('./now.xlsm')
     const project = await creator.createProject()
+
+    console.log(`基準日: ${project.baseDate.toLocaleDateString('ja-JP')}`)
 
     // フルパス名に「開発」を含むタスクでフィルタ
     const stats = project.getStatistics({ filter: '開発' })
@@ -218,29 +104,22 @@ main()
 
 ```typescript
 import { ExcelProjectCreator } from 'evmtools-node/infrastructure'
-import { TaskRow } from 'evmtools-node/domain'
 
 async function main() {
     const creator = new ExcelProjectCreator('./now.xlsm')
     const project = await creator.createProject()
 
-    const tasks = project.toTaskRows()
+    console.log(`基準日: ${project.baseDate.toLocaleDateString('ja-JP')}`)
 
-    // 担当者をユニークに取得（リーフタスクのみ）
-    const leafTasks = tasks.filter((t: TaskRow) => t.isLeaf)
-    const assignees = [...new Set(leafTasks.map((t) => t.assignee).filter(Boolean))]
+    // 担当者別統計を取得
+    const statsByName = project.getStatisticsByName()
 
     console.log('| 担当者 | タスク数 | BAC | PV | EV | SPI |')
     console.log('|--------|---------|-----|-----|-----|-----|')
 
-    for (const assignee of assignees) {
-        const assigneeTasks = leafTasks.filter((t: TaskRow) => t.assignee === assignee)
-        const bac = assigneeTasks.reduce((sum, t) => sum + (t.workload ?? 0), 0)
-        const pv = assigneeTasks.reduce((sum, t) => sum + (t.pv ?? 0), 0)
-        const ev = assigneeTasks.reduce((sum, t) => sum + (t.ev ?? 0), 0)
-        const spi = pv > 0 ? (ev / pv).toFixed(3) : '-'
-
-        console.log(`| ${assignee} | ${assigneeTasks.length} | ${bac} | ${pv} | ${ev} | ${spi} |`)
+    for (const stats of statsByName) {
+        const spi = stats.spi?.toFixed(3) ?? '-'
+        console.log(`| ${stats.assignee} | ${stats.totalTasksCount} | ${stats.totalWorkloadExcel} | ${stats.totalPvCalculated} | ${stats.totalEv} | ${spi} |`)
     }
 }
 
@@ -261,37 +140,31 @@ main()
 
 ---
 
-## 複数スナップショットから直近 SPI を計算する
+## 複数スナップショットから平均 SPI を計算する
 
-複数日のプロジェクトスナップショットから、直近の SPI を計算できます。
+複数日のプロジェクトスナップショットから、平均の SPI を計算することができます。通常のSPIはプロジェクト開始からいままでの生産性をあらわす指標ですが、直近のスナップショットを複数渡すことで、最近の生産性をあらわす指標を作成することができます。
 
-### コード例
+`calculateRecentSpi()` は複数のスナップショットを受け取り、各スナップショットのSPIを平均して返します。たとえば直近1週間の日次スナップショットを渡すことで、その期間のSPI平均を取得できます。
+
+### コード例（2スナップショット）
 
 ```typescript
 import { ExcelProjectCreator } from 'evmtools-node/infrastructure'
 import { ProjectService } from 'evmtools-node/domain'
 
 async function main() {
-    // 複数日のスナップショットを読み込む
-    const creatorNow = new ExcelProjectCreator('./now.xlsm')
-    const creatorPrev = new ExcelProjectCreator('./prev.xlsm')
+    // 2つのスナップショットを読み込む
+    const projectPrev = await new ExcelProjectCreator('./prev.xlsm').createProject()
+    const projectNow = await new ExcelProjectCreator('./now.xlsm').createProject()
 
-    const projectNow = await creatorNow.createProject()
-    const projectPrev = await creatorPrev.createProject()
+    console.log(`前回基準日: ${projectPrev.baseDate.toLocaleDateString('ja-JP')}`)
+    console.log(`今回基準日: ${projectNow.baseDate.toLocaleDateString('ja-JP')}`)
 
     // ProjectService で直近 SPI を計算
     const service = new ProjectService()
     const recentSpi = service.calculateRecentSpi([projectPrev, projectNow])
 
-    console.log(`直近SPI（2スナップショット間）: ${recentSpi?.toFixed(3)}`)
-
-    // 直近SPIで完了予測
-    if (recentSpi) {
-        const forecast = projectNow.calculateCompletionForecast({
-            spiOverride: recentSpi,
-        })
-        console.log(`完了予測日（直近SPI使用）: ${forecast?.forecastDate?.toLocaleDateString('ja-JP')}`)
-    }
+    console.log(`直近SPI: ${recentSpi?.toFixed(3)}`)
 }
 
 main()
@@ -303,12 +176,27 @@ main()
 前回基準日: 2025/7/4
 今回基準日: 2025/7/25
 
-直近SPI（2スナップショット間）: 1.252
+直近SPI: 1.252
+```
 
-完了予測日（直近SPI使用）: 2025/8/12
+### コード例（1週間分のスナップショット）
+
+```typescript
+// 直近1週間の日次スナップショットを読み込む
+const files = ['0718.xlsm', '0722.xlsm', '0723.xlsm', '0724.xlsm', '0725.xlsm']
+const projects = await Promise.all(
+    files.map(f => new ExcelProjectCreator(`./${f}`).createProject())
+)
+
+const service = new ProjectService()
+const weeklyAvgSpi = service.calculateRecentSpi(projects)
+
+console.log(`直近1週間のSPI平均: ${weeklyAvgSpi?.toFixed(3)}`)
 ```
 
 > 直近 SPI が 1.0 を超えている場合、最近の進捗が予定より早いことを示します。
+>
+> **完了予測への活用**: 直近SPIを使った完了予測については [完了予測 - 直近SPIで完了予測する](./04-completion-forecast.md#直近spiで完了予測する) を参照してください。
 
 ---
 
@@ -381,10 +269,10 @@ main()
 
 | id | name | 残日数 | 計画PV | 実行PV | 状態 |
 |----|------|--------|--------|--------|------|
-| 9 | 機能1 | 6 | 1.000 | 1.500 | 遅れ |
-| 10 | 機能2 | 6 | 0.500 | 0.667 | 遅れ |
-| 11 | 機能3 | 6 | 0.500 | 0.583 | 遅れ |
-| 12 | 機能4 | 6 | 1.000 | 1.000 | 予定通り |
+| 9 | 機能1 | 5 | 1.000 | 1.800 | 遅れ |
+| 10 | 機能2 | 5 | 0.500 | 0.800 | 遅れ |
+| 11 | 機能3 | 5 | 0.500 | 0.700 | 遅れ |
+| 12 | 機能4 | 5 | 1.000 | 1.200 | 遅れ |
 ```
 
 ### 解釈
@@ -393,13 +281,13 @@ main()
 - **実行PV < 計画PV**: 前倒し（今日やるべき量が計画より少ない）
 - **実行PV = 計画PV**: 予定通り
 
-> 機能1〜3は「遅れ」状態です。機能1は計画PV（1.000）に対して実行PV（1.500）と1.5倍のペースで進める必要があります。
-> 機能4は進捗40%で残日数6日、計画通りのペースです。
+> 全タスクが「遅れ」状態です。機能1は計画PV（1.000）に対して実行PV（1.800）と1.8倍のペースで進める必要があります。
+> 残日数は基準日の翌日から終了日までの稼働日数です（基準日終了時点の考え方）。
 
 ---
 
 ## 次のステップ
 
 - [タスク操作](./03-task-operations.md) - 遅延タスクの抽出
-- [完了予測の詳細](./04-completion-forecast.md) - オプション詳細
+- [完了予測](./04-completion-forecast.md) - 完了予測日の計算とオプション
 - [スナップショット比較](./05-diff-snapshots.md) - 2時点間の差分
