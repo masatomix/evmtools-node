@@ -664,8 +664,9 @@ export class Project {
 
         // 基本統計を計算（循環参照を避けるため _calculateBasicStats を使用）
         const basicStats = this._calculateBasicStats(tasks)
-        const spi = basicStats.spi
-        if (spi === undefined || spi === null || spi === 0) {
+        // SPI決定: spiOverride > 累積SPI (REQ-SPI-002)
+        const usedSpi = options?.spiOverride ?? basicStats.spi
+        if (usedSpi === undefined || usedSpi === null || usedSpi <= 0) {
             return undefined
         }
 
@@ -681,7 +682,7 @@ export class Project {
                 forecastDate: new Date(this._baseDate),
                 remainingWork: 0,
                 usedDailyPv: 0,
-                usedSpi: spi,
+                usedSpi: usedSpi,
                 dailyBurnRate: 0,
                 confidence: 'high',
                 confidenceReason: 'プロジェクト完了済み',
@@ -696,11 +697,11 @@ export class Project {
             return undefined
         }
 
-        // ETC' を計算
-        const etcPrime = remainingWork / spi
+        // ETC' を計算 (REQ-SPI-002: usedSpi を使用)
+        const etcPrime = remainingWork / usedSpi
 
-        // 日あたり消化量
-        const dailyBurnRate = usedDailyPv * spi
+        // 日あたり消化量 (REQ-SPI-002: usedSpi を使用)
+        const dailyBurnRate = usedDailyPv * usedSpi
 
         // 完了予測日を計算
         let currentRemaining = remainingWork
@@ -721,10 +722,11 @@ export class Project {
             return undefined
         }
 
-        // 信頼性を判定
+        // 信頼性を判定 (REQ-SPI-002: hasSpiOverride パラメータ追加)
         const { confidence, confidenceReason } = this.determineConfidence(
-            spi,
+            usedSpi,
             options?.dailyPvOverride !== undefined,
+            options?.spiOverride !== undefined,
             currentDate
         )
 
@@ -733,7 +735,7 @@ export class Project {
             forecastDate: currentDate,
             remainingWork,
             usedDailyPv,
-            usedSpi: spi,
+            usedSpi: usedSpi,
             dailyBurnRate,
             confidence,
             confidenceReason,
@@ -742,12 +744,22 @@ export class Project {
 
     /**
      * 信頼性を判定
+     * @param spi 使用するSPI
+     * @param hasDailyPvOverride dailyPvOverride が指定されたか
+     * @param hasSpiOverride spiOverride が指定されたか (REQ-SPI-002)
+     * @param forecastDate 予測日
      */
     private determineConfidence(
         spi: number,
         hasDailyPvOverride: boolean,
+        hasSpiOverride: boolean,
         forecastDate: Date
     ): { confidence: 'high' | 'medium' | 'low'; confidenceReason: string } {
+        // spiOverride 指定時は高信頼（最優先）(REQ-SPI-002)
+        if (hasSpiOverride) {
+            return { confidence: 'high', confidenceReason: 'ユーザーがSPIを指定' }
+        }
+
         // 手入力PV使用の場合は高信頼
         if (hasDailyPvOverride) {
             return { confidence: 'high', confidenceReason: 'ユーザーが日あたりPVを指定' }
@@ -932,6 +944,14 @@ export interface CompletionForecastOptions {
     lookbackDays?: number
     /** 計算を打ち切る最大日数（デフォルト: 730 = 2年） */
     maxForecastDays?: number
+    /**
+     * 外部から指定するSPI（優先使用）
+     * ProjectService.calculateRecentSpi() で計算した直近N日SPIを指定可能
+     * @example
+     * const recentSpi = service.calculateRecentSpi([projectPrev, projectNow])
+     * project.calculateCompletionForecast({ spiOverride: recentSpi })
+     */
+    spiOverride?: number
 }
 
 /**

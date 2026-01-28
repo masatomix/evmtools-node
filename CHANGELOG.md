@@ -5,6 +5,28 @@
 フォーマットは [Keep a Changelog](https://keepachangelog.com/ja/1.0.0/) に基づき、
 [セマンティックバージョニング](https://semver.org/lang/ja/) に準拠しています。
 
+## [0.0.27]
+
+### 追加
+- **spiOverrideオプション**: 完了予測に任意のSPIを指定可能 (#147)
+  - `Project.calculateCompletionForecast({ spiOverride })`: SPIを外部指定して完了予測
+  - シナリオ分析（悲観/楽観）や直近SPIでの予測に活用
+  - 要件定義: `docs/specs/requirements/REQ-SPI-002.md`
+  - 詳細仕様: `docs/specs/domain/features/CompletionForecast.spiOverride.spec.md`
+- **サンプルドキュメント集**: ライブラリの使い方を示すサンプルコード集 (#154)
+  - `docs/examples/01-basic-usage.md`: 基本的な使い方
+  - `docs/examples/02-project-statistics.md`: プロジェクト統計
+  - `docs/examples/03-task-operations.md`: タスク操作
+  - `docs/examples/04-completion-forecast.md`: 完了予測
+  - `docs/examples/05-diff-snapshots.md`: スナップショット比較
+  - `docs/examples/06-cli-commands.md`: CLIコマンド
+  - 各ドキュメントに対応する検証スクリプト付き
+
+### 修正
+- **remainingDays計算修正**: 基準日を含まないよう修正 (#156)
+  - 基準日の翌日から終了日までの稼働日数を返すよう修正
+  - 詳細仕様: `docs/specs/domain/master/TaskRow.spec.md`
+
 ## [0.0.26]
 
 ### 追加
