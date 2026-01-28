@@ -312,6 +312,92 @@ main()
 
 ---
 
+## 今日のPV（計画PV と 実行PV）
+
+タスクごとの「今日消化すべきPV」を取得できます。
+
+| 種類 | プロパティ/メソッド | 計算式 | 説明 |
+|------|-------------------|--------|------|
+| **計画PV** | `workloadPerDay` | workload / scheduledWorkDays | 計画段階で決まる固定値 |
+| **実行PV** | `pvTodayActual(baseDate)` | 残工数 / 残日数 | 進捗を反映した実態値 |
+
+### コード例
+
+```typescript
+import { ExcelProjectCreator } from 'evmtools-node/infrastructure'
+import { TaskRow } from 'evmtools-node/domain'
+
+async function main() {
+    const creator = new ExcelProjectCreator('./now.xlsm')
+    const project = await creator.createProject()
+
+    const baseDate = project.baseDate
+    console.log(`基準日: ${baseDate.toLocaleDateString('ja-JP')}`)
+
+    const tasks = project.toTaskRows()
+
+    // 進行中タスク（PV > 0 かつ 未完了）を抽出
+    const inProgressTasks = tasks.filter((t: TaskRow) =>
+        t.isLeaf &&
+        t.pv !== undefined &&
+        t.pv > 0 &&
+        t.progressRate !== undefined &&
+        t.progressRate < 1.0
+    )
+
+    console.log('')
+    console.log('| id | name | 残日数 | 計画PV | 実行PV | 状態 |')
+    console.log('|----|------|--------|--------|--------|------|')
+
+    for (const task of inProgressTasks) {
+        const remainingDays = task.remainingDays(baseDate)
+        const plannedPV = task.workloadPerDay?.toFixed(3) ?? '-'
+        const actualPV = task.pvTodayActual(baseDate)?.toFixed(3) ?? '-'
+
+        // 実行PV > 計画PV なら遅れ、実行PV < 計画PV なら前倒し
+        let status = '-'
+        if (task.workloadPerDay && actualPV !== '-') {
+            const actual = parseFloat(actualPV)
+            if (actual > task.workloadPerDay) {
+                status = '遅れ'
+            } else if (actual < task.workloadPerDay) {
+                status = '前倒し'
+            } else {
+                status = '予定通り'
+            }
+        }
+
+        console.log(`| ${task.id} | ${task.name} | ${remainingDays} | ${plannedPV} | ${actualPV} | ${status} |`)
+    }
+}
+
+main()
+```
+
+### 出力例
+
+```
+基準日: 2025/7/25
+
+| id | name | 残日数 | 計画PV | 実行PV | 状態 |
+|----|------|--------|--------|--------|------|
+| 9 | 機能1 | 6 | 1.000 | 1.500 | 遅れ |
+| 10 | 機能2 | 6 | 0.500 | 0.667 | 遅れ |
+| 11 | 機能3 | 6 | 0.500 | 0.583 | 遅れ |
+| 12 | 機能4 | 6 | 1.000 | 1.000 | 予定通り |
+```
+
+### 解釈
+
+- **実行PV > 計画PV**: 遅れている（今日やるべき量が計画より多い）
+- **実行PV < 計画PV**: 前倒し（今日やるべき量が計画より少ない）
+- **実行PV = 計画PV**: 予定通り
+
+> 機能1〜3は「遅れ」状態です。機能1は計画PV（1.000）に対して実行PV（1.500）と1.5倍のペースで進める必要があります。
+> 機能4は進捗40%で残日数6日、計画通りのペースです。
+
+---
+
 ## 次のステップ
 
 - [タスク操作](./03-task-operations.md) - 遅延タスクの抽出

@@ -181,6 +181,52 @@ async function example6_recentSpiWithMultipleSnapshots() {
     console.log('')
 }
 
+async function example7_pvToday() {
+    console.log('=== Example 7: 今日のPV（計画PV と 実行PV） ===\n')
+
+    const creator = new ExcelProjectCreator('./now.xlsm')
+    const project = await creator.createProject()
+
+    const baseDate = project.baseDate
+    console.log(`基準日: ${baseDate.toLocaleDateString('ja-JP')}\n`)
+
+    const tasks = project.toTaskRows()
+
+    // 進行中タスク（PV > 0 かつ 未完了）を抽出
+    const inProgressTasks = tasks.filter((t: TaskRow) =>
+        t.isLeaf &&
+        t.pv !== undefined &&
+        t.pv > 0 &&
+        t.progressRate !== undefined &&
+        t.progressRate < 1.0
+    )
+
+    console.log('| id | name | 残日数 | 計画PV | 実行PV | 状態 |')
+    console.log('|----|------|--------|--------|--------|------|')
+
+    for (const task of inProgressTasks) {
+        const remainingDays = task.remainingDays(baseDate)
+        const plannedPV = task.workloadPerDay?.toFixed(3) ?? '-'
+        const actualPV = task.pvTodayActual(baseDate)?.toFixed(3) ?? '-'
+
+        // 実行PV > 計画PV なら遅れ、実行PV < 計画PV なら前倒し
+        let status = '-'
+        if (task.workloadPerDay && actualPV !== '-') {
+            const actual = parseFloat(actualPV)
+            if (actual > task.workloadPerDay) {
+                status = '遅れ'
+            } else if (actual < task.workloadPerDay) {
+                status = '前倒し'
+            } else {
+                status = '予定通り'
+            }
+        }
+
+        console.log(`| ${task.id} | ${task.name} | ${remainingDays} | ${plannedPV} | ${actualPV} | ${status} |`)
+    }
+    console.log('')
+}
+
 async function main() {
     await example1_projectStats()
     await example2_completionForecast()
@@ -188,6 +234,7 @@ async function main() {
     await example4_filterStats()
     await example5_assigneeStats()
     await example6_recentSpiWithMultipleSnapshots()
+    await example7_pvToday()
 }
 
 main().catch(console.error)
