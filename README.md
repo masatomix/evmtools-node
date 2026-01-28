@@ -254,6 +254,8 @@ npm run format        # Prettierチェック
 詳細な開発フローは [DEVELOPMENT_WORKFLOW.md](docs/workflow/DEVELOPMENT_WORKFLOW.md) を参照してください。
 
 ## 改訂履歴
+- 0.0.27 spiOverrideオプション追加、サンプルドキュメント集、remainingDays計算修正
+- 0.0.26 直近N日SPI計算機能、EVM進捗管理ガイド、完了予測機能リファクタリング
 - 0.0.25 タスクフィルタリングと統計情報機能（filterTasks, getStatistics, getStatisticsByName）、型チェック自動化
 - 0.0.24 pv-today機能、遅延タスク取得機能、EVM指標拡張（ETC'・完了予測日）
 - 0.0.20 タスク管理機能、仕様書テンプレート統一化
