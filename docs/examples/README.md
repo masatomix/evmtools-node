@@ -27,8 +27,7 @@ main()
 | 03 | [タスク操作](./03-task-operations.md) | 遅延タスク、担当者フィルタ、進捗率フィルタ、期限切れ判定 |
 | 04 | [完了予測](./04-completion-forecast.md) | spiOverride、直近SPI、シナリオ分析、信頼度 |
 | 05 | [スナップショット比較](./05-diff-snapshots.md) | calculateTaskDiffs、担当者別差分、進捗分析 |
-| 06 | [CSV読み込み](./06-csv-import.md) | CsvProjectCreator、エンコーディング、カラム形式 |
-| 07 | [CLIコマンド](./07-cli-commands.md) | pbevm-show-project、pbevm-diff、pbevm-show-pv |
+| 06 | [CLIコマンド](./06-cli-commands.md) | pbevm-show-project、pbevm-diff、pbevm-show-pv |
 
 ## モジュール構成
 
