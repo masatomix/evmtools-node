@@ -1,6 +1,6 @@
 # Project 仕様書
 
-**バージョン**: 1.6.1
+**バージョン**: 1.8.0
 **作成日**: 2025-12-16
 **ソースファイル**: `src/domain/Project.ts`
 
@@ -954,6 +954,78 @@ interface CompletionForecast {
 
 ---
 
+### 5.16 `getTree(): TreeNode[]`
+
+#### 目的
+プロジェクトのタスクツリーを TreeNode 形式で取得する。CLI や他のツールからツリー構造を利用する際に使用する。
+
+#### シグネチャ
+```typescript
+getTree(): TreeNode[]
+```
+
+#### 型定義
+```typescript
+// TreeNode は common/TreeFormatter.ts で定義
+interface TreeNode {
+  name: string
+  children: TreeNode[]
+}
+```
+
+#### 事前条件
+
+該当なし
+
+#### 事後条件
+
+| ID | 条件 |
+|----|------|
+| POST-GT-01 | 戻り値は`TreeNode[]`型 |
+| POST-GT-02 | 各要素は `name` と `children` プロパティのみを持つ |
+| POST-GT-03 | TaskNode の他のプロパティ（id, workload 等）は含まれない |
+| POST-GT-04 | 子ノードは再帰的に TreeNode 形式に変換される |
+
+#### アルゴリズム
+
+```
+1. _taskNodes.map(node => toTreeNode(node)) を呼び出す
+2. toTreeNode(node) は再帰的に以下を行う:
+   - { name: node.name, children: node.children.map(child => toTreeNode(child)) }
+3. TreeNode[] を返す
+```
+
+#### 同値クラス・境界値
+
+| ID | 分類 | 入力条件 | 期待結果 |
+|----|------|----------|----------|
+| EQ-GTR-001 | 正常系 | 単一ルート・子あり | TreeNode[] 1件、children に子ノード |
+| EQ-GTR-002 | 正常系 | 複数ルート | TreeNode[] 複数件 |
+| EQ-GTR-003 | 正常系 | 3階層ネスト | 孫ノードも TreeNode 形式 |
+| EQ-GTR-004 | 境界値 | taskNodes: 空配列 | 空配列 `[]` |
+| EQ-GTR-005 | 境界値 | 子なしルート1件 | children: [] |
+
+#### 使用例
+
+```typescript
+import { ExcelProjectCreator } from 'evmtools-node/infrastructure'
+import { TreeFormatter } from 'evmtools-node/common'
+
+const creator = new ExcelProjectCreator('./now.xlsm')
+const project = await creator.createProject()
+
+// TreeNode[] を取得
+const tree = project.getTree()
+
+// テキスト形式で出力
+console.log(TreeFormatter.toText(tree))
+
+// JSON形式で出力
+console.log(JSON.stringify(TreeFormatter.toJson(tree), null, 2))
+```
+
+---
+
 ## 6. テストシナリオ（Given-When-Then形式）
 
 ### 6.1 基本生成テスト
@@ -1197,7 +1269,8 @@ Scenario: SPI=0で予測不可
 | plannedWorkDays | 3件 | 3件 |
 | calculateRecentDailyPv() | 4件 | 4件 |
 | calculateCompletionForecast() | 17件 | 17件 |
-| **合計** | **92件** | **92件** |
+| getTree() | 5件 | 5件 |
+| **合計** | **97件** | **97件** |
 
 ---
 
@@ -1248,6 +1321,7 @@ Scenario: SPI=0で予測不可
 | REQ-REFACTOR-002 AC-06 | `_calculateCompletionForecastForTasks()` が削除されていること | TC-13 | ✅ PASS |
 | REQ-REFACTOR-002 AC-07 | 高性能版呼び出し時に簡易版の計算が走らないこと | TC-14 | ✅ PASS |
 | REQ-REFACTOR-002 AC-08 | 既存テストが全てPASSすること | TC-20 | ✅ PASS (221件) |
+| REQ-TREE-001 AC-07 | `Project.getTree()` メソッドが実装されている | TC-10, TC-11 | ✅ PASS |
 
 > **ステータス凡例**:
 > - ⏳: 未実装
@@ -1266,6 +1340,7 @@ Scenario: SPI=0で予測不可
 | `src/domain/__tests__/Project.delayedTasks.test.ts` | getDelayedTasks()テスト | 17件 |
 | `src/domain/__tests__/Project.completionForecast.test.ts` | 完了予測機能テスト（REQ-REFACTOR-002 含む） | 45件 |
 | `src/domain/__tests__/Project.filterStatistics.test.ts` | タスクフィルタリング・統計テスト | 30件 |
+| `src/domain/__tests__/Project.getTree.test.ts` | getTree()テスト | 5件 |
 
 ### 11.2 テストフィクスチャ
 
@@ -1274,9 +1349,9 @@ Scenario: SPI=0で予測不可
 ### 11.3 テスト実行結果
 
 ```
-実行日: 2026-01-26
-Test Suites: 8 passed, 8 total
-Tests:       221 passed, 221 total
+実行日: 2026-01-30
+Test Suites: 17 passed, 17 total
+Tests:       262 passed, 262 total (2 skipped)
 ```
 
 ---
@@ -1336,3 +1411,4 @@ Tests:       221 passed, 221 total
 | 1.6.0 | 2026-01-26 | 完了予測機能を高性能版に統一。`calculateCompletionForecast()` にオーバーロード追加（フィルタ対応、タスク配列渡し対応）。`_calculateBasicStats()` 内部メソッド追加（循環参照回避）。`_calculateCompletionForecastForTasks()` 削除 | REQ-REFACTOR-002 |
 | 1.6.1 | 2026-01-26 | `_calculateExtendedStats()` の `dailyPvOverride: 1.0` を削除（REQ-EVM-001 AC-03準拠）。設計方針セクション追加（Statistics と CompletionForecast の役割分担） | Issue #145 |
 | 1.7.0 | 2026-01-28 | `CompletionForecastOptions` に `spiOverride` オプション追加。`calculateCompletionForecast()` で外部指定SPIを使用可能に | REQ-SPI-002 |
+| 1.8.0 | 2026-01-30 | `getTree()` メソッド追加。TaskNode[] を TreeNode[] 形式に変換してツリー構造を取得可能に | REQ-TREE-001 AC-07 |
