@@ -5,6 +5,19 @@
 フォーマットは [Keep a Changelog](https://keepachangelog.com/ja/1.0.0/) に基づき、
 [セマンティックバージョニング](https://semver.org/lang/ja/) に準拠しています。
 
+## [0.0.28]
+
+### 追加
+- **pbevm-treeコマンド**: プロジェクトのツリー構造を出力 (#161)
+  - テキスト形式でのツリー表示（罫線文字使用）
+  - JSON形式での出力（`--json` オプション）
+  - 深さ指定（`--depth` オプション）
+  - 複数ルート対応（空行で区切り）
+  - `TreeFormatter` ユーティリティを `evmtools-node/common` からエクスポート
+  - `Project.getTree()` メソッドを追加（プログラムからツリー構造を取得）
+  - 要件定義: `docs/specs/requirements/REQ-TREE-001.md`
+  - 詳細仕様: `docs/specs/domain/features/CLI.tree.spec.md`
+
 ## [0.0.27]
 
 ### 追加

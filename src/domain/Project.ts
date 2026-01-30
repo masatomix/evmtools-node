@@ -1,5 +1,6 @@
 import { tidy, filter, summarize, groupBy } from '@tidyjs/tidy'
 import { average, dateStr, formatRelativeDaysNumber, generateBaseDates, isHoliday, sum } from '../common'
+import { TreeNode } from '../common/TreeFormatter'
 import { TaskNode } from './TaskNode'
 import { TaskService } from './TaskService'
 import { TaskRow } from './TaskRow'
@@ -27,6 +28,24 @@ export class Project {
     }
     get taskNodes() {
         return this._taskNodes
+    }
+
+    /**
+     * プロジェクトのタスクツリーを TreeNode 形式で取得
+     * @returns TreeNode[] ルートノードの配列
+     */
+    getTree(): TreeNode[] {
+        return this._taskNodes.map((node) => this.toTreeNode(node))
+    }
+
+    /**
+     * TaskNode を TreeNode に変換（再帰）
+     */
+    private toTreeNode(node: TaskNode): TreeNode {
+        return {
+            name: node.name,
+            children: node.children.map((child) => this.toTreeNode(child)),
+        }
     }
 
     get startDate() {

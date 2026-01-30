@@ -190,6 +190,54 @@ export class TreeFormatter {
 ]
 ```
 
+### 3.6 Project.getTree() メソッド
+
+Project クラスにツリー構造を取得するメソッドを追加する。
+
+```typescript
+// Project.ts
+import { TreeNode } from '../common/TreeFormatter'
+
+class Project {
+    /**
+     * プロジェクトのタスクツリーを TreeNode 形式で取得
+     * @returns TreeNode[] ルートノードの配列
+     */
+    getTree(): TreeNode[] {
+        return this._taskNodes.map(node => this.toTreeNode(node))
+    }
+
+    /**
+     * TaskNode を TreeNode に変換（再帰）
+     */
+    private toTreeNode(node: TaskNode): TreeNode {
+        return {
+            name: node.name,
+            children: node.children.map(child => this.toTreeNode(child))
+        }
+    }
+}
+```
+
+#### 使用例
+
+```typescript
+import { ExcelProjectCreator } from 'evmtools-node/infrastructure'
+import { TreeFormatter } from 'evmtools-node/common'
+
+const creator = new ExcelProjectCreator('./now.xlsm')
+const project = await creator.createProject()
+
+// TreeNode[] を取得
+const tree = project.getTree()
+
+// テキスト形式で出力
+console.log(TreeFormatter.toText(tree))
+
+// JSON形式で出力
+console.log(JSON.stringify(TreeFormatter.toJson(tree), null, 2))
+```
+
 ---
 
 ## 4. テストケース
@@ -212,6 +260,13 @@ export class TreeFormatter {
 | TC-07 | `--help` オプション | Usage文字列を含む、終了コード0 |
 | TC-08 | `--path` でファイル指定 | 指定ファイルを読み込み |
 | TC-09 | `--depth 1 --json` 組み合わせ | depth適用済みのJSON出力 |
+
+### 4.3 Project.getTree() テスト
+
+| TC-ID | テスト内容 | 期待結果 |
+|-------|-----------|---------|
+| TC-10 | getTree() が TreeNode[] を返す | name と children を持つ配列 |
+| TC-11 | 子ノードが再帰的に変換される | 孫ノードも TreeNode 形式 |
 
 ---
 
@@ -261,8 +316,9 @@ npx pbevm-tree --path ./project.xlsm --depth 2 --json
 | REQ-TREE-001 AC-04 | `--json` オプションでJSON形式出力ができる | TC-05, TC-09 | ✅ PASS |
 | REQ-TREE-001 AC-05 | `--help` オプションでヘルプが表示される | TC-07 | ✅ PASS |
 | REQ-TREE-001 AC-06 | package.json の bin に登録されている | 目視確認 | ✅ OK |
+| REQ-TREE-001 AC-07 | `Project.getTree()` メソッドが実装されている | TC-10, TC-11 | ✅ PASS |
 
-**テストファイル**: `src/common/__tests__/TreeFormatter.test.ts`, `src/presentation/__tests__/cli-pbevm-tree.test.ts`
+**テストファイル**: `src/common/__tests__/TreeFormatter.test.ts`, `src/presentation/__tests__/cli-pbevm-tree.test.ts`, `src/domain/__tests__/Project.getTree.test.ts`
 
 ---
 
@@ -271,3 +327,5 @@ npx pbevm-tree --path ./project.xlsm --depth 2 --json
 | バージョン | 日付 | 変更内容 | 要件ID |
 |-----------|------|---------|--------|
 | 1.0.0 | 2026-01-30 | 初版作成 | REQ-TREE-001 |
+| 1.1.0 | 2026-01-30 | Project.getTree() メソッド追加 | REQ-TREE-001 AC-07 |
+| 1.1.1 | 2026-01-30 | Project.getTree() 実装完了、AC-07 PASS | REQ-TREE-001 AC-07 |

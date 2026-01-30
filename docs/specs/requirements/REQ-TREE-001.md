@@ -30,6 +30,7 @@
 | JSON形式での出力オプション | ✅ |
 | 深さ指定オプション | ✅ |
 | package.json への bin 登録 | ✅ |
+| `Project.getTree()` メソッドの追加 | ✅ |
 
 ---
 
@@ -116,6 +117,26 @@
 | `--depth 2` | ルート直下の子とその子まで表示 |
 | 指定なし | 全階層を表示 |
 
+### 2.5 Project.getTree() メソッド
+
+Project クラスにツリー構造を取得するメソッドを追加する。
+
+```typescript
+// Project.ts
+getTree(): TreeNode[] {
+    return this.taskNodes.map(node => this.toTreeNode(node))
+}
+
+private toTreeNode(node: TaskNode): TreeNode {
+    return {
+        name: node.name,
+        children: node.children.map(child => this.toTreeNode(child))
+    }
+}
+```
+
+これにより、ライブラリ利用者がプログラムからツリー構造を取得できる。
+
 ---
 
 ## 3. 非機能要件
@@ -158,12 +179,13 @@ npx pbevm-tree --help
 
 | ID | 基準 | 結果 |
 |----|------|------|
-| AC-01 | CLIコマンドとして実装されている（yargsベース） | ⬜ |
-| AC-02 | ツリー構造が視覚的にわかりやすく出力される | ⬜ |
-| AC-03 | `--depth` オプションで深さ指定ができる | ⬜ |
-| AC-04 | `--json` オプションでJSON形式出力ができる | ⬜ |
-| AC-05 | `--help` オプションでヘルプが表示される | ⬜ |
-| AC-06 | package.json の bin に登録されている | ⬜ |
+| AC-01 | CLIコマンドとして実装されている（yargsベース） | ✅ |
+| AC-02 | ツリー構造が視覚的にわかりやすく出力される | ✅ |
+| AC-03 | `--depth` オプションで深さ指定ができる | ✅ |
+| AC-04 | `--json` オプションでJSON形式出力ができる | ✅ |
+| AC-05 | `--help` オプションでヘルプが表示される | ✅ |
+| AC-06 | package.json の bin に登録されている | ✅ |
+| AC-07 | `Project.getTree()` メソッドが実装されている | ✅ |
 
 ---
 
