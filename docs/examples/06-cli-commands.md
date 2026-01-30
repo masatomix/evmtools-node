@@ -9,6 +9,7 @@
 | `pbevm-show-project` | プロジェクト情報を表示 |
 | `pbevm-diff` | 2時点間の差分を表示 |
 | `pbevm-show-pv` | PVデータを表示 |
+| `pbevm-tree` | ツリー構造を表示 |
 | `pbevm-show-resourceplan` | 要員計画を表示（ベータ版） |
 
 ---
@@ -161,6 +162,99 @@ npx pbevm-show-pv --path ./now.xlsm
 
 ---
 
+## pbevm-tree
+
+プロジェクトのツリー構造を表示します。
+
+### 使用方法
+
+```bash
+# npm scripts経由（開発時）
+npm run pbevm-tree
+
+# 直接実行
+npx pbevm-tree --path ./now.xlsm
+```
+
+### オプション
+
+| オプション | 説明 | デフォルト |
+|-----------|------|----------|
+| `--path` | Excelファイルのパス | `./now.xlsm` |
+| `--depth` | 出力する階層の深さ（1=直下のみ） | 全階層 |
+| `--json` | JSON形式で出力 | `false` |
+
+### 出力例（テキスト形式）
+
+```
+$ npx pbevm-tree --path ./now.xlsm
+要件定義
+└── 機能全体
+
+設計
+├── 機能1
+├── 機能2
+├── 機能3
+└── 機能4
+
+開発
+├── 機能1
+├── 機能2
+├── 機能3
+└── 機能4
+
+テスト
+├── 単体テスト
+├── 連結テスト
+└── 総合テスト
+
+リリース
+├── 準備
+└── 作業
+```
+
+### 出力例（深さ指定）
+
+```
+$ npx pbevm-tree --path ./now.xlsm --depth 0
+要件定義
+
+設計
+
+開発
+
+テスト
+
+リリース
+```
+
+### 出力例（JSON形式）
+
+```bash
+$ npx pbevm-tree --path ./now.xlsm --json
+[
+  {
+    "name": "要件定義",
+    "children": [
+      { "name": "機能全体", "children": [] }
+    ]
+  },
+  {
+    "name": "設計",
+    "children": [
+      { "name": "機能1", "children": [] },
+      { "name": "機能2", "children": [] },
+      ...
+    ]
+  },
+  ...
+]
+```
+
+> **ヒント**: `--json` オプションは他のツールとの連携に便利です。
+
+---
+
 ## pbevm-show-resourceplan
 
 要員計画を表示します（ベータ版機能）。
@@ -204,6 +298,7 @@ package.json に定義されている便利なスクリプト:
 npm run pbevm-show-project       # now.xlsm のプロジェクト情報を表示
 npm run pbevm-diff               # now.xlsm と prev.xlsm の差分を表示
 npm run pbevm-show-pv            # now.xlsm の PV データを表示
+npm run pbevm-tree               # now.xlsm のツリー構造を表示
 npm run pbevm-show-resourceplan  # 要員計画を表示（ベータ版）
 ```
 

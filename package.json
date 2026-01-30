@@ -42,7 +42,8 @@
         "pbevm-show-project": "./dist/presentation/cli-pbevm-show-project.js",
         "pbevm-diff": "./dist/presentation/cli-pbevm-diff.js",
         "pbevm-show-pv": "./dist/presentation/cli-pbevm-show-pv.js",
-        "pbevm-show-resourceplan": "./dist/resource/presentation/cli-pbevm-show-resourceplan.js"
+        "pbevm-show-resourceplan": "./dist/resource/presentation/cli-pbevm-show-resourceplan.js",
+        "pbevm-tree": "./dist/presentation/cli-pbevm-tree.js"
     },
     "scripts": {
         "typecheck": "tsc --noEmit",
@@ -65,7 +66,8 @@
         "pbevm-show-pv": "ts-node ./src/presentation/cli-pbevm-show-pv --path now.xlsm",
         "cli-test": "ts-node ./src/presentation/cli-test --excelPath now.xlsm",
         "pbevm-summary": "ts-node ./src/presentation/cli-pbevm-summary --path now.xlsm",
-        "pbevm-show-resourceplan": "ts-node ./src/resource/presentation/cli-pbevm-show-resourceplan"
+        "pbevm-show-resourceplan": "ts-node ./src/resource/presentation/cli-pbevm-show-resourceplan",
+        "pbevm-tree": "ts-node ./src/presentation/cli-pbevm-tree --path now.xlsm"
     },
     "repository": {
         "type": "git",

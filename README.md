@@ -152,6 +152,67 @@ $ ls -lrt
 $ 
 ```
 
+### プロジェクトのツリー構造を表示する
+
+```console
+$ npx pbevm-tree --help
+Usage: npx pbevm-tree [options]
+
+Options:
+  --version  Show version number                                       [boolean]
+  --path     Excel file Path                    [string] [default: "./now.xlsm"]
+  --depth    出力する階層の深さ（1=直下のみ）                            [number]
+  --json     JSON形式で出力                           [boolean] [default: false]
+  --help     Show help                                                 [boolean]
+
+Examples:
+  npx pbevm-tree --path ./now.xlsm  ツリー構造を表示
+  npx pbevm-tree --depth 1          1階層のみ表示
+  npx pbevm-tree --json             JSON形式で出力
+```
+
+例:
+
+```console
+$ npx pbevm-tree --path ./now.xlsm
+要件定義
+└── 機能全体
+
+設計
+├── 機能1
+├── 機能2
+├── 機能3
+└── 機能4
+
+開発
+├── 機能1
+├── 機能2
+├── 機能3
+└── 機能4
+
+テスト
+├── 単体テスト
+├── 連結テスト
+└── 総合テスト
+
+リリース
+├── 準備
+└── 作業
+```
+
+```console
+$ npx pbevm-tree --path ./now.xlsm --depth 0
+要件定義
+
+設計
+
+開発
+
+テスト
+
+リリース
+```
+
 ### 指定したファイル間のDIFFをとる
 
 
@@ -261,6 +322,7 @@ npm run format        # Prettierチェック
 詳細な開発フローは [DEVELOPMENT_WORKFLOW.md](docs/workflow/DEVELOPMENT_WORKFLOW.md) を参照してください。
 
 ## 改訂履歴
+- 0.0.28 pbevm-treeコマンド追加（ツリー構造表示）
 - 0.0.27 spiOverrideオプション追加、サンプルドキュメント集、remainingDays計算修正
 - 0.0.26 直近N日SPI計算機能、EVM進捗管理ガイド、完了予測機能リファクタリング
 - 0.0.25 タスクフィルタリングと統計情報機能（filterTasks, getStatistics, getStatisticsByName）、型チェック自動化
