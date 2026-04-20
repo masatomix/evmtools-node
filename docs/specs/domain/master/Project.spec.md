@@ -1026,6 +1026,55 @@ console.log(JSON.stringify(TreeFormatter.toJson(tree), null, 2))
 
 ---
 
+### 5.17 `getNameWithGreeting(): string`
+
+#### 目的
+プロジェクト名の末尾に固定文字列「 Hello World.」を付加した文字列を返す。SDDワークフロー体験用の極小機能。
+
+#### シグネチャ
+```typescript
+getNameWithGreeting(): string
+```
+
+#### 事前条件
+
+該当なし
+
+#### 事後条件
+
+| ID | 条件 |
+|----|------|
+| POST-GNWG-01 | 戻り値は `string` 型 |
+| POST-GNWG-02 | `this._name` が定義されている場合、戻り値は `` `${this._name} Hello World.` `` |
+| POST-GNWG-03 | `this._name` が `undefined` または空文字の場合、戻り値は `" Hello World."` |
+| POST-GNWG-04 | 呼び出しによる副作用なし（`this._name` は不変） |
+
+#### アルゴリズム
+
+```
+1. this._name を取得（undefined の場合は空文字として扱う）
+2. `${name} Hello World.` を返す
+```
+
+#### 同値クラス・境界値
+
+| ID | 分類 | 入力条件 | 期待結果 |
+|----|------|----------|----------|
+| EQ-GNWG-001 | 正常系 | 通常の英字名 | `"{name} Hello World."` |
+| EQ-GNWG-002 | 境界値 | 空文字 | `" Hello World."` |
+| EQ-GNWG-003 | 正常系 | 日本語名 | 連結された文字列 |
+| EQ-GNWG-004 | 境界値 | `_name` が undefined | `" Hello World."` |
+
+#### 使用例
+
+```typescript
+const project = new Project([], new Date(), [], undefined, undefined, 'サンプルPJ')
+console.log(project.getNameWithGreeting())
+// 出力: "サンプルPJ Hello World."
+```
+
+---
+
 ## 6. テストシナリオ（Given-When-Then形式）
 
 ### 6.1 基本生成テスト
@@ -1270,7 +1319,8 @@ Scenario: SPI=0で予測不可
 | calculateRecentDailyPv() | 4件 | 4件 |
 | calculateCompletionForecast() | 17件 | 17件 |
 | getTree() | 5件 | 5件 |
-| **合計** | **97件** | **97件** |
+| getNameWithGreeting() | 4件 | 4件 |
+| **合計** | **101件** | **101件** |
 
 ---
 
@@ -1322,6 +1372,9 @@ Scenario: SPI=0で予測不可
 | REQ-REFACTOR-002 AC-07 | 高性能版呼び出し時に簡易版の計算が走らないこと | TC-14 | ✅ PASS |
 | REQ-REFACTOR-002 AC-08 | 既存テストが全てPASSすること | TC-20 | ✅ PASS (221件) |
 | REQ-TREE-001 AC-07 | `Project.getTree()` メソッドが実装されている | TC-10, TC-11 | ✅ PASS |
+| REQ-HELLO-001 AC-01 | 通常のプロジェクト名に対して `"{name} Hello World."` を返す | TC-01 | ✅ PASS |
+| REQ-HELLO-001 AC-02 | 空文字のプロジェクト名に対して `" Hello World."` を返す | TC-02 | ✅ PASS |
+| REQ-HELLO-001 AC-03 | 日本語を含むプロジェクト名でも正しく連結される | TC-03 | ✅ PASS |
 
 > **ステータス凡例**:
 > - ⏳: 未実装
@@ -1341,6 +1394,7 @@ Scenario: SPI=0で予測不可
 | `src/domain/__tests__/Project.completionForecast.test.ts` | 完了予測機能テスト（REQ-REFACTOR-002 含む） | 45件 |
 | `src/domain/__tests__/Project.filterStatistics.test.ts` | タスクフィルタリング・統計テスト | 30件 |
 | `src/domain/__tests__/Project.getTree.test.ts` | getTree()テスト | 5件 |
+| `src/domain/__tests__/Project.nameWithGreeting.test.ts` | getNameWithGreeting()テスト | 4件 |
 
 ### 11.2 テストフィクスチャ
 
@@ -1412,3 +1466,4 @@ Tests:       262 passed, 262 total (2 skipped)
 | 1.6.1 | 2026-01-26 | `_calculateExtendedStats()` の `dailyPvOverride: 1.0` を削除（REQ-EVM-001 AC-03準拠）。設計方針セクション追加（Statistics と CompletionForecast の役割分担） | Issue #145 |
 | 1.7.0 | 2026-01-28 | `CompletionForecastOptions` に `spiOverride` オプション追加。`calculateCompletionForecast()` で外部指定SPIを使用可能に | REQ-SPI-002 |
 | 1.8.0 | 2026-01-30 | `getTree()` メソッド追加。TaskNode[] を TreeNode[] 形式に変換してツリー構造を取得可能に | REQ-TREE-001 AC-07 |
+| 1.9.0 | 2026-04-20 | `getNameWithGreeting()` メソッド追加。SDDワークフロー体験用の極小機能 | REQ-HELLO-001 |
