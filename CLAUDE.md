@@ -130,28 +130,13 @@ package.jsonのexportsで個別のエントリーポイントを公開:
 
 ## テスト
 
-Jestによるテストフレームワークを導入:
-
 ```bash
 npm test              # 全テストを実行
 npm test -- --watch   # ウォッチモードで実行
+npm run test:coverage # カバレッジ付きテスト
 ```
 
-### テストファイル
-
-- `src/domain/__tests__/`: ドメイン層のテスト
-- `src/infrastructure/__tests__/`: インフラ層のテスト
-  - `CsvProjectCreator.test.ts`: CsvProjectCreator単体テスト（22件）
-  - `CsvProjectCreator.integration.test.ts`: EVM計算統合テスト（10件）
-
-### 動作確認用スクリプト
-
-- `src/presentation/cli-test.ts`: TaskRowCreator、TaskServiceの動作確認
-  - ExcelからTaskRow[]を読み込み、TaskNodeツリーを構築
-  - generateBaseDates()で期間指定、結果をExcel出力
-- `src/presentation/project-test2.ts`: ProjectProgressの動作確認
-  - Excel「EVM記録」シートから時系列のPV/EVデータを読み込み
-  - ProjectProgress（date, pv, ev, spi）として表示
+テスト方針・配置パターン・EVM 特有の注意点は [`.kiro/steering/testing.md`](.kiro/steering/testing.md) を参照。
 
 ## Git Flow ブランチ戦略（重要）
 
@@ -216,53 +201,63 @@ git branch -d feature/機能名  # ローカルブランチも削除
 
 ## 仕様駆動開発（重要）
 
-本プロジェクトは仕様駆動開発（Spec-Driven Development）を採用している。新機能開発時は以下のフローに従うこと。
+本プロジェクトは Kiro スタイルの仕様駆動開発（cc-sdd）を採用している。詳細なワークフローは [`.kiro/CLAUDE.md`](.kiro/CLAUDE.md) を参照。
+
+### コマンド一覧
+
+| フェーズ | コマンド | 機能 |
+|---------|---------|------|
+| Phase 0 | `/kiro-steering` | プロジェクトメモリの初期化・同期 |
+| Phase 0 | `/kiro-steering-custom` | カスタム steering 作成 |
+| Discovery | `/kiro-discovery "説明"` | アクションパス判定、brief.md 生成 |
+| Phase 1 | `/kiro-spec-init "説明"` | spec 初期化 |
+| Phase 1 | `/kiro-spec-requirements {feature}` | EARS形式要件定義 |
+| Phase 1 | `/kiro-validate-gap {feature}` | 既存コードとのギャップ分析 |
+| Phase 1 | `/kiro-spec-design {feature}` | 技術設計書生成 |
+| Phase 1 | `/kiro-validate-design {feature}` | 設計レビュー（GO/NO-GO） |
+| Phase 1 | `/kiro-spec-tasks {feature}` | タスク分解 |
+| Phase 1 | `/kiro-spec-quick {feature} [--auto]` | 一括 spec 生成 |
+| Phase 1 | `/kiro-spec-batch` | 複数 spec 並列生成 |
+| Phase 2 | `/kiro-impl {feature} [tasks]` | TDD実装（サブエージェント活用） |
+| Phase 2 | `/kiro-review` | タスク実装レビュー |
+| Phase 2 | `/kiro-validate-impl {feature}` | 統合検証 |
+| Phase 2 | `/kiro-verify-completion` | 完了検証 |
+| Phase 2 | `/kiro-debug` | 失敗時のルートコーズ分析 |
+| 共通 | `/kiro-spec-status {feature}` | 進捗確認 |
+
+### ディレクトリ構成
+
+```
+.kiro/
+├── CLAUDE.md                    # kiro式SDDのワークフロー定義
+├── steering/                    # プロジェクト共通知識
+│   ├── product.md               # プロダクト概要
+│   ├── tech.md                  # 技術スタック
+│   └── structure.md             # ディレクトリ構造
+├── specs/                       # 新規機能の仕様書（kiro式）
+│   └── {feature-name}/
+│       ├── brief.md
+│       ├── spec.json
+│       ├── requirements.md
+│       ├── design.md
+│       └── tasks.md
+└── settings/templates/          # 各種テンプレート
+```
+
+### 既存仕様書との共存
+
+既存の `docs/specs/` 配下の仕様書はそのまま維持する。新規機能は `.kiro/specs/` に配置。
+
+| 配置場所 | 用途 |
+|---------|------|
+| `docs/specs/` | 旧SDDで作成された既存仕様書（参照用） |
+| `.kiro/specs/` | kiro式SDDで新規作成する仕様書 |
 
 ### 参照すべきドキュメント
 
 | ドキュメント | パス | 内容 |
 |-------------|------|------|
+| kiro SDDワークフロー定義 | [`.kiro/CLAUDE.md`](.kiro/CLAUDE.md) | スキル構成・最小ワークフロー |
+| cc-sdd 開発ワークフロー | [`CC-SDD_WORKFLOW.md`](docs/workflow/CC-SDD_WORKFLOW.md) | 全体フロー・コマンド早見表・旧SDDとの対応 |
 | コア用語集 | [`GLOSSARY.md`](docs/GLOSSARY.md) | EVM用語、クラス詳細仕様、稼働日計算ロジック |
-| 開発ワークフロー | [`DEVELOPMENT_WORKFLOW.md`](docs/workflow/DEVELOPMENT_WORKFLOW.md) | 全体フロー、必須セクション |
-| サンプル開発フロー | [`SAMPLE_DEVELOPMENT_FLOW.md`](docs/workflow/SAMPLE_DEVELOPMENT_FLOW.md) | REQ-TASK-001の実例、トレーサビリティ具体例 |
-
-### 仕様書の必須セクション
-
-**案件設計書（`docs/specs/domain/features/`配下）には以下を必ず含めること:**
-
-| セクション | 必須 | 内容 |
-|-----------|:----:|------|
-| インターフェース仕様 | ✅ | 型定義、メソッドシグネチャ |
-| 処理仕様 | ✅ | ロジック、擬似コード |
-| テストケース | ✅ | TC-ID、テスト内容、期待結果 |
-| **要件トレーサビリティ** | ✅ | AC-ID → TC-ID の対応表 |
-| 使用例 | - | コード例（任意） |
-
-### 要件トレーサビリティセクションの書き方
-
-```markdown
-## 要件トレーサビリティ
-
-| 要件ID | 受け入れ基準 | 対応テストケース | 結果 |
-|--------|-------------|-----------------|------|
-| REQ-XXX AC-01 | 受け入れ基準の内容 | TC-01, TC-02 | ✅ PASS |
-```
-
-**重要**: AC-IDがgrepで検索可能な形式で記載されていること。
-
-### 案件設計書とマスター設計書の同期
-
-**重要**: 案件設計書（`features/`配下）を修正した場合、対応するマスター設計書（`master/`配下）への反映を必ず確認すること。
-
-| 案件設計書の変更 | マスター設計書への反映 |
-|-----------------|---------------------|
-| 要件トレーサビリティの追加・修正 | ✅ 必須（同じ内容を反映） |
-| テストケースの追加・修正 | ✅ 必須（テストシナリオセクションに反映） |
-| インターフェース仕様の変更 | ✅ 必須（メソッド仕様セクションに反映） |
-| 変更履歴の更新 | ✅ 必須（バージョン番号を更新） |
-
-### 参考となる既存仕様書
-
-- `docs/specs/domain/master/CsvProjectCreator.spec.md` - 正しいフォーマットの例
-- `docs/specs/domain/master/Project.spec.md` - マスター設計書の例
-- `docs/specs/domain/features/Project.excludedTasks.spec.md` - 案件設計書の例
+| 旧SDD 開発ワークフロー | [`DEVELOPMENT_WORKFLOW.md`](docs/workflow/DEVELOPMENT_WORKFLOW.md) | 旧方式の参照用 |
