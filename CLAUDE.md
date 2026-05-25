@@ -130,28 +130,13 @@ package.jsonのexportsで個別のエントリーポイントを公開:
 
 ## テスト
 
-Jestによるテストフレームワークを導入:
-
 ```bash
 npm test              # 全テストを実行
 npm test -- --watch   # ウォッチモードで実行
+npm run test:coverage # カバレッジ付きテスト
 ```
 
-### テストファイル
-
-- `src/domain/__tests__/`: ドメイン層のテスト
-- `src/infrastructure/__tests__/`: インフラ層のテスト
-  - `CsvProjectCreator.test.ts`: CsvProjectCreator単体テスト（22件）
-  - `CsvProjectCreator.integration.test.ts`: EVM計算統合テスト（10件）
-
-### 動作確認用スクリプト
-
-- `src/presentation/cli-test.ts`: TaskRowCreator、TaskServiceの動作確認
-  - ExcelからTaskRow[]を読み込み、TaskNodeツリーを構築
-  - generateBaseDates()で期間指定、結果をExcel出力
-- `src/presentation/project-test2.ts`: ProjectProgressの動作確認
-  - Excel「EVM記録」シートから時系列のPV/EVデータを読み込み
-  - ProjectProgress（date, pv, ev, spi）として表示
+テスト方針・配置パターン・EVM 特有の注意点は [`.kiro/steering/testing.md`](.kiro/steering/testing.md) を参照。
 
 ## Git Flow ブランチ戦略（重要）
 
