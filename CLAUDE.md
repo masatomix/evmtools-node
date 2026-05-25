@@ -257,7 +257,7 @@ git branch -d feature/機能名  # ローカルブランチも削除
 
 | ドキュメント | パス | 内容 |
 |-------------|------|------|
-| kiro SDDワークフロー | [`.kiro/CLAUDE.md`](.kiro/CLAUDE.md) | kiro式SDDの詳細フロー |
+| kiro SDDワークフロー定義 | [`.kiro/CLAUDE.md`](.kiro/CLAUDE.md) | スキル構成・最小ワークフロー |
+| cc-sdd 開発ワークフロー | [`CC-SDD_WORKFLOW.md`](docs/workflow/CC-SDD_WORKFLOW.md) | 全体フロー・コマンド早見表・旧SDDとの対応 |
 | コア用語集 | [`GLOSSARY.md`](docs/GLOSSARY.md) | EVM用語、クラス詳細仕様、稼働日計算ロジック |
-| 開発ワークフロー | [`DEVELOPMENT_WORKFLOW.md`](docs/workflow/DEVELOPMENT_WORKFLOW.md) | 全体フロー、必須セクション |
-| サンプル開発フロー | [`SAMPLE_DEVELOPMENT_FLOW.md`](docs/workflow/SAMPLE_DEVELOPMENT_FLOW.md) | REQ-TASK-001の実例、トレーサビリティ具体例 |
+| 旧SDD 開発ワークフロー | [`DEVELOPMENT_WORKFLOW.md`](docs/workflow/DEVELOPMENT_WORKFLOW.md) | 旧方式の参照用 |
