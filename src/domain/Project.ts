@@ -546,7 +546,7 @@ export class Project {
             // console.table(result)
 
             for (const row of result) {
-                const name = (row.assignee ?? '(未割当)') as string
+                const name = row.assignee ?? '(未割当)'
                 longFormat.push({
                     assignee: name,
                     baseDate: label,
@@ -949,9 +949,8 @@ export interface TaskFilterOptions {
  * 統計情報取得オプション
  * TaskFilterOptions を継承（フィルタ条件を含む）
  */
-export interface StatisticsOptions extends TaskFilterOptions {
-    // 将来の拡張用（例: includeDelayed, groupBy など）
-}
+// 将来の拡張用（例: includeDelayed, groupBy など）。現状はフィルタ条件のみ。
+export type StatisticsOptions = TaskFilterOptions
 
 /**
  * 計算から除外されたタスクの情報

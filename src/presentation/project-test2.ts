@@ -96,7 +96,7 @@ const createArgs = () => {
     return argv
 }
 
-main()
+void main()
 
 function printTable(datas: ProjectProgress[]) {
     const dispDatas = datas.map((data) => {

@@ -27,7 +27,7 @@ export class PbevmShowResourcePlanUsecase {
         // const creator = new ResourcePlansCreatorImpl(this._path)
         const unitResults = await this._creator.createResourcePlans()
         const outputDir = this._outputDir
-        fs.existsSync(outputDir) || fs.mkdirSync(outputDir)
+        if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir)
 
         const workbook = await createWorkbook()
         console.log('素データ')
