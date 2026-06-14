@@ -66,4 +66,4 @@ const createArgs = () => {
     return argv
 }
 
-main()
+void main()
