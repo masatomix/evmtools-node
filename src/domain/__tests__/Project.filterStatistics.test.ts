@@ -26,30 +26,32 @@ function createPlotMap(startDate: Date, endDate: Date): Map<number, boolean> {
 /**
  * テスト用のTaskNode生成ヘルパー
  */
-function createTaskNode(overrides: Partial<{
-    sharp: number
-    id: number
-    level: number
-    name: string
-    assignee: string
-    workload: number
-    startDate: Date
-    endDate: Date
-    actualStartDate: Date
-    actualEndDate: Date
-    progressRate: number
-    scheduledWorkDays: number
-    pv: number
-    ev: number
-    spi: number
-    expectedProgressDate: Date
-    delayDays: number
-    remarks: string
-    parentId: number
-    isLeaf: boolean
-    plotMap: Map<number, boolean>
-    children: TaskNode[]
-}> = {}): TaskNode {
+function createTaskNode(
+    overrides: Partial<{
+        sharp: number
+        id: number
+        level: number
+        name: string
+        assignee: string
+        workload: number
+        startDate: Date
+        endDate: Date
+        actualStartDate: Date
+        actualEndDate: Date
+        progressRate: number
+        scheduledWorkDays: number
+        pv: number
+        ev: number
+        spi: number
+        expectedProgressDate: Date
+        delayDays: number
+        remarks: string
+        parentId: number
+        isLeaf: boolean
+        plotMap: Map<number, boolean>
+        children: TaskNode[]
+    }> = {}
+): TaskNode {
     const defaults = {
         sharp: 1,
         id: 1,
@@ -225,7 +227,7 @@ describe('Project.filterStatistics', () => {
 
                 // 認証機能（親）、ログイン実装、ログアウト実装
                 expect(tasks.length).toBe(3)
-                const names = tasks.map(t => t.name)
+                const names = tasks.map((t) => t.name)
                 expect(names).toContain('認証機能')
                 expect(names).toContain('ログイン実装')
                 expect(names).toContain('ログアウト実装')
@@ -239,7 +241,7 @@ describe('Project.filterStatistics', () => {
 
                 // fullTaskName に "認証機能" を含むタスク
                 expect(tasks.length).toBeGreaterThan(0)
-                expect(tasks.map(t => t.name)).toContain('認証機能')
+                expect(tasks.map((t) => t.name)).toContain('認証機能')
             })
         })
 
@@ -275,8 +277,8 @@ describe('Project.filterStatistics', () => {
                 const tasks = project.filterTasks({ filter: '機能' })
 
                 // 認証機能（親）、API機能（親）、およびそれらの子タスク
-                const parentTasks = tasks.filter(t => !t.isLeaf)
-                const leafTasks = tasks.filter(t => t.isLeaf)
+                const parentTasks = tasks.filter((t) => !t.isLeaf)
+                const leafTasks = tasks.filter((t) => t.isLeaf)
 
                 expect(parentTasks.length).toBeGreaterThan(0)
                 expect(leafTasks.length).toBeGreaterThan(0)
@@ -342,7 +344,7 @@ describe('Project.filterStatistics', () => {
             })
         })
 
-        describe('TC-15: ETC\'が正しく計算される', () => {
+        describe("TC-15: ETC'が正しく計算される", () => {
             it('etcPrime = (BAC - EV) / SPI', () => {
                 const project = createTestProject()
                 const stats = project.getStatistics()
@@ -456,7 +458,7 @@ describe('Project.filterStatistics', () => {
                 expect(Array.isArray(stats)).toBe(true)
                 expect(stats.length).toBeGreaterThan(0)
 
-                const assignees = stats.map(s => s.assignee)
+                const assignees = stats.map((s) => s.assignee)
                 expect(assignees).toContain('田中')
                 expect(assignees).toContain('佐藤')
             })
@@ -484,12 +486,12 @@ describe('Project.filterStatistics', () => {
             })
         })
 
-        describe('TC-23: 担当者ごとにETC\'が計算される', () => {
+        describe("TC-23: 担当者ごとにETC'が計算される", () => {
             it('各担当者のetcPrimeが正しい', () => {
                 const project = createTestProject()
                 const stats = project.getStatisticsByName()
 
-                stats.forEach(stat => {
+                stats.forEach((stat) => {
                     if (stat.spi && stat.spi > 0) {
                         expect(stat.etcPrime).toBeDefined()
                     }
@@ -502,7 +504,7 @@ describe('Project.filterStatistics', () => {
                 const project = createTestProject()
                 const stats = project.getStatisticsByName()
 
-                stats.forEach(stat => {
+                stats.forEach((stat) => {
                     expect(stat.delayedTaskCount).toBeDefined()
                     expect(stat.averageDelayDays).toBeDefined()
                     expect(stat.maxDelayDays).toBeDefined()
@@ -555,7 +557,7 @@ describe('Project.filterStatistics', () => {
                 const stats = project.getStatisticsByName()
 
                 // assignee=undefined のエントリが含まれる
-                const undefinedAssignee = stats.find(s => s.assignee === undefined)
+                const undefinedAssignee = stats.find((s) => s.assignee === undefined)
                 expect(undefinedAssignee).toBeDefined()
             })
         })

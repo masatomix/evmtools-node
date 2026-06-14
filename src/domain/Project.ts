@@ -1,5 +1,12 @@
 import { tidy, filter, summarize, groupBy } from '@tidyjs/tidy'
-import { average, dateStr, formatRelativeDaysNumber, generateBaseDates, isHoliday, sum } from '../common'
+import {
+    average,
+    dateStr,
+    formatRelativeDaysNumber,
+    generateBaseDates,
+    isHoliday,
+    sum,
+} from '../common'
 import { TreeNode } from '../common/TreeFormatter'
 import { TaskNode } from './TaskNode'
 import { TaskService } from './TaskService'
@@ -326,7 +333,9 @@ export class Project {
                 assignee: assignee || undefined,
                 totalTasksCount: assigneeTasks.length,
                 totalWorkloadExcel: bac,
-                totalWorkloadCalculated: endDate ? sumCalculatePVs(assigneeTasks, endDate) : undefined,
+                totalWorkloadCalculated: endDate
+                    ? sumCalculatePVs(assigneeTasks, endDate)
+                    : undefined,
                 averageWorkload: averageWorkload(assigneeTasks),
                 baseDate: dateStr(baseDate),
                 totalPvExcel: sumPVs(assigneeTasks),
@@ -360,7 +369,8 @@ export class Project {
         const forecast = this.calculateCompletionForecast(tasks)
 
         // 遅延情報
-        const { delayedTaskCount, averageDelayDays, maxDelayDays } = this._calculateDelayStats(tasks)
+        const { delayedTaskCount, averageDelayDays, maxDelayDays } =
+            this._calculateDelayStats(tasks)
 
         return {
             etcPrime: forecast?.etcPrime,

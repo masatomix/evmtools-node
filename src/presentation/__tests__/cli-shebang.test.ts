@@ -17,11 +17,7 @@ describe('CLI shebang検証', () => {
     const projectRoot = path.resolve(__dirname, '../../..')
     const distDir = path.join(projectRoot, 'dist/presentation')
 
-    const cliFiles = [
-        'cli-pbevm-show-project.js',
-        'cli-pbevm-diff.js',
-        'cli-pbevm-show-pv.js',
-    ]
+    const cliFiles = ['cli-pbevm-show-project.js', 'cli-pbevm-diff.js', 'cli-pbevm-show-pv.js']
 
     describe('TC-01: distファイルのshebang確認', () => {
         it.each(cliFiles)('%s にshebangが含まれる', (filename) => {

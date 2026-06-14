@@ -122,7 +122,9 @@ export class TreeFormatter {
 
         return {
             name: node.name,
-            children: node.children.map((child) => this.limitDepth(child, currentDepth + 1, maxDepth)),
+            children: node.children.map((child) =>
+                this.limitDepth(child, currentDepth + 1, maxDepth)
+            ),
         }
     }
 }
