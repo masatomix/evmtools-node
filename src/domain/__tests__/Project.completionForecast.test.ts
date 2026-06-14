@@ -962,9 +962,9 @@ describe('Project.completionForecast リファクタリング (REQ-REFACTOR-002)
 
                 const stats = project.getStatistics()
                 // etcPrime は number または undefined
-                expect(
-                    stats.etcPrime === undefined || typeof stats.etcPrime === 'number'
-                ).toBe(true)
+                expect(stats.etcPrime === undefined || typeof stats.etcPrime === 'number').toBe(
+                    true
+                )
             })
         })
 

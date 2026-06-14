@@ -4,22 +4,22 @@
  * @see docs/specs/requirements/REQ-VERSION-001.md
  */
 
-import * as packageJson from '../../package.json';
+import * as packageJson from '../../package.json'
 
 /**
  * バージョン情報を表すインターフェース
  */
 export interface VersionInfo {
     /** パッケージのバージョン番号 */
-    version: string;
+    version: string
     /** パッケージ名 */
-    name: string;
+    name: string
     /** パッケージの説明文 */
-    description: string;
+    description: string
 }
 
 /** キャッシュされたバージョン情報 */
-let cachedVersionInfo: VersionInfo | null = null;
+let cachedVersionInfo: VersionInfo | null = null
 
 /**
  * バージョン情報を取得する
@@ -27,14 +27,14 @@ let cachedVersionInfo: VersionInfo | null = null;
  */
 export function getVersionInfo(): VersionInfo {
     if (cachedVersionInfo !== null) {
-        return cachedVersionInfo;
+        return cachedVersionInfo
     }
 
     cachedVersionInfo = {
         version: packageJson.version || '',
         name: packageJson.name || '',
         description: packageJson.description || '',
-    };
+    }
 
-    return cachedVersionInfo;
+    return cachedVersionInfo
 }

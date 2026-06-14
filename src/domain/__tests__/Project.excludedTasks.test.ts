@@ -25,30 +25,32 @@ function createPlotMap(startDate: Date, endDate: Date): Map<number, boolean> {
 /**
  * テスト用のTaskNode生成ヘルパー
  */
-function createTaskNode(overrides: Partial<{
-    sharp: number
-    id: number
-    level: number
-    name: string
-    assignee: string
-    workload: number
-    startDate: Date
-    endDate: Date
-    actualStartDate: Date
-    actualEndDate: Date
-    progressRate: number
-    scheduledWorkDays: number
-    pv: number
-    ev: number
-    spi: number
-    expectedProgressDate: Date
-    delayDays: number
-    remarks: string
-    parentId: number
-    isLeaf: boolean
-    plotMap: Map<number, boolean>
-    children: TaskNode[]
-}> = {}): TaskNode {
+function createTaskNode(
+    overrides: Partial<{
+        sharp: number
+        id: number
+        level: number
+        name: string
+        assignee: string
+        workload: number
+        startDate: Date
+        endDate: Date
+        actualStartDate: Date
+        actualEndDate: Date
+        progressRate: number
+        scheduledWorkDays: number
+        pv: number
+        ev: number
+        spi: number
+        expectedProgressDate: Date
+        delayDays: number
+        remarks: string
+        parentId: number
+        isLeaf: boolean
+        plotMap: Map<number, boolean>
+        children: TaskNode[]
+    }> = {}
+): TaskNode {
     const defaults = {
         sharp: 1,
         id: 1,
@@ -103,7 +105,14 @@ describe('Project.excludedTasks', () => {
                 isLeaf: true,
             })
 
-            const project = new Project([validTask], baseDate, [], startDate, endDate, 'テストプロジェクト')
+            const project = new Project(
+                [validTask],
+                baseDate,
+                [],
+                startDate,
+                endDate,
+                'テストプロジェクト'
+            )
 
             expect(project.excludedTasks).toEqual([])
         })
@@ -121,7 +130,14 @@ describe('Project.excludedTasks', () => {
                 isLeaf: true,
             })
 
-            const project = new Project([invalidTask], baseDate, [], startDate, endDate, 'テストプロジェクト')
+            const project = new Project(
+                [invalidTask],
+                baseDate,
+                [],
+                startDate,
+                endDate,
+                'テストプロジェクト'
+            )
 
             expect(project.excludedTasks.length).toBe(1)
             expect(project.excludedTasks[0].task.id).toBe(1)
@@ -141,7 +157,14 @@ describe('Project.excludedTasks', () => {
                 isLeaf: true,
             })
 
-            const project = new Project([invalidTask], baseDate, [], startDate, endDate, 'テストプロジェクト')
+            const project = new Project(
+                [invalidTask],
+                baseDate,
+                [],
+                startDate,
+                endDate,
+                'テストプロジェクト'
+            )
 
             expect(project.excludedTasks.length).toBe(1)
             expect(project.excludedTasks[0].task.id).toBe(2)
@@ -162,7 +185,14 @@ describe('Project.excludedTasks', () => {
                 isLeaf: true,
             })
 
-            const project = new Project([invalidTask], baseDate, [], startDate, endDate, 'テストプロジェクト')
+            const project = new Project(
+                [invalidTask],
+                baseDate,
+                [],
+                startDate,
+                endDate,
+                'テストプロジェクト'
+            )
 
             expect(project.excludedTasks.length).toBe(1)
             expect(project.excludedTasks[0].task.id).toBe(3)
@@ -183,7 +213,14 @@ describe('Project.excludedTasks', () => {
                 isLeaf: true,
             })
 
-            const project = new Project([invalidTask], baseDate, [], startDate, endDate, 'テストプロジェクト')
+            const project = new Project(
+                [invalidTask],
+                baseDate,
+                [],
+                startDate,
+                endDate,
+                'テストプロジェクト'
+            )
 
             expect(project.excludedTasks.length).toBe(1)
             expect(project.excludedTasks[0].task.id).toBe(4)
@@ -232,7 +269,7 @@ describe('Project.excludedTasks', () => {
             )
 
             expect(project.excludedTasks.length).toBe(2)
-            const excludedIds = project.excludedTasks.map(e => e.task.id)
+            const excludedIds = project.excludedTasks.map((e) => e.task.id)
             expect(excludedIds).toContain(2)
             expect(excludedIds).toContain(3)
         })
@@ -269,7 +306,14 @@ describe('Project.excludedTasks', () => {
 
             parentTask.children = [childTask]
 
-            const project = new Project([parentTask], baseDate, [], startDate, endDate, 'テストプロジェクト')
+            const project = new Project(
+                [parentTask],
+                baseDate,
+                [],
+                startDate,
+                endDate,
+                'テストプロジェクト'
+            )
 
             // 親タスクは無効だがisLeaf=falseなので対象外
             // 子タスクは有効
@@ -286,7 +330,14 @@ describe('Project.excludedTasks', () => {
                 isLeaf: true,
             })
 
-            const project = new Project([invalidTask], baseDate, [], startDate, endDate, 'テストプロジェクト')
+            const project = new Project(
+                [invalidTask],
+                baseDate,
+                [],
+                startDate,
+                endDate,
+                'テストプロジェクト'
+            )
 
             expect(project.excludedTasks[0].reason).toMatch(/日付エラー/)
             expect(project.excludedTasks[0].reason).toMatch(/タスクID:1/)
@@ -305,7 +356,14 @@ describe('Project.excludedTasks', () => {
                 isLeaf: true,
             })
 
-            const project = new Project([invalidTask], baseDate, [], startDate, endDate, 'テストプロジェクト')
+            const project = new Project(
+                [invalidTask],
+                baseDate,
+                [],
+                startDate,
+                endDate,
+                'テストプロジェクト'
+            )
 
             expect(project.excludedTasks[0].reason).toMatch(/日数エラー/)
             expect(project.excludedTasks[0].reason).toMatch(/タスクID:5/)

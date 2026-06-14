@@ -24,29 +24,31 @@ function createPlotMap(startDate: Date, endDate: Date): Map<number, boolean> {
 /**
  * テスト用のTaskRow生成ヘルパー
  */
-function createTaskRow(overrides: Partial<{
-    sharp: number
-    id: number
-    level: number
-    name: string
-    assignee: string
-    workload: number
-    startDate: Date
-    endDate: Date
-    actualStartDate: Date
-    actualEndDate: Date
-    progressRate: number
-    scheduledWorkDays: number
-    pv: number
-    ev: number
-    spi: number
-    expectedProgressDate: Date
-    delayDays: number
-    remarks: string
-    parentId: number
-    isLeaf: boolean
-    plotMap: Map<number, boolean>
-}> = {}): TaskRow {
+function createTaskRow(
+    overrides: Partial<{
+        sharp: number
+        id: number
+        level: number
+        name: string
+        assignee: string
+        workload: number
+        startDate: Date
+        endDate: Date
+        actualStartDate: Date
+        actualEndDate: Date
+        progressRate: number
+        scheduledWorkDays: number
+        pv: number
+        ev: number
+        spi: number
+        expectedProgressDate: Date
+        delayDays: number
+        remarks: string
+        parentId: number
+        isLeaf: boolean
+        plotMap: Map<number, boolean>
+    }> = {}
+): TaskRow {
     const defaults = {
         sharp: 1,
         id: 1,

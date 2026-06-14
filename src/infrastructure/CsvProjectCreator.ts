@@ -103,7 +103,8 @@ export class CsvProjectCreator implements ProjectCreator {
 
         // 3. ファイル読み込みとエンコーディング処理
         const fileBuffer = fs.readFileSync(this._csvPath)
-        const encoding = this._encoding === 'auto' ? this.detectEncoding(fileBuffer) : this._encoding
+        const encoding =
+            this._encoding === 'auto' ? this.detectEncoding(fileBuffer) : this._encoding
         const content = this.decodeBuffer(fileBuffer, encoding)
 
         // 4. CSVパース
@@ -429,11 +430,7 @@ export class CsvProjectCreator implements ProjectCreator {
         const date = new Date(year, month, day)
 
         // 有効な日付かチェック
-        if (
-            date.getFullYear() !== year ||
-            date.getMonth() !== month ||
-            date.getDate() !== day
-        ) {
+        if (date.getFullYear() !== year || date.getMonth() !== month || date.getDate() !== day) {
             this.logger.warn(`Invalid date: "${trimmed}"`)
             return undefined
         }
