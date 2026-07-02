@@ -4,6 +4,39 @@ import { calcRate, dateStr, isValidNumber, subtract } from '../common'
 import { TaskNode } from './TaskNode'
 
 /**
+ * 進捗率の完了判定に用いる許容誤差。
+ * 浮動小数点誤差（例: 0.9999999...）でも完了として扱えるようにする。
+ */
+export const PROGRESS_RATE_EPSILON = 1e-9
+
+/**
+ * Date を「日単位の Excel シリアル値（整数）」に変換する。
+ * date2Sn はローカル時刻ベースで、時刻成分がシリアル値の小数部になるため
+ * （例: JST 9:00 → .375）、floor して日単位に正規化する。
+ * 日付比較では date2Sn の直呼びではなく必ずこのラッパを経由すること。
+ */
+const toDaySerial = (date: Date): number => Math.floor(date2Sn(date))
+
+/**
+ * plotMap のキー（シリアル値）も時刻成分の小数部を持ち得るため、
+ * 日単位（整数）に正規化して返す。
+ */
+const toDaySerialFromKey = (serial: number): number => Math.floor(serial)
+
+/**
+ * 指定した日シリアル値の日に plotMap のプロットがあるか（日単位で突合）
+ */
+const hasPlotOnDay = (plotMap: Map<number, boolean>, daySerial: number): boolean => {
+    // 整数キー（Excel由来の通常ケース）の高速パス
+    if (plotMap.get(daySerial) === true) return true
+    // 小数部付きキー（時刻成分を持つ Date から生成されたケース）のフォールバック
+    for (const [serial, value] of plotMap.entries()) {
+        if (value === true && toDaySerialFromKey(serial) === daySerial) return true
+    }
+    return false
+}
+
+/**
  * タスクを表す基本エンティティ（リーフまたは中間ノード）
  */
 export class TaskRow {
@@ -143,10 +176,11 @@ export class TaskRow {
     }
 
     /**
-     * 進捗率が100% ならtrueそれ以外はfalse
+     * 進捗率が100%（許容誤差 PROGRESS_RATE_EPSILON 込み）以上ならtrueそれ以外はfalse。
+     * 1.0を超える値（入力誤り等）も完了として扱う。
      */
     get finished(): boolean {
-        return this.progressRate === 1.0
+        return this.progressRate !== undefined && this.progressRate >= 1.0 - PROGRESS_RATE_EPSILON
     }
 
     /**
@@ -154,12 +188,12 @@ export class TaskRow {
      * - 終了日 <= 基準日 かつ 未完了 の場合に true を返す
      * (あくまで基準日の業務が終わったときの状況を算出する考えなので、等号を入れた)
      * progressRate はundefinedの場合もある(未完了と見なす)
+     * 完了判定は finished と対称（同じ許容誤差を使用）
      */
     isOverdueAt(baseDate: Date): boolean {
         if (!this.endDate) return false
 
-        const isNotFinished = this.progressRate === undefined || this.progressRate < 1.0
-        return isNotFinished && this.endDate <= baseDate
+        return !this.finished && this.endDate <= baseDate
     }
 
     get validStatus(): ValidStatus {
@@ -230,25 +264,34 @@ export class TaskRow {
      * plotMapが取れなかったらゼロ
      * 開始日終了日が取れなかったらゼロ
      *
+     * 親タスクのplotMapには土日もプロットされているため、土日のserialは
+     * 累積から除外する（リーフのplotMapは元々平日のみなので影響しない）。
+     * プロジェクト固有の祝日は isHolidayFn を注入した場合のみ除外する。
+     *
      * @param baseDate
+     * @param isHolidayFn 祝日判定関数（任意）。Project.isHoliday を渡すことを想定
      * @return
      */
-    calculatePVs = (baseDate: Date): number => {
+    calculatePVs = (baseDate: Date, isHolidayFn?: (date: Date) => boolean): number => {
         if (!this.checkStartEndDateAndPlotMap()) {
             return 0.0
         }
 
         let pvs = 0
-        const baseSerial = date2Sn(baseDate)
+        const baseSerial = toDaySerial(baseDate)
         // plotMapのキー値(ExcelのDateのシリアル値)
         // 指定した基準日「まで(含む)」のpv値は足す。
-        // ホントは土日を除去しないと、親タスクの計算はバグってしまう
-        // (土日もプロットされているため。かつ、稼働予定日数も間違っている)
         for (const [serial /*value*/] of this.plotMap.entries()) {
-            if (serial <= baseSerial) {
-                const pv = this.calculatePV(dateFromSn(serial))
-                pvs += pv ?? 0.0
-            }
+            const daySerial = toDaySerialFromKey(serial)
+            if (daySerial > baseSerial) continue
+
+            const date = dateFromSn(daySerial)
+            const day = date.getDay() // 0: 日, 6: 土
+            if (day === 0 || day === 6) continue // 土日は稼働日でないため除外
+            if (isHolidayFn?.(date)) continue // 注入時のみ祝日も除外
+
+            const pv = this.calculatePV(date)
+            pvs += pv ?? 0.0
         }
         return pvs
     }
@@ -296,9 +339,9 @@ export class TaskRow {
 
         const { startDate, endDate, plotMap } = this
 
-        const baseSerial = date2Sn(baseDate)
-        const startSerial = date2Sn(startDate)
-        const endSerial = date2Sn(endDate)
+        const baseSerial = toDaySerial(baseDate)
+        const startSerial = toDaySerial(startDate)
+        const endSerial = toDaySerial(endDate)
 
         // タスク期間外チェック
         if (baseSerial < startSerial || baseSerial > endSerial) {
@@ -309,7 +352,8 @@ export class TaskRow {
         // ※基準日自体は含まない（基準日終了時点の解釈）
         let count = 0
         for (const [serial, value] of plotMap.entries()) {
-            if (value === true && serial > baseSerial && serial <= endSerial) {
+            const daySerial = toDaySerialFromKey(serial)
+            if (value === true && daySerial > baseSerial && daySerial <= endSerial) {
                 count++
             }
         }
@@ -424,10 +468,10 @@ function isInRange(
     endDate: Date,
     plotMap: Map<number, boolean>
 ): boolean {
-    const baseSerial = date2Sn(baseDate)
-    const startSerial = date2Sn(startDate)
-    const endSerial = date2Sn(endDate)
-    return plotMap.get(baseSerial) === true && startSerial <= baseSerial && baseSerial <= endSerial
+    const baseSerial = toDaySerial(baseDate)
+    const startSerial = toDaySerial(startDate)
+    const endSerial = toDaySerial(endDate)
+    return hasPlotOnDay(plotMap, baseSerial) && startSerial <= baseSerial && baseSerial <= endSerial
     // return startDate <= baseDate && baseDate <= endDate
 }
 

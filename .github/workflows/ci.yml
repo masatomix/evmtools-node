@@ -24,5 +24,11 @@ jobs:
       - run: npm run lint
       - run: npm run format
       - run: npm run typecheck
+      # 日付境界の回帰防止のため、テストは JST / UTC の両タイムゾーンで実行する
       - run: npm test
+        env:
+          TZ: Asia/Tokyo
+      - run: npm test
+        env:
+          TZ: UTC
       - run: npm run build
