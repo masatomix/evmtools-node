@@ -48,16 +48,16 @@
   - _Boundary: Project_
   - _Depends: 3.2_
 
-- [ ] 4. Core: #165 今日までの未完了タスク取得
+- [x] 4. Core: #165 今日までの未完了タスク取得
   - 着手前ゲート: phase0-bugfix-0.0.29（`PROGRESS_RATE_EPSILON` による `finished`・暦日ヘルパー）が develop にマージ済みであることを確認してから着手する
-- [ ] 4.1 (P) getIncompleteTasksUpToToday のテストを追加（RED）
+- [x] 4.1 (P) getIncompleteTasksUpToToday のテストを追加（RED）
   - 着手前ゲート: phase0 が develop にマージ済みであること（未マージなら着手不可）
   - 遅延のみ/当日のみ/遅延かつ当日（id 重複排除）、完了タスク除外、非 leaf 除外、遅延日数降順・id 昇順、`baseDate` 引数指定と未指定（`this.baseDate` 利用）をケース化
   - phase0 の許容誤差付き `finished` を未完了判定に用いる前提でケースを組む
   - 観測可能な完了条件: 未実装の現行に対して RED になること
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
   - _Boundary: Project_
-- [ ] 4.2 getIncompleteTasksUpToToday を実装（GREEN）
+- [x] 4.2 getIncompleteTasksUpToToday を実装（GREEN）
   - 今日時点の遅延タスクと `getTaskRows(today)` の未完了タスクを id で union（重複排除）し、遅延日数降順・id 昇順でソート。`baseDate` 未指定時は `this.baseDate` を today とする
   - `getDelayedTasks()` / `getTaskRows()` のシグネチャ・戻り値を変更しない
   - 観測可能な完了条件: 4.1 のテストが GREEN、既存メソッドが回帰なしで緑
@@ -109,3 +109,4 @@
 - タスク1: 要件1.2 の undefined 分岐に専用TCなし（TC-02は空文字のみ。実装は `?? ''` で対応、レビュアーが手動確認済み）。タスク6のトレーサビリティ整理時に AC 1.2 の undefined 分岐の扱いを明記すること
 - タスク2: RED専用テストの単独コミットはブランチを赤にするため、2.1+2.2 を1レビュー・1コミット単位に統合した（以後の RED/GREEN ペアも同様とする）
 - タスク3: キャッシュは無効化されない前提（Project 内でツリー不変・id 一意）を design が明示。TaskRow.fullName.test.ts は Project.fullNameCache.test.ts に統合（機能的に同等のカバレッジ）
+- タスク4: 遅延集合と当日集合は同一 today 基準では互いに素（Map dedup は設計指定の防御コード＝等価ミュータント）。遅延判定は getDelayedTasks とロジック重複（設計指定の帰結）— 将来 private getDelayedTasksAsOf(today, minDays) への共通化を推奨

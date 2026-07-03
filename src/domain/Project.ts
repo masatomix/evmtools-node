@@ -873,6 +873,56 @@ export class Project {
             .filter((task) => calcDelayDays(task) > minDays)
             .sort((a, b) => calcDelayDays(b) - calcDelayDays(a))
     }
+
+    /**
+     * 今日時点で対応が必要な未完了タスクの一覧を取得（#165）
+     *
+     * 「今日時点で遅延している未完了タスク」と「今日稼働予定の未完了タスク」を
+     * マージし、同一 id の重複を排除した TaskRow 配列を返す。
+     *
+     * @param baseDate 「今日」として用いる基準日（未指定時は Project の baseDate）
+     * @returns 遅延日数降順・遅延日数が等しい場合は id 昇順にソートされた TaskRow 配列
+     *
+     * @remarks
+     * - 完了タスク（finished === true、許容誤差付き判定）を除外する（要件 4.2）
+     * - isLeaf === true のタスクのみを対象とする（要件 4.3）
+     * - 遅延判定・当日判定はともに引数の「今日」基準で行う（要件 4.5）。
+     *   getDelayedTasks() は this.baseDate 固定のため、遅延集合は本メソッド内で
+     *   同じ today 基準で算出する（素朴な連結による重複・基準ずれを回避）
+     * - 該当タスクがない場合は空配列を返す（例外を投げない）
+     */
+    getIncompleteTasksUpToToday(baseDate?: Date): TaskRow[] {
+        const today = baseDate ?? this._baseDate
+
+        // 遅延日数を計算するヘルパー関数（getDelayedTasks と同じ経路）
+        // formatRelativeDaysNumber は endDate - today を返すので符号反転
+        const calcDelayDays = (task: TaskRow): number => {
+            return -(formatRelativeDaysNumber(today, task.endDate) ?? 0)
+        }
+
+        // 今日時点で遅延している未完了 leaf タスク（today 基準で算出。要件 4.1〜4.3, 4.5）
+        const delayedTasks = this.toTaskRows()
+            .filter((task) => task.isLeaf)
+            .filter((task) => !task.finished)
+            .filter((task) => task.endDate !== undefined)
+            .filter((task) => calcDelayDays(task) > 0)
+
+        // 今日稼働予定の未完了 leaf タスク（要件 4.1, 4.2）
+        const todaysTasks = this.getTaskRows(today).filter((task) => !task.finished)
+
+        // id で union（重複排除。要件 4.1）
+        const merged = new Map<number, TaskRow>()
+        for (const task of [...delayedTasks, ...todaysTasks]) {
+            if (!merged.has(task.id)) {
+                merged.set(task.id, task)
+            }
+        }
+
+        // 遅延日数降順・同値は id 昇順（要件 4.4）
+        return Array.from(merged.values()).sort(
+            (a, b) => calcDelayDays(b) - calcDelayDays(a) || a.id - b.id
+        )
+    }
 }
 
 const sumWorkload = (group: TaskRow[]) => sum(group.map((d) => d.workload))
