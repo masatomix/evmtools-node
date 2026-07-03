@@ -6,7 +6,7 @@
 >
 > ブランチ: CLAUDE.md 準拠で各 Issue の feature ブランチを develop から worktree で分岐（`--no-track`）。独立実装のため Issue 単位でブランチを分けてよい。
 
-- [ ] 1. (P) #166: getNameWithGreeting を取り込み・照合する
+- [x] 1. (P) #166: getNameWithGreeting を取り込み・照合する
   - 既存コミット `e8c497b`（`origin/worktree-evmtools`）の `Project.getNameWithGreeting()` とテスト `src/domain/__tests__/Project.nameWithGreeting.test.ts`（TC-01〜TC-04）を取り込む（cherry-pick 相当。整形差分が混在する場合は該当メソッドとテストのみ手動取り込み）
   - name が英字/空文字/日本語で `{name} Hello World.` を返し、name 未設定時は先頭スペースの ` Hello World.` を返すこと、呼び出し後も `name` が不変であることを要件 1 と照合
   - 観測可能な完了条件: `Project.nameWithGreeting.test.ts` の 4 ケースが GREEN、全体テストが回帰なしで緑
@@ -104,3 +104,6 @@
   - 観測可能な完了条件: バージョンが 0.0.30、CHANGELOG に 5 件の追記が存在し、検証ゲートが緑であること
   - _Requirements: 7.1, 7.2_
   - _Depends: 7.1_
+
+## Implementation Notes
+- タスク1: 要件1.2 の undefined 分岐に専用TCなし（TC-02は空文字のみ。実装は `?? ''` で対応、レビュアーが手動確認済み）。タスク6のトレーサビリティ整理時に AC 1.2 の undefined 分岐の扱いを明記すること

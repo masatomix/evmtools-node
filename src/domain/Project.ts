@@ -65,6 +65,16 @@ export class Project {
         return this._name
     }
 
+    /**
+     * プロジェクト名の末尾に「 Hello World.」を付加した文字列を返す
+     *
+     * @returns `${this.name} Hello World.` 形式の文字列
+     * @see docs/specs/domain/features/Project.nameWithGreeting.spec.md (REQ-HELLO-001)
+     */
+    getNameWithGreeting(): string {
+        return `${this._name ?? ''} Hello World.`
+    }
+
     get holidayDatas() {
         return this._holidayDatas
     }
