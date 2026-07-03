@@ -183,23 +183,24 @@ main()
 
 ※ 値は例です。この期間に増えたEV ÷ この期間に増えた計画PV を表します。
 
-### コード例（1週間分のスナップショット）
+### 直近N日の期間SPIを取得する
+
+期間SPIは窓端2点（最古・最新）だけで決まります。したがって「直近1週間の実勢SPI」が欲しい場合、日次スナップショットを全部読み込む必要はなく、**1週間前のファイルと最新のファイルの2つだけ**を渡せば十分です。
 
 ```typescript
-// 直近1週間の日次スナップショットを読み込む
-const files = ['0718.xlsm', '0722.xlsm', '0723.xlsm', '0724.xlsm', '0725.xlsm']
-const projects = await Promise.all(
-    files.map(f => new ExcelProjectCreator(`./${f}`).createProject())
-)
+// 「N日前」と「最新」の2スナップショットを選んで読み込む
+const projectWeekAgo = await new ExcelProjectCreator('./0718.xlsm').createProject()
+const projectNow = await new ExcelProjectCreator('./0725.xlsm').createProject()
 
 const service = new ProjectService()
-// 最古(0718)と最新(0725)の2点から週間の期間SPIを算出（中間の日は使われない）
-const weeklySpi = service.calculateRecentSpi(projects)
+const weeklySpi = service.calculateRecentSpi([projectWeekAgo, projectNow])
 
 console.log(`直近1週間の期間SPI: ${weeklySpi?.toFixed(3)}`)
 ```
 
-> 期間 SPI が 1.0 を超えている場合、最近の進捗が予定より早いことを示します。
+> 3点以上を渡すこともできますが、その場合も基準日で最古・最新の2点だけが計算に使われ、中間のスナップショットは無視されます。日次スナップショットの配列を既に持っている場合はそのまま渡しても結果は同じです。
+>
+> 期間 SPI が 1.0 を超えている場合、最近の進捗が予定より早いことを示します。逆に累積SPIが良好でも期間SPIが低い場合、直近で失速している兆候です。
 >
 > **完了予測への活用**: 期間SPIを使った完了予測については [完了予測 - 直近SPI（期間SPI）で完了予測する](./04-completion-forecast.md#直近spi期間spiで完了予測する) を参照してください。
 
