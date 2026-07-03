@@ -111,3 +111,4 @@
 - タスク3: キャッシュは無効化されない前提（Project 内でツリー不変・id 一意）を design が明示。TaskRow.fullName.test.ts は Project.fullNameCache.test.ts に統合（機能的に同等のカバレッジ）
 - タスク4: 遅延集合と当日集合は同一 today 基準では互いに素（Map dedup は設計指定の防御コード＝等価ミュータント）。遅延判定は getDelayedTasks とロジック重複（設計指定の帰結）— 将来 private getDelayedTasksAsOf(today, minDays) への共通化を推奨
 - タスク6.1: 旧 features/ への設計書新設は sdd-consolidation のポインタモデルに読み替え（テスト・サンプル冒頭に feature 名+要件番号を記載、git grep で横断可能に）
+- PR レビュー指摘: TaskDiff.isReschedule（非オプショナル）は TaskDiff を自前構築する外部利用者に型的破壊的変更。release/0.0.30 の CHANGELOG に「構築側は isReschedule の付与が必要」を明記すること（読む側は完全互換）
