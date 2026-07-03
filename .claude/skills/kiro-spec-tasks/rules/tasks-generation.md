@@ -235,6 +235,9 @@ a master-sync task** with these details:
 - Update `docs/specs/domain/master/INDEX.md` (class list / public API catalog) for every added or
   changed public symbol
 - Link the task to the spec's documentation-sync requirement via `_Requirements:`
+- Include the feature name (the `.kiro/specs/` directory name) in the tasks.md title line
+  (e.g. `# 実装計画（{feature-name}）`) so `git grep {feature-name}` traverses
+  requirements → tasks → tests → master docs (grep convention in `.kiro/steering/master-spec-sync.md`)
 
 Do NOT generate tasks that create or modify `docs/specs/domain/features/*.spec.md`
 (the legacy per-case spec location is retired; new requirements live in `.kiro/specs/{feature}/`).
