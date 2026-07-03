@@ -95,16 +95,28 @@ export class Project {
      * @returns
      */
     getFullTaskName(task?: TaskRow): string {
+        if (!task) return ''
+
+        // 内部メモ化: Project 内ではツリー不変・id 一意のため、id をキーに結果をキャッシュする。
+        // 公開シグネチャ・戻り値は従来と同一（#153 は性能改善のみ、公開 API 追加なし）
+        const cached = this._fullNameCache.get(task.id)
+        if (cached !== undefined) return cached
+
         const names: string[] = []
-        let current = task
+        let current: TaskRow | undefined = task
 
         while (current) {
             names.unshift(current.name) // 先頭に名前追加
             current = current.parentId ? this.getTask(current.parentId) : undefined
         }
 
-        return names.join('/')
+        const fullName = names.join('/')
+        this._fullNameCache.set(task.id, fullName)
+        return fullName
     }
+
+    /** getFullTaskName の内部キャッシュ（task.id → フルパス名）。外部非公開 */
+    private _fullNameCache = new Map<number, string>()
 
     /**
      * 指定された期間、担当者のタスク配列を返す。親タスクは除外しています。

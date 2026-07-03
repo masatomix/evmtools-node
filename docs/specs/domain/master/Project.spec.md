@@ -260,6 +260,8 @@ getFullTaskName(task?: TaskRow): string
 
 ---
 
+> **1.9.0〜（#153）**: 本メソッドは内部メモ化される。初回算出時に結果を Project 内部の private キャッシュ（task.id → フルパス名の Map）に保存し、以降はキャッシュを返す（`getTask` の再走査なし）。**公開 API の追加はなく**、シグネチャ・戻り値は従来と同一。
+
 ### 5.4 `getTaskRows(fromDate: Date, toDate?: Date, assignee?: string): TaskRow[]`
 
 #### 目的
@@ -1412,3 +1414,4 @@ Tests:       262 passed, 262 total (2 skipped)
 | 1.6.1 | 2026-01-26 | `_calculateExtendedStats()` の `dailyPvOverride: 1.0` を削除（REQ-EVM-001 AC-03準拠）。設計方針セクション追加（Statistics と CompletionForecast の役割分担） | Issue #145 |
 | 1.7.0 | 2026-01-28 | `CompletionForecastOptions` に `spiOverride` オプション追加。`calculateCompletionForecast()` で外部指定SPIを使用可能に | REQ-SPI-002 |
 | 1.8.0 | 2026-01-30 | `getTree()` メソッド追加。TaskNode[] を TreeNode[] 形式に変換してツリー構造を取得可能に | REQ-TREE-001 AC-07 |
+| 1.9.0 | 2026-07-04 | phase1-minor-issues-0.0.30: `getFullTaskName` を内部メモ化（#153 要件3。private Map によるキャッシュ、公開 API 追加なし・シグネチャ/戻り値不変）。※当初計画の #166/#165 の公開 API 追加はスコープ外し（公開 API 追加基準の適用: 既存 API の組み合わせで実現可能なため） | phase1-minor-issues-0.0.30 要件3 |
