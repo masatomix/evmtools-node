@@ -65,7 +65,7 @@
   - _Boundary: Project_
   - _Depends: 4.1_
 
-- [ ] 5. (P) #160: 今日のPV サンプルを追加する
+- [x] 5. (P) #160: 今日のPV サンプルを追加する
   - `samples/evm-sample-projects.ts` に、各 leaf タスクの計画PV（`workloadPerDay`）と実行PV（`pvTodayActual(baseDate)`）を並べて出力する関数を追加し、メイン実行から呼ぶ
   - 実行PV > 計画PV で遅延圧、実行PV < 計画PV で前倒し、という状態解釈を表に併記
   - 観測可能な完了条件: `npx ts-node samples/evm-sample-projects.ts` がエラーなく完了し、「今日のPV」表が標準出力に表示される
@@ -73,12 +73,12 @@
   - _Boundary: Samples_
 
 - [ ] 6. Integration: 設計書同期とサンプルドキュメント
-- [ ] 6.1 (P) 各案件設計書を新設・改訂（トレーサビリティ表付き）
-  - `docs/specs/domain/features/` に #138（`ProjectService.task-diff-reschedule`）・#153（`TaskRow.fullNameCache`）・#165（`Project.incompleteTasksUpToToday`）・#160（`Samples.pv-today`）の案件設計書を新設し、#166（`Project.nameWithGreeting`）は取り込み済み設計書と要件を照合
-  - 各 spec に AC-ID → TC-ID の要件トレーサビリティ表を grep 可能な形式で記載
-  - 観測可能な完了条件: 各 feature spec に AC-ID → TC-ID 表が存在し、`grep` で AC-ID がヒットする
+- [ ] 6.1 (P) 【ポインタモデル準拠に読み替え】要件追跡の grep 規約への適合
+  - （原文の features/ への案件設計書新設は sdd-consolidation で廃止済み。トレーサビリティは .kiro/specs 本 spec の requirements/design/tasks が正）
+  - 新規テストファイル（nameWithGreeting / isReschedule / fullNameCache / incompleteTasksUpToToday）とサンプル追加箇所の冒頭コメントに feature 名 `phase1-minor-issues-0.0.30` + 要件番号を記載し、`git grep phase1-minor-issues` で要件→実装→テストが横断できることを確認
+  - 観測可能な完了条件: `git grep -l "phase1-minor-issues"` に上記テスト4ファイルとサンプルがヒットする
   - _Requirements: 6.1, 6.3_
-  - _Boundary: docs/features_
+  - _Boundary: tests, Samples_
   - _Depends: 1, 2.2, 3.3, 4.2, 5_
 - [ ] 6.2 master 設計書を同期
   - `docs/specs/domain/master/Project.spec.md`（#166/#153/#165）・`ProjectService.spec.md`（#138）・`TaskRow.spec.md`（#153）に、メソッド仕様・テストシナリオ・変更履歴（バージョン更新）を反映

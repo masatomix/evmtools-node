@@ -2,6 +2,7 @@
  * EVM指標サンプル出力
  *
  * 3つのプロジェクト（順調/遅延/失速）を比較して、EVM指標の意味を理解する。
+ * 末尾では「今日のPV」（計画PV と実行PV pvTodayActual の比較）の読み取り方を示す。
  *
  * 共通設定:
  * - タスク数: 5タスク（各1人日）
@@ -18,6 +19,7 @@
 import { date2Sn } from 'excel-csv-read-write'
 import { Project } from '../src/domain/Project'
 import { TaskNode } from '../src/domain/TaskNode'
+import { TaskRow } from '../src/domain/TaskRow'
 
 // ============================================
 // ヘルパー関数
@@ -29,6 +31,17 @@ import { TaskNode } from '../src/domain/TaskNode'
 function createPlotMapForSingleDay(date: Date): Map<number, boolean> {
     const plotMap = new Map<number, boolean>()
     plotMap.set(date2Sn(date), true)
+    return plotMap
+}
+
+/**
+ * plotMapを生成（指定した複数日）
+ */
+function createPlotMapForDates(dates: Date[]): Map<number, boolean> {
+    const plotMap = new Map<number, boolean>()
+    for (const date of dates) {
+        plotMap.set(date2Sn(date), true)
+    }
     return plotMap
 }
 
@@ -73,6 +86,54 @@ function createTask(
         undefined, // parentId
         true, // isLeaf
         createPlotMapForSingleDay(date),
+        [] // children
+    )
+}
+
+/**
+ * 複数日にまたがるTaskNode生成ヘルパー（今日のPVサンプル用）
+ */
+function createMultiDayTask(
+    id: number,
+    name: string,
+    dates: Date[],
+    workload: number,
+    progressRate: number
+): TaskNode {
+    const startDate = dates[0]
+    const endDate = dates[dates.length - 1]
+    const scheduledWorkDays = dates.length
+
+    // PV: 基準日（8/5）までにプロットされた日数 × 1日あたり計画量
+    // EV: workload × progressRate
+    const baseDate = new Date('2025-08-05')
+    const plannedDays = dates.filter((date) => date <= baseDate).length
+    const pv = (workload / scheduledWorkDays) * plannedDays
+    const ev = workload * progressRate
+    const spi = pv > 0 ? ev / pv : 0
+
+    return new TaskNode(
+        id, // sharp
+        id, // id
+        1, // level
+        name,
+        undefined, // assignee
+        workload,
+        startDate,
+        endDate,
+        undefined, // actualStartDate
+        undefined, // actualEndDate
+        progressRate,
+        scheduledWorkDays,
+        pv,
+        ev,
+        spi,
+        undefined, // expectedProgressDate
+        undefined, // delayDays
+        undefined, // remarks
+        undefined, // parentId
+        true, // isLeaf
+        createPlotMapForDates(dates),
         [] // children
     )
 }
@@ -212,6 +273,133 @@ function printSummaryTable(projects: Project[]) {
     }
 }
 
+/**
+ * 今日のPVの状態解釈
+ * - 実行PV > 計画PV: 遅延圧（1日あたりの必要消化量が計画を上回っている）
+ * - 実行PV < 計画PV: 前倒し（計画より少ない消化量で完了できる）
+ * - 実行PV = 計画PV: 計画通り
+ */
+function interpretPvToday(
+    task: TaskRow,
+    baseDate: Date,
+    plannedPv: number | undefined,
+    actualPv: number | undefined,
+    remainingDays: number | undefined
+): string {
+    if (plannedPv === undefined || actualPv === undefined) {
+        return '-'
+    }
+    if ((task.progressRate ?? 0) >= 1) {
+        return '完了'
+    }
+    if (task.startDate !== undefined && task.startDate > baseDate) {
+        return '開始前'
+    }
+    if (remainingDays === 0) {
+        return '期間超過（残日数0）'
+    }
+    if (actualPv > plannedPv) {
+        return '遅延圧'
+    }
+    if (actualPv < plannedPv) {
+        return '前倒し'
+    }
+    return '計画通り'
+}
+
+/**
+ * 数値をフォーマット（undefinedは'-'）
+ */
+function formatPv(value: number | undefined): string {
+    return value !== undefined ? value.toFixed(2) : '-'
+}
+
+/**
+ * 各leafタスクの計画PVと実行PVを並べて表示する
+ */
+function printPvTodayTable(title: string, tasks: TaskRow[], baseDate: Date) {
+    console.log(`\n### ${title}`)
+    console.log(`| ID | タスク | 進捗率 | 残日数 | 計画PV | 実行PV | 状態 |`)
+    console.log(`|----|-------|-------|-------|--------|--------|------|`)
+
+    for (const task of tasks.filter((task) => task.isLeaf)) {
+        const plannedPv = task.workloadPerDay
+        const actualPv = task.pvTodayActual(baseDate)
+        const remaining = task.remainingDays(baseDate)
+        const progress =
+            task.progressRate !== undefined
+                ? `${(task.progressRate * 100).toFixed(0)}%`
+                : '-'
+        const status = interpretPvToday(
+            task,
+            baseDate,
+            plannedPv,
+            actualPv,
+            remaining
+        )
+
+        console.log(
+            `| ${task.id} | ${task.name} | ${progress} | ${remaining ?? '-'} | ${formatPv(plannedPv)} | ${formatPv(actualPv)} | ${status} |`
+        )
+    }
+}
+
+/**
+ * 今日のPV（計画PV vs 実行PV）サンプルを出力する
+ */
+function printPvTodaySamples(projects: Project[]) {
+    console.log(`\n## 今日のPV（計画PV vs 実行PV）`)
+    console.log('')
+    console.log('- 計画PV: 1日あたりの計画消化量（workload / 稼動予定日数）')
+    console.log(
+        '- 実行PV: 今日やるべき消化量（残工数 / 残日数 = pvTodayActual）'
+    )
+    console.log('- 状態解釈:')
+    console.log('  - 実行PV > 計画PV → 遅延圧（挽回が必要）')
+    console.log('  - 実行PV < 計画PV → 前倒し（計画より余裕がある）')
+    console.log('  - 実行PV = 計画PV → 計画通り')
+
+    for (const project of projects) {
+        printPvTodayTable(
+            `${project.name}プロジェクト`,
+            project.toTaskRows(),
+            project.baseDate
+        )
+    }
+
+    console.log('')
+    console.log(
+        '※1日タスクは基準日を過ぎると残日数0となり実行PVは0になる（期間超過）。'
+    )
+    console.log(
+        '  日々の遅延圧・前倒しの読み取りは、以下の複数日タスクの例が分かりやすい。'
+    )
+
+    // 複数日タスクの例: 5稼働日（8/1〜8/7）のタスク、workload 5人日 → 計画PV 1.0人日/日
+    // 基準日 8/5 時点で残2日（8/6, 8/7）
+    const allDays = [day1, day2, day3, day4, day5]
+    const multiDayTasks = [
+        createMultiDayTask(1, '遅れているタスク', allDays, 5, 0.2),
+        createMultiDayTask(2, '計画通りのタスク', allDays, 5, 0.6),
+        createMultiDayTask(3, '進んでいるタスク', allDays, 5, 0.8),
+    ]
+    const multiDayProject = createSampleProject('複数日タスク', multiDayTasks)
+
+    printPvTodayTable(
+        '複数日タスクの例（5稼働日・5人日、基準日時点で残2日）',
+        multiDayProject.toTaskRows(),
+        multiDayProject.baseDate
+    )
+
+    console.log('')
+    console.log(
+        '例: 進捗20%のタスクは残工数4.0人日を残2日で消化する必要があり、'
+    )
+    console.log(
+        '実行PV 2.00 > 計画PV 1.00 → 遅延圧。進捗80%なら実行PV 0.50 < 1.00 → 前倒し。'
+    )
+}
+
 // メイン実行
 console.log('# EVM指標サンプル出力')
 console.log('')
@@ -243,3 +431,6 @@ console.log(
 )
 console.log(`- 完了予測日 = 2025-08-05 + ${Math.ceil(etcPrimeRecent)}稼働日 ≒ 2025-08-25`)
 console.log(`- 遅延日数 = 18日（累積SPI版の4.5倍！）`)
+
+// 今日のPV（計画PV vs 実行PV）サンプル
+printPvTodaySamples([onTrackProject, delayedProject, stalledProject])
