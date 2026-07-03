@@ -793,7 +793,9 @@ Scenario: 進捗100%タスクの実行PV
 
 ## 10. 要件トレーサビリティ
 
-> **重要**: このセクションは必須です。grepで検索可能な形式で記載すること。
+> **注記（2026-07-03〜）**: 下表は旧方式（REQ-*）の凍結資産であり、行の追加は行わない。
+> 以降の要件追跡は「13. 変更履歴」の feature 名（例: `phase0-bugfix-0.0.29`）から
+> `.kiro/specs/{feature}/`（requirements.md / design.md / tasks.md）を参照する（ポインタモデル）。
 
 | 要件ID | 受け入れ基準 | 対応メソッド | 対応テストケース | 結果 |
 |--------|-------------|-------------|-----------------|------|
@@ -803,7 +805,7 @@ Scenario: 進捗100%タスクの実行PV
 | REQ-PV-TODAY-001 AC-04 | 期間外でremainingDaysは0 | remainingDays | TC-05, TC-06 | ✅ PASS |
 | REQ-PV-TODAY-001 AC-07 | 進捗100%でpvTodayActualは0 | pvTodayActual | TC-15 | ✅ PASS |
 
-**詳細仕様書**: [`TaskRow.pv-today.spec.md`](../features/TaskRow.pv-today.spec.md)
+**詳細仕様書**: [`TaskRow.pv-today.spec.md`](../../../attic/features/TaskRow.pv-today.spec.md)（アーカイブ）
 
 ---
 

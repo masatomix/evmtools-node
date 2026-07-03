@@ -4,7 +4,7 @@
  * 分離環境でCLIコマンドの動作を検証する。
  * リリース検証用のワンショットテストであり、リグレッションテストには含めない。
  *
- * @see docs/specs/domain/features/CLI.shebang.spec.md
+ * @see docs/attic/features/CLI.shebang.spec.md （アーカイブ）
  * @see docs/specs/requirements/REQ-CLI-001.md
  */
 

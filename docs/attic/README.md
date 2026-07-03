@@ -11,6 +11,10 @@
 | 仕様駆動開発の規約（マスター設計書の同期ルール） | [.kiro/steering/master-spec-sync.md](../../.kiro/steering/master-spec-sync.md) |
 | 進行中の機能仕様 | `.kiro/specs/{feature}/` |
 
+## リンクについて
+
+attic 配下の文書内のリンクは、退避により切れている場合がありますが**修正しません**（歴史資料のため、退避時点の内容を保存します）。
+
 ## 収録内容
 
 - `DEVELOPMENT_WORKFLOW.md` / `SAMPLE_DEVELOPMENT_FLOW.md` — 旧・独自SDD のワークフロー文書（cc-sdd 移行により廃止）

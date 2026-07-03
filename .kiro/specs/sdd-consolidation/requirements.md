@@ -22,7 +22,7 @@
 #### 受入基準（Acceptance Criteria）
 
 1. The `docs/specs/domain/master/INDEX.md` shall レイヤー別の全クラス一覧（責務1行）と公開 API カタログ（クラス・メソッド/型・概要・マスター設計書へのリンク）を含む。
-2. The APIカタログ shall package.json の exports 実体（`src/*/index.ts` のバレル）に載る全公開シンボルを網羅する。
+2. The APIカタログ shall package.json の exports 実体（`src/*/index.ts` のバレル）に載る全公開シンボルを網羅する。ただしベータの `resource` サブパスは API 安定化までカタログ対象外とし、その旨を INDEX.md に明記する。
 3. Where マスター設計書が存在しないクラスがある場合, the 移行作業 shall 一覧化し、主要クラスの master spec を新設または INDEX 上で「未文書化（Backlog）」と明示する。
 
 ### 要件 3: 旧方式資産の Attic 退避

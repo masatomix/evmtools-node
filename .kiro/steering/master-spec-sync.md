@@ -28,8 +28,14 @@ docs/specs/domain/master/
   「全体の API 一覧が存在しない」状態を防ぐ横串文書。
 - **{Class}.spec.md**: 複数 feature spec に分散した変更をクラス単位に集約する。価値:
   クラスの全体像 / 新メンバーのオンボーディング / 影響範囲の特定。
-  必須セクション: 概要 / インターフェース仕様 / 処理仕様 / テストシナリオ /
-  要件トレーサビリティ（AC-ID が grep 可能な形式）/ 変更履歴。
+  必須セクション: 概要 / インターフェース仕様 / 処理仕様 / テストシナリオ / 要件追跡 / 変更履歴。
+- **要件追跡（ポインタモデル）**: 変更履歴に **feature 名 + 要件番号**（例: `phase0-bugfix-0.0.29 要件3〜5`）を
+  必ず記載する。AC→テストの詳細対応は `.kiro/specs/{feature}/`（requirements.md の AC 番号 /
+  design.md のトレーサビリティ表 / tasks.md の `_Requirements` 注釈）を正とし、master 側に対応表は複製しない。
+  既存の REQ-* トレーサビリティ表は凍結資産として保持する（行の追加はしない）。
+- **grep 規約**: feature 名（`.kiro/specs/` のディレクトリ名）を requirements/design/tasks・
+  テストコードのコメント・master 変更履歴で一貫して使用する。`git grep {feature名}` で
+  要件→実装→テスト→master を横断検索できる状態を保つ。
   正例: `CsvProjectCreator.spec.md`（トレーサビリティ付き）、`Project.spec.md`（複数要件の集約）。
 - 用語・ドメイン概念は `docs/GLOSSARY.md`、運用知見は `docs/EVM-KNOWLEDGE.md`（phase5〜）が担う。
 
