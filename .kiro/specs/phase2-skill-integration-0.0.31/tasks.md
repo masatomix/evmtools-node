@@ -1,5 +1,16 @@
 # 実装計画（phase2-skill-integration-0.0.31）
 
+> **スコープ改訂（2026-07-04、ユーザー判断）**: steering「公開 API 追加の基準」の適用により、
+> **要件2（AlertService）と要件3（detectActiveSubprojects）は取り下げ**。
+> いずれも公開 API（getStatisticsByName / getDelayedTasks / calculateRecentSpi / getTree / calculateTaskDiffs）
+> だけで利用側が合成可能であり、閾値・文言・「アクティブ」定義は利用側固有のポリシーのため。
+> **要件1（getDailyPvByAssignee）のみ実施**。合成できない理由（基準4）: ライブラリ内部の同一 EVM 計算
+> （_internalPvByNameLong 相当）をスキルが再実装しており、丸め・(未割当)・日付ラベルの細部乖離による
+> **数値不一致リスクの解消（計算の単一ソース化）**。getStatistics({filter})（#393→0.0.25）と同一パターン。
+> リリースは 0.0.31 単独ではなく **0.0.30（phase1 残置分と合流）** に変更。
+
+
+
 > 前提: phase0-bugfix-0.0.29（期間SPI ΔEV/ΔPV・日付ヘルパー・`calculateProjectDiffs` 空入力デフォルト）が develop に取り込み済みであること。3 機能（日次PV / アラート / アクティブ検出）は相互独立のため `(P)` を付与している。参照実装（task スキル 3 本）を数値一致のオラクルとする。
 
 - [ ] 1. 基盤: テスト fixtures と依存前提の確立
@@ -31,8 +42,8 @@
   - _Boundary: Project.getDailyPvByAssignee_
   - _Depends: 2.1_
 
-- [ ] 3. アラート判定（AlertService）
-- [ ] 3.1 (P) アラート判定ドメインサービスを新規実装する
+- [x] ~~3. アラート判定（AlertService）~~ **取り下げ（スコープ改訂）**
+- [x] ~~3.1 (P) アラート判定ドメインサービスを新規実装する~~ **取り下げ（スコープ改訂）**
   - 未完了タスク限定で、タスクSPI（Excel PV/EV、PV≤0 は 1.0）と Excel 遅延日数から CRITICAL_DELAY（<0.8 または >5 日）と WARNING_DELAY（<0.9 または >0 日、CRITICAL と排他）を判定する
   - 基準日時点の期限超過を独立の OVERDUE として追加し、担当者別未完了件数が上限（既定 10）超で HIGH_WORKLOAD を生成する
   - 各アラートに種別・重要度・対象名・タスクID・メッセージを持たせ、重要度別件数とサマリ文字列を返す。閾値はオプションで上書き可能にする
@@ -40,7 +51,7 @@
   - 観測可能な完了条件: fixtures で呼ぶと 4 種別のアラート・counts・summary が返り、メッセージ文言が参照実装と一致する
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 4.1, 4.5_
   - _Boundary: AlertService_
-- [ ] 3.2 (P) アラート判定のユニット/参照一致テストを追加する
+- [x] ~~3.2 (P) アラート判定のユニット/参照一致テストを追加する~~ **取り下げ（スコープ改訂）**
   - 未完了限定・CRITICAL/WARNING の境界と排他・OVERDUE 独立追加（同一タスクで 2 件）・HIGH_WORKLOAD・オプション上書き・counts/summary 書式・メッセージ文言を検証する
   - 参照実装 `checkAlertsCore` と同一入力で生成アラート（種別/重要度/対象/件数/サマリ）が一致することを統合テストで検証する
   - 観測可能な完了条件: 追加テストが TZ 二重実行で緑、メッセージ文言が固定される
@@ -48,7 +59,7 @@
   - _Boundary: AlertService_
   - _Depends: 3.1_
 
-- [ ] 4. アクティブサブプロジェクト検出（ProjectService）
+- [x] ~~4. アクティブサブプロジェクト検出（ProjectService）~~ **取り下げ（スコープ改訂）**
 - [ ] 4.1 (P) 差分のあるサブツリー検出を公開メソッドとして実装する
   - ツリーのルート直下から探索し、差分ありの子が単一なら掘り下げ、複数なら直前の単一祖先を返す（無ければその階層の全候補）、葉到達/差分なしなら直前の単一祖先か空を返す
   - 各子の差分件数を、その子のフルタスク名で絞ったタスク集合に対する差分集計（変更＋追加＋削除）として算出し、`calculateTaskDiffs` は一度だけ計算して再利用する
@@ -56,7 +67,7 @@
   - 観測可能な完了条件: fixtures で呼ぶと names/paths/trace が返り、単一掘り下げ・複数親返却・depth=1 複数・葉/差分なしの各分岐が参照実装と一致する
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.3, 4.5_
   - _Boundary: ProjectService.detectActiveSubprojects_
-- [ ] 4.2 (P) アクティブ検出のユニット/参照一致テストを追加する
+- [x] ~~4.2 (P) アクティブ検出のユニット/参照一致テストを追加する~~ **取り下げ（スコープ改訂）**
   - 単一掘り下げ・複数で親返却・depth=1 複数・差分なし・葉到達・maxDepth 打ち切り・changeCount 定義・trace の depth/parentPath/decision を検証する
   - 参照実装 `detectActiveSubprojects` と同一入力で names/paths/trace が一致することを統合テストで検証する
   - 観測可能な完了条件: 追加テストが TZ 二重実行で緑、trace の decision 種別が固定される
