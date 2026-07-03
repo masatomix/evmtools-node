@@ -132,19 +132,45 @@ describe('TaskRow.calculatePVs（土日・祝日除外）', () => {
         expect(task.calculatePVs(new Date(2025, 5, 11))).toBeCloseTo(4)
     })
 
-    it('isHolidayFn を注入すると祝日も除外される', () => {
-        const plotMap = createPlotMap(startDate, endDate, true)
+    it('リーフの週末プロット（意図した週末稼働）は除外されず PV に計上される', () => {
+        const plotMap = createPlotMap(startDate, endDate, false) // 金,土,日,月,火,水 = 6日プロット
         const task = createTaskRow({
+            startDate,
+            endDate,
+            workload: 6,
+            scheduledWorkDays: 6,
+            isLeaf: true, // リーフ: plotMap のプロットを尊重する
+            plotMap,
+        })
+        // リーフは土日除外の対象外。6日分すべて計上される
+        expect(task.calculatePVs(new Date(2025, 5, 11))).toBeCloseTo(6)
+    })
+
+    it('isHolidayFn を注入すると親タスクの祝日も除外される（リーフには適用されない）', () => {
+        const plotMap = createPlotMap(startDate, endDate, true)
+        const parent = createTaskRow({
             startDate,
             endDate,
             workload: 4,
             scheduledWorkDays: 4,
+            isLeaf: false,
             plotMap,
         })
         const holiday = new Date(2025, 5, 9) // 6/9(月) を祝日とする
         const isHolidayFn = (d: Date) => d.getTime() === holiday.getTime()
-        // 金,火,水 の3日分（月曜が祝日除外）
-        expect(task.calculatePVs(new Date(2025, 5, 11), isHolidayFn)).toBeCloseTo(3)
+        // 親タスク: 金,火,水 の3日分（月曜が祝日除外）
+        expect(parent.calculatePVs(new Date(2025, 5, 11), isHolidayFn)).toBeCloseTo(3)
+
+        // リーフ: 祝日除外は適用されず4日分
+        const leaf = createTaskRow({
+            startDate,
+            endDate,
+            workload: 4,
+            scheduledWorkDays: 4,
+            isLeaf: true,
+            plotMap,
+        })
+        expect(leaf.calculatePVs(new Date(2025, 5, 11), isHolidayFn)).toBeCloseTo(4)
     })
 
     it('baseDate に時刻成分があってもシリアル比較がずれない', () => {

@@ -264,9 +264,12 @@ export class TaskRow {
      * plotMapが取れなかったらゼロ
      * 開始日終了日が取れなかったらゼロ
      *
-     * 親タスクのplotMapには土日もプロットされているため、土日のserialは
-     * 累積から除外する（リーフのplotMapは元々平日のみなので影響しない）。
-     * プロジェクト固有の祝日は isHolidayFn を注入した場合のみ除外する。
+     * 親タスク（isLeaf === false）のplotMapには土日もプロットされているため、
+     * 親タスクに限り土日のserialを累積から除外する。
+     * リーフタスクは plotMap のプロットをそのまま尊重する（週末稼働を意図的に
+     * プロットしたリーフの PV を取りこぼさないため、除外しない）。
+     * プロジェクト固有の祝日は isHolidayFn を注入した場合のみ除外する
+     * （注入経路は現状未接続。Project 側から this.isHoliday を渡す想定の将来拡張点）。
      *
      * @param baseDate
      * @param isHolidayFn 祝日判定関数（任意）。Project.isHoliday を渡すことを想定
@@ -277,6 +280,9 @@ export class TaskRow {
             return 0.0
         }
 
+        // 土日除外は親タスク限定（リーフの週末プロットは意図された稼働として尊重する）
+        const isParent = this.isLeaf === false
+
         let pvs = 0
         const baseSerial = toDaySerial(baseDate)
         // plotMapのキー値(ExcelのDateのシリアル値)
@@ -286,9 +292,11 @@ export class TaskRow {
             if (daySerial > baseSerial) continue
 
             const date = dateFromSn(daySerial)
-            const day = date.getDay() // 0: 日, 6: 土
-            if (day === 0 || day === 6) continue // 土日は稼働日でないため除外
-            if (isHolidayFn?.(date)) continue // 注入時のみ祝日も除外
+            if (isParent) {
+                const day = date.getDay() // 0: 日, 6: 土
+                if (day === 0 || day === 6) continue // 親タスクの土日混入を除外
+                if (isHolidayFn?.(date)) continue // 注入時のみ祝日も除外
+            }
 
             const pv = this.calculatePV(date)
             pvs += pv ?? 0.0
