@@ -162,7 +162,7 @@ export class TaskRow {
 
     /**
      * キャッシュ済みのフルパス名を返す。未キャッシュなら undefined。
-     * @see docs/specs/domain/features/Project.fullNameCache（REQ 3.2）
+     * @see docs/specs/domain/master/TaskRow.spec.md（phase1-minor-issues-0.0.30 要件3）
      */
     get fullName(): string | undefined {
         return this._fullName
