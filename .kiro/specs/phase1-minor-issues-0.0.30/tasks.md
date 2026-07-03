@@ -72,21 +72,21 @@
   - _Requirements: 5.1, 5.2, 5.3_
   - _Boundary: Samples_
 
-- [ ] 6. Integration: 設計書同期とサンプルドキュメント
-- [ ] 6.1 (P) 【ポインタモデル準拠に読み替え】要件追跡の grep 規約への適合
+- [x] 6. Integration: 設計書同期とサンプルドキュメント
+- [x] 6.1 (P) 【ポインタモデル準拠に読み替え】要件追跡の grep 規約への適合
   - （原文の features/ への案件設計書新設は sdd-consolidation で廃止済み。トレーサビリティは .kiro/specs 本 spec の requirements/design/tasks が正）
   - 新規テストファイル（nameWithGreeting / isReschedule / fullNameCache / incompleteTasksUpToToday）とサンプル追加箇所の冒頭コメントに feature 名 `phase1-minor-issues-0.0.30` + 要件番号を記載し、`git grep phase1-minor-issues` で要件→実装→テストが横断できることを確認
   - 観測可能な完了条件: `git grep -l "phase1-minor-issues"` に上記テスト4ファイルとサンプルがヒットする
   - _Requirements: 6.1, 6.3_
   - _Boundary: tests, Samples_
   - _Depends: 1, 2.2, 3.3, 4.2, 5_
-- [ ] 6.2 master 設計書を同期
+- [x] 6.2 master 設計書を同期
   - `docs/specs/domain/master/Project.spec.md`（#166/#153/#165）・`ProjectService.spec.md`（#138）・`TaskRow.spec.md`（#153）に、メソッド仕様・テストシナリオ・変更履歴（バージョン更新）を反映
   - 観測可能な完了条件: 各 master 設計書の該当メソッド節と変更履歴が feature 設計書と一致する
   - _Requirements: 6.2_
   - _Boundary: docs/master_
   - _Depends: 6.1_
-- [ ] 6.3 (P) 今日のPV サンプルをドキュメントに反映
+- [x] 6.3 (P) 今日のPV サンプルをドキュメントに反映
   - `docs/examples/` の該当ファイル（`README.md` もしくは `02-project-statistics.md`）に、追加した「今日のPV」サンプルへの参照または説明を追記
   - 観測可能な完了条件: `docs/examples` から `samples/evm-sample-projects.ts` の「今日のPV」サンプルへの参照が辿れる
   - _Requirements: 5.4_
@@ -110,3 +110,4 @@
 - タスク2: RED専用テストの単独コミットはブランチを赤にするため、2.1+2.2 を1レビュー・1コミット単位に統合した（以後の RED/GREEN ペアも同様とする）
 - タスク3: キャッシュは無効化されない前提（Project 内でツリー不変・id 一意）を design が明示。TaskRow.fullName.test.ts は Project.fullNameCache.test.ts に統合（機能的に同等のカバレッジ）
 - タスク4: 遅延集合と当日集合は同一 today 基準では互いに素（Map dedup は設計指定の防御コード＝等価ミュータント）。遅延判定は getDelayedTasks とロジック重複（設計指定の帰結）— 将来 private getDelayedTasksAsOf(today, minDays) への共通化を推奨
+- タスク6.1: 旧 features/ への設計書新設は sdd-consolidation のポインタモデルに読み替え（テスト・サンプル冒頭に feature 名+要件番号を記載、git grep で横断可能に）

@@ -4,6 +4,7 @@ import { TaskNode } from '../TaskNode'
 import { TaskRow } from '../TaskRow'
 
 /**
+ * spec: phase1-minor-issues-0.0.30 要件4（#165 今日までの未完了タスク）
  * #165 Project.getIncompleteTasksUpToToday(baseDate?) のテスト（RED フェーズ）
  *
  * 仕様（design.md #165 節 / requirements.md 要件 4）:

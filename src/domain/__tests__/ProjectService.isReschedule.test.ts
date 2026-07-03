@@ -6,6 +6,7 @@ import { TaskNode } from '../TaskNode'
 
 /**
  * TaskDiff.isReschedule のテスト
+ * spec: phase1-minor-issues-0.0.30 要件2（#138 リスケ検知）
  * REQ 2 / Issue #138: リスケ検知プロパティの追加
  *
  * コンセプト: 「計画価値の後退（deltaPV < 0）をリスケとして検知する」

@@ -1,6 +1,7 @@
 import { Project } from '../Project'
 
 /**
+ * spec: phase1-minor-issues-0.0.30 要件1（#166 getNameWithGreeting）
  * Project.getNameWithGreeting() のテスト
  *
  * 要件ID: REQ-HELLO-001

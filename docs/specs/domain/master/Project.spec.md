@@ -260,6 +260,8 @@ getFullTaskName(task?: TaskRow): string
 
 ---
 
+> **1.9.0〜（#153）**: 本メソッドは遅延メモ化される。初回算出時に結果を `task.setFullName()` でタスク自身に書き込み、以降はキャッシュを返す（`getTask` の再走査なし）。戻り値は従来と同一。
+
 ### 5.4 `getTaskRows(fromDate: Date, toDate?: Date, assignee?: string): TaskRow[]`
 
 #### 目的
@@ -1026,6 +1028,62 @@ console.log(JSON.stringify(TreeFormatter.toJson(tree), null, 2))
 
 ---
 
+### 5.17 `getNameWithGreeting(): string`
+
+#### 目的
+プロジェクト名に挨拶文を付加して返す（SDD プロセス体験用のデモメソッド。#166）
+
+#### シグネチャ
+```typescript
+getNameWithGreeting(): string
+```
+
+#### 事後条件
+
+| ID | 条件 |
+|----|------|
+| POST-NWG-01 | `${name ?? ''} Hello World.` を返す（name 未設定時は先頭スペースの ` Hello World.`） |
+| POST-NWG-02 | 呼び出し後も `name` は不変 |
+
+#### 同値クラス・境界値
+
+| ID | 分類 | 入力条件 | 期待結果 |
+|----|------|----------|----------|
+| EQ-NWG-001 | 正常系 | name='Alpha' | 'Alpha Hello World.' |
+| EQ-NWG-002 | 境界値 | name=''/undefined | ' Hello World.' |
+| EQ-NWG-003 | 正常系 | name='プロジェクトA'（日本語） | 'プロジェクトA Hello World.' |
+
+テスト実体: `src/domain/__tests__/Project.nameWithGreeting.test.ts`（TC-01〜04）
+
+---
+
+### 5.18 `getIncompleteTasksUpToToday(baseDate?: Date): TaskRow[]`
+
+#### 目的
+「今日までにやるべきなのに終わっていないタスク」= 今日時点の遅延タスクと当日の未完了タスクを統合して返す（#165）
+
+#### シグネチャ
+```typescript
+getIncompleteTasksUpToToday(baseDate?: Date): TaskRow[]
+```
+
+#### 事後条件
+
+| ID | 条件 |
+|----|------|
+| POST-ITU-01 | today = `baseDate ?? this.baseDate`。遅延判定・当日判定とも today 基準 |
+| POST-ITU-02 | 遅延タスク（leaf・未完了・endDate < today）と当日タスク（`getTaskRows(today)` の未完了）を id で union（重複排除） |
+| POST-ITU-03 | 未完了判定は許容誤差付き `finished`（`PROGRESS_RATE_EPSILON`、0.0.29〜）を使用 |
+| POST-ITU-04 | 遅延日数降順・同値は id 昇順でソート。当日タスクの遅延日数は負値（クランプなし） |
+| POST-ITU-05 | 該当なしは空配列。`getDelayedTasks()` / `getTaskRows()` のシグネチャ・戻り値は不変 |
+
+#### 実装上の注意
+遅延判定は `getDelayedTasks()`（`this.baseDate` 固定）を呼ばず today 基準でインライン算出する（引数指定時のズレ回避）。フィルタ4条件・符号は `getDelayedTasks` と同一。遅延集合と当日集合は同一 today 基準では互いに素であり、Map による重複排除は防御的コード。
+
+テスト実体: `src/domain/__tests__/Project.incompleteTasksUpToToday.test.ts`（TC-01〜09、13件）
+
+---
+
 ## 6. テストシナリオ（Given-When-Then形式）
 
 ### 6.1 基本生成テスト
@@ -1412,3 +1470,4 @@ Tests:       262 passed, 262 total (2 skipped)
 | 1.6.1 | 2026-01-26 | `_calculateExtendedStats()` の `dailyPvOverride: 1.0` を削除（REQ-EVM-001 AC-03準拠）。設計方針セクション追加（Statistics と CompletionForecast の役割分担） | Issue #145 |
 | 1.7.0 | 2026-01-28 | `CompletionForecastOptions` に `spiOverride` オプション追加。`calculateCompletionForecast()` で外部指定SPIを使用可能に | REQ-SPI-002 |
 | 1.8.0 | 2026-01-30 | `getTree()` メソッド追加。TaskNode[] を TreeNode[] 形式に変換してツリー構造を取得可能に | REQ-TREE-001 AC-07 |
+| 1.9.0 | 2026-07-04 | phase1-minor-issues-0.0.30: `getNameWithGreeting()`（#166 要件1）と `getIncompleteTasksUpToToday(baseDate?)`（#165 要件4）を追加。`getFullTaskName` を遅延メモ化（#153 要件3、TaskRow.fullName キャッシュ利用、戻り値不変） | phase1-minor-issues-0.0.30 要件1,3,4 |
