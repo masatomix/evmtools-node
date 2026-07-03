@@ -1,4 +1,4 @@
-# 実装計画
+# 実装計画（phase4-scurve-eac-0.0.33）
 
 > 方針: テスト先行（RED → GREEN）。domain の予測バリエーション → usecase の系列合成 → CLI → docs → 検証・リリースの順。
 > 着手前ゲート: phase2-skill-integration-0.0.31（`getDailyPvByAssignee`）と phase3-earned-schedule-0.0.32（`calculateEarnedSchedule`）が develop にマージ済みであることを確認する。未マージの場合、タスク 1 の悲観シナリオ（spiT）とタスク 2 のオプション系列（3.x）は着手不可。

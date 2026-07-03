@@ -1,4 +1,4 @@
-# 実装計画
+# 実装計画（phase2-skill-integration-0.0.31）
 
 > 前提: phase0-bugfix-0.0.29（期間SPI ΔEV/ΔPV・日付ヘルパー・`calculateProjectDiffs` 空入力デフォルト）が develop に取り込み済みであること。3 機能（日次PV / アラート / アクティブ検出）は相互独立のため `(P)` を付与している。参照実装（task スキル 3 本）を数値一致のオラクルとする。
 

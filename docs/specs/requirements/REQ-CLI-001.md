@@ -128,7 +128,7 @@ pbevm-show-project --path ./now.xlsm
 | ドキュメント | パス | 説明 |
 |-------------|------|------|
 | GitHub Issue | #67 | CLIコマンドのshebang設定・bin登録の整備 |
-| 詳細仕様書 | [`CLI.shebang.spec.md`](../domain/features/CLI.shebang.spec.md) | shebang追加の詳細仕様 |
+| 詳細仕様書 | [`CLI.shebang.spec.md`](../../attic/features/CLI.shebang.spec.md) | shebang追加の詳細仕様 |
 | 実装 | `src/presentation/cli-pbevm-*.ts` | CLIファイル |
 | 自動テスト | [`cli-shebang.test.ts`](../../../src/presentation/__tests__/cli-shebang.test.ts) | CLI shebang検証テスト |
 | README | `README.md` | 使用方法の説明 |

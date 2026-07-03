@@ -157,7 +157,7 @@ severeDelays.forEach(task => {
 
 | ドキュメント | パス | 説明 |
 |-------------|------|------|
-| 設計書 | [`Project.delayedTasks.spec.md`](../domain/features/Project.delayedTasks.spec.md) | 詳細仕様（作成予定） |
+| 設計書 | [`Project.delayedTasks.spec.md`](../../attic/features/Project.delayedTasks.spec.md) | 詳細仕様（作成予定） |
 | 用語集 | [`GLOSSARY.md`](../../GLOSSARY.md) | EVM用語、ドメインモデル定義 |
 | 移行元 | `my-pbtask/.claude/skills/evmtools/scripts/src/core/delayed.ts` | スキル側の既存実装 |
 

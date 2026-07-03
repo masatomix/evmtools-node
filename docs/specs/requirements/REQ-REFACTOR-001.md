@@ -153,7 +153,7 @@ const spi = stats?.spi
 | ドキュメント | パス | 説明 |
 |-------------|------|------|
 | マスター設計書 | [`Project.spec.md`](../domain/master/Project.spec.md) | 更新対象 |
-| 案件設計書 | [`Project.remove-dup-accessors.spec.md`](../domain/features/Project.remove-dup-accessors.spec.md) | 本案件の詳細仕様 |
+| 案件設計書 | [`Project.remove-dup-accessors.spec.md`](../../attic/features/Project.remove-dup-accessors.spec.md) | 本案件の詳細仕様 |
 | 実装 | [`Project.ts`](../../../src/domain/Project.ts) | 削除対象のプロパティ |
 
 ---

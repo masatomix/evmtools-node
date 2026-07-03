@@ -91,7 +91,8 @@ src/{layer}/
 |---------|------|
 | `docs/specs/requirements/` | 要件定義書（REQ-xxx-nnn 形式） |
 | `docs/specs/domain/master/` | クラス別マスター設計書 |
-| `docs/specs/domain/features/` | 案件別設計書・タスク管理 |
+| `docs/specs/domain/master/INDEX.md` | 全クラス・公開APIカタログ（横串） |
+| `docs/attic/` | 廃止済み旧方式文書（歴史資料。参照しない） |
 | `.kiro/specs/` | kiro 式 SDD による新規仕様書 |
 | `docs/GLOSSARY.md` | EVM ドメイン用語集・クラス仕様リファレンス |
 

@@ -1,4 +1,4 @@
-# 実装計画
+# 実装計画（phase0-bugfix-0.0.29）
 
 > 方針: テスト先行（RED → GREEN → REFACTOR）。日付ヘルパー（Foundation）を最初に確立し、それを利用する TaskRow・ProjectService を Core、CI/ドキュメントを Integration、検証・Issue整理・リリースを Validation に配置する。
 > ブランチ: `feature/170-recent-spi-delta` を develop から worktree で分岐（`--no-track`）。

@@ -1,4 +1,4 @@
-# 実装計画
+# 実装計画（phase5-evmethod-knowledge-0.0.34）
 
 > 方針: テスト先行（RED → GREEN）。EV 導出コア（純関数）→ options スレッディング → 統合検証 → 知識ベース/docs → Backlog 起票・リリースの順。
 > 着手前ゲート: phase0-bugfix-0.0.29（許容誤差付き `finished`）と phase3-earned-schedule-0.0.32（`StatisticsOptions` の interface 化・options スレッディング・`includeEarnedSchedule`）が develop にマージ済みであることを確認する。phase3 未マージの場合、タスク 2.2 の ES 反映と `StatisticsOptions` 前提が成立しない。phase4-scurve-eac-0.0.33（`calculateForecastVariants`）は知識ベースの参照先のためタスク 3.1 の前提。

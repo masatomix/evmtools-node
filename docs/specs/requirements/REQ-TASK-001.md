@@ -127,7 +127,7 @@ const validTasks = project.toTaskRows().filter(t => t.validStatus.isValid)
 
 | ドキュメント | パス | 説明 |
 |-------------|------|------|
-| 設計書 | [`Project.excludedTasks.spec.md`](../domain/features/Project.excludedTasks.spec.md) | 詳細仕様 |
+| 設計書 | [`Project.excludedTasks.spec.md`](../../attic/features/Project.excludedTasks.spec.md) | 詳細仕様 |
 | 実装 | [`Project.ts`](../../../src/domain/Project.ts) | excludedTasksプロパティ、ExcludedTask型 |
 | テスト | [`Project.excludedTasks.test.ts`](../../../src/domain/__tests__/Project.excludedTasks.test.ts) | 10件 |
 

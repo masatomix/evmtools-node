@@ -1,8 +1,8 @@
 # TaskRow 仕様書
 
-**バージョン**: 1.1.1
+**バージョン**: 1.2.0
 **作成日**: 2025-12-16
-**更新日**: 2026-01-28
+**更新日**: 2026-07-03
 **ソースファイル**: `src/domain/TaskRow.ts`
 
 ---
@@ -206,8 +206,9 @@ get finished(): boolean
 
 | ID | 条件 |
 |----|------|
-| POST-FIN-01 | progressRate === 1.0 の場合はtrue |
+| POST-FIN-01 | progressRate >= 1.0 − PROGRESS_RATE_EPSILON（1e-9）の場合はtrue（1.0超の入力誤りも完了扱い。0.0.29〜） |
 | POST-FIN-02 | それ以外（undefined含む）はfalse |
+| POST-FIN-03 | isOverdueAt の完了判定と対称（同じ許容誤差を使用） |
 
 #### 同値クラス・境界値
 
@@ -217,7 +218,11 @@ get finished(): boolean
 | EQ-FIN-002 | 正常系 | progressRate=0.5 | false |
 | EQ-FIN-003 | 境界値 | progressRate=0 | false |
 | EQ-FIN-004 | 境界値 | progressRate=undefined | false |
-| EQ-FIN-005 | 境界値 | progressRate=0.999 | false |
+| EQ-FIN-005 | 境界値 | progressRate=0.9999 | false（EPSILON=1e-9 より大きい差） |
+| EQ-FIN-006 | 境界値 | progressRate=0.9999999999 | true（浮動小数誤差の救済） |
+| EQ-FIN-007 | 境界値 | progressRate=1.2 | true（入力誤りも完了扱い） |
+
+テスト実体: `src/domain/__tests__/TaskRow.finished.test.ts`
 
 ---
 
@@ -239,9 +244,9 @@ isOverdueAt(baseDate: Date): boolean
 
 | ID | 条件 |
 |----|------|
-| POST-OD-01 | endDate <= baseDate かつ 未完了（progressRate < 1.0 または undefined）の場合はtrue |
+| POST-OD-01 | endDate <= baseDate かつ 未完了（`!finished`。許容誤差込みの対称判定）の場合はtrue |
 | POST-OD-02 | endDateがundefinedの場合はfalse |
-| POST-OD-03 | 完了済み（progressRate === 1.0）の場合はfalse |
+| POST-OD-03 | 完了済み（`finished` = 許容誤差込みで progressRate >= 1.0）の場合はfalse |
 
 #### ビジネスルール
 
@@ -352,8 +357,10 @@ calculatePV(baseDate: Date): number | undefined
 
 #### シグネチャ
 ```typescript
-calculatePVs(baseDate: Date): number
+calculatePVs(baseDate: Date, isHolidayFn?: (date: Date) => boolean): number
 ```
+
+（`isHolidayFn` は 0.0.29 で追加されたオプショナル引数。注入経路は現状未接続の将来拡張点）
 
 #### 事前条件
 
@@ -365,9 +372,10 @@ calculatePVs(baseDate: Date): number
 
 | ID | 条件 |
 |----|------|
-| POST-PVS-01 | plotMapの全エントリのうち、シリアル値 <= baseDateシリアル値のPVを合計 |
+| POST-PVS-01 | plotMapの全エントリのうち、日単位シリアル値 <= baseDateの日単位シリアル値のPVを合計（シリアル比較は toDaySerial=floor(date2Sn) で日単位に正規化。時刻成分による±1日ずれなし。0.0.29〜） |
 | POST-PVS-02 | タスク開始前は0 |
 | POST-PVS-03 | タスク終了後は全工数（workload） |
+| POST-PVS-04 | 親タスク（isLeaf === false）の土日プロットは累積から除外する。リーフのプロットは尊重する（週末稼働の取りこぼし防止）。isHolidayFn 注入時は親タスクの祝日も除外（0.0.29〜） |
 
 #### 同値クラス・境界値
 
@@ -377,6 +385,11 @@ calculatePVs(baseDate: Date): number
 | EQ-PVS-002 | 境界値 | タスク開始前 | 0 |
 | EQ-PVS-003 | 境界値 | タスク終了後 | 全工数 |
 | EQ-PVS-004 | 異常系 | 必須データ不足 | 0 |
+| EQ-PVS-005 | 境界値 | 親タスク（土日込みプロット6日） | 平日4日分のみ（土日除外） |
+| EQ-PVS-006 | 境界値 | リーフ（土日込みプロット6日） | 6日分（除外しない） |
+| EQ-PVS-007 | 境界値 | baseDateに時刻成分あり | 0時のbaseDateと同値 |
+
+テスト実体: `src/domain/__tests__/TaskRow.finished.test.ts`（calculatePVs 節）
 
 ---
 
@@ -780,7 +793,9 @@ Scenario: 進捗100%タスクの実行PV
 
 ## 10. 要件トレーサビリティ
 
-> **重要**: このセクションは必須です。grepで検索可能な形式で記載すること。
+> **注記（2026-07-03〜）**: 下表は旧方式（REQ-*）の凍結資産であり、行の追加は行わない。
+> 以降の要件追跡は「13. 変更履歴」の feature 名（例: `phase0-bugfix-0.0.29`）から
+> `.kiro/specs/{feature}/`（requirements.md / design.md / tasks.md）を参照する（ポインタモデル）。
 
 | 要件ID | 受け入れ基準 | 対応メソッド | 対応テストケース | 結果 |
 |--------|-------------|-------------|-----------------|------|
@@ -790,7 +805,7 @@ Scenario: 進捗100%タスクの実行PV
 | REQ-PV-TODAY-001 AC-04 | 期間外でremainingDaysは0 | remainingDays | TC-05, TC-06 | ✅ PASS |
 | REQ-PV-TODAY-001 AC-07 | 進捗100%でpvTodayActualは0 | pvTodayActual | TC-15 | ✅ PASS |
 
-**詳細仕様書**: [`TaskRow.pv-today.spec.md`](../features/TaskRow.pv-today.spec.md)
+**詳細仕様書**: [`TaskRow.pv-today.spec.md`](../../../attic/features/TaskRow.pv-today.spec.md)（アーカイブ）
 
 ---
 
@@ -830,3 +845,4 @@ Tests:       59 passed, 59 total
 | 1.0.0 | 2025-12-16 | 初版作成 | - |
 | 1.1.0 | 2026-01-23 | `remainingDays`, `pvTodayActual` メソッド追加 | REQ-PV-TODAY-001 |
 | 1.1.1 | 2026-01-28 | `remainingDays` 定義修正: 基準日を含まない（基準日終了時点の解釈）#156 | REQ-PV-TODAY-001 |
+| 1.2.0 | 2026-07-03 | 0.0.29 / phase0-bugfix-0.0.29: `finished` を許容誤差付き（`PROGRESS_RATE_EPSILON`=1e-9、公開定数）に変更、`isOverdueAt` を `!finished` で対称化。日付比較を `toDaySerial`（日単位整数シリアル）に統一（date2Sn のローカル時刻小数部による±1日ずれを解消）。`calculatePVs` に親タスク限定の土日/祝日除外と `isHolidayFn?` 引数を追加 | #170 関連, phase0 要件3〜5 |

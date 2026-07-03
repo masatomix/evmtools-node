@@ -292,12 +292,29 @@ git branch -d feature/機能名
 
 ---
 
-## 8. 関連ドキュメント
+## 8. 要件↔実装↔テストの追跡方法
+
+トレーサビリティは **feature 名（`.kiro/specs/` のディレクトリ名）を横断キー**にして辿る（ポインタモデル。詳細は [`master-spec-sync.md`](../../.kiro/steering/master-spec-sync.md)）。
+
+```bash
+# 例: phase0-bugfix-0.0.29 の要件→実装→テスト→マスター設計書を横断検索
+git grep -l "phase0-bugfix"
+#   .kiro/specs/phase0-bugfix-0.0.29/requirements.md   ← 要件（AC 番号つき）
+#   .kiro/specs/phase0-bugfix-0.0.29/tasks.md          ← タスク（_Requirements: 3.1 等で AC に紐づく）
+#   src/domain/__tests__/TaskRow.finished.test.ts      ← テスト（冒頭コメントに feature 名 + 要件番号）
+#   docs/specs/domain/master/TaskRow.spec.md           ← マスター設計書（変更履歴に feature 名）
+```
+
+- 順方向（要件→テスト）: requirements.md の AC 番号 → tasks.md の `_Requirements` → タスクが作ったテストファイル
+- 逆方向（コード→要件）: テスト/変更履歴の feature 名 → `.kiro/specs/{feature}/requirements.md`
+- 旧方式（REQ-* ID）の追跡は各マスター設計書の凍結済みトレーサビリティ表を参照
+
+## 9. 関連ドキュメント
 
 | ドキュメント | パス | 内容 |
 |-------------|------|------|
 | cc-sdd ワークフロー定義 | [`.kiro/CLAUDE.md`](../../.kiro/CLAUDE.md) | スキル構成・最小ワークフロー |
 | マスター設計書同期ルール | [`.kiro/steering/master-spec-sync.md`](../../.kiro/steering/master-spec-sync.md) | 同期タイミング・反映内容 |
 | プロダクト概要 | [`.kiro/steering/product.md`](../../.kiro/steering/product.md) | EVM ドメイン用語・コアケーパビリティ |
-| 旧 SDD ワークフロー | [`DEVELOPMENT_WORKFLOW.md`](DEVELOPMENT_WORKFLOW.md) | 旧方式の参照用 |
+| 旧 SDD ワークフロー | [`docs/attic/DEVELOPMENT_WORKFLOW.md`](../attic/DEVELOPMENT_WORKFLOW.md) | 旧方式のアーカイブ（歴史資料） |
 | コア用語集 | [`docs/GLOSSARY.md`](../GLOSSARY.md) | EVM 用語・クラス詳細仕様 |

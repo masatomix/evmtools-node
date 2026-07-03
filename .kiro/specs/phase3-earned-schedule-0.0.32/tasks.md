@@ -1,4 +1,4 @@
-# 実装計画
+# 実装計画（phase3-earned-schedule-0.0.32）
 
 - [ ] 1. 基盤: Earned Schedule 型と純関数モジュールの骨組み
 - [ ] 1.1 ES の型定義と domain バレル export
