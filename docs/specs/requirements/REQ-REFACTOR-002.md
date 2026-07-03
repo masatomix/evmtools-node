@@ -216,7 +216,7 @@ interface CompletionForecast {
 | ドキュメント | パス | 説明 |
 |-------------|------|------|
 | マスター設計書 | [`Project.spec.md`](../domain/master/Project.spec.md) | 更新対象 |
-| 案件設計書 | [`Project.completion-forecast-refactor.spec.md`](../domain/features/Project.completion-forecast-refactor.spec.md) | 本案件の詳細仕様（作成予定） |
+| 案件設計書 | [`Project.completion-forecast-refactor.spec.md`](../../attic/features/Project.completion-forecast-refactor.spec.md) | 本案件の詳細仕様（作成予定） |
 | 実装 | [`Project.ts`](../../../src/domain/Project.ts) | 修正対象 |
 | 関連Issue | #139 | 直近N日のSPI計算機能（将来統合予定） |
 | 関連Issue | #142 (PR #143) | 重複アクセサ削除（対応済み） |

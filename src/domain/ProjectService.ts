@@ -1,7 +1,13 @@
 import { tidy, groupBy, summarize } from '@tidyjs/tidy'
 import { Project, ProjectStatistics, TaskFilterOptions } from './Project'
 import { TaskRow } from './TaskRow'
-import { dateStr, formatRelativeDays, formatRelativeDaysNumber, sum } from '../common'
+import {
+    dateStr,
+    diffCalendarDays,
+    formatRelativeDays,
+    formatRelativeDaysNumber,
+    sum,
+} from '../common'
 import { getLogger } from '../logger'
 
 const logger = getLogger('ProjectService')
@@ -20,30 +26,49 @@ export interface RecentSpiOptions extends TaskFilterOptions {
 
 export class ProjectService {
     /**
-     * 複数のProjectスナップショットから期間SPIを計算する
-     * 渡されたProject群の累積SPIの平均を返す
+     * 複数のProjectスナップショットから期間SPI（直近の実勢SPI）を計算する。
      *
-     * @param projects Project配列
+     * 期間SPI = ΔEV / ΔPV
+     *   ΔEV = EV(最新スナップショット) - EV(最古スナップショット)
+     *   ΔPV = 累積PV(最新スナップショット) - 累積PV(最古スナップショット)
+     *
+     * 累積SPI（ΣEV/ΣPV）と異なり、期間中の増分だけで効率を測るため、
+     * 過去の実績（母数）に平滑化されず、直近の回復・失速を検出できる。
+     * 窓端2点のみを使用し、中間のスナップショットは参照しない。
+     *
+     * @param projects Project配列（baseDate順でなくてよい。内部でソートする）
      * @param options オプション（フィルタ条件、警告閾値）
-     * @returns 期間SPI。計算不能な場合はundefined
+     * @returns 期間SPI。以下の場合は undefined:
+     *   - スナップショットが2点未満（期間が定義できない）
+     *   - ΔPV <= 0（期間中に計画が進んでいない、または再計画でPVが減少）
+     *   - 窓端いずれかの統計（EV/累積PV）が取得できない
+     * @see Issue #139, #170
      */
     calculateRecentSpi(projects: Project[], options?: RecentSpiOptions): number | undefined {
-        // 1. 空配列チェック
-        if (projects.length === 0) return undefined
+        // 1. 2点未満は期間が定義できない
+        if (projects.length < 2) return undefined
 
         // 2. 期間チェックと警告
         this._warnIfPeriodTooLong(projects, options?.warnThresholdDays ?? 30)
 
-        // 3. 各ProjectのSPIを取得
-        const spis = projects
-            .map((p) => p.getStatistics(options ?? {}).spi)
-            .filter((spi): spi is number => spi !== undefined)
+        // 3. baseDate 昇順ソートし、窓端2点（最古・最新）の統計を取得
+        const sorted = [...projects].sort((a, b) => a.baseDate.getTime() - b.baseDate.getTime())
+        const oldest = sorted[0].getStatistics(options ?? {})
+        const newest = sorted[sorted.length - 1].getStatistics(options ?? {})
 
-        // 4. 全てundefinedなら計算不能
-        if (spis.length === 0) return undefined
+        if (oldest.totalEv === undefined || newest.totalEv === undefined) return undefined
+        if (oldest.totalPvCalculated === undefined || newest.totalPvCalculated === undefined) {
+            return undefined
+        }
 
-        // 5. 平均を返す
-        return spis.reduce((a, b) => a + b, 0) / spis.length
+        // 4. ΔEV/ΔPV
+        const deltaEv = newest.totalEv - oldest.totalEv
+        const deltaPv = newest.totalPvCalculated - oldest.totalPvCalculated
+
+        // ΔPV<=0: 期間中に計画が進んでいない/再計画でPV減少 → 効率が定義できない
+        if (deltaPv <= 0) return undefined
+
+        return deltaEv / deltaPv
     }
 
     /**
@@ -59,9 +84,8 @@ export class ProjectService {
         const oldest = sorted[0].baseDate
         const newest = sorted[sorted.length - 1].baseDate
 
-        // 日数差を計算
-        const diffMs = newest.getTime() - oldest.getTime()
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+        // 日数差を計算（暦日ベース。時刻成分による off-by-one を防ぐ）
+        const diffDays = diffCalendarDays(oldest, newest) ?? 0
 
         if (diffDays > thresholdDays) {
             logger.warn(
@@ -216,14 +240,34 @@ export class ProjectService {
     // }
 
     calculateProjectDiffs(taskDiffs: TaskDiff[]): ProjectDiff[] {
+        const filtered = taskDiffs.filter((taskDiff) => taskDiff.hasDiff)
+
+        // 空入力（または差分なし）の場合、全フィールドが数値0のデフォルト値を返す。
+        // tidy/summarize は空配列で undefined フィールドを返してしまい、
+        // 利用側がデフォルト値へのマージを強いられるため（task スキルのワークアラウンド解消）
+        if (filtered.length === 0) {
+            return [
+                {
+                    deltaPV: 0,
+                    deltaEV: 0,
+                    prevPV: 0,
+                    prevEV: 0,
+                    currentPV: 0,
+                    currentEV: 0,
+                    modifiedCount: 0,
+                    addedCount: 0,
+                    removedCount: 0,
+                    hasDiff: false,
+                    finished: true, // 空集合の every() と同じ扱い
+                },
+            ]
+        }
+
         const result: ProjectDiff[] = tidy(
-            taskDiffs.filter((taskDiff) => taskDiff.hasDiff),
-            // taskDiffs,
+            filtered,
             summarize({
-                // deltaProgressRate: (group) => this._calcProgressRate(group),
                 deltaPV: (group) => sum(group.map((g) => g.deltaPV)),
                 deltaEV: (group) => sum(group.map((g) => g.deltaEV)),
-                // deltaSPI: (group) => sumDelta(group.map((g) => g.deltaSPI)), // これはおかしい。
                 prevPV: (group) => sum(group.filter((g) => g.hasPvDiff).map((g) => g.prevPV)),
                 prevEV: (group) => sum(group.filter((g) => g.hasEvDiff).map((g) => g.prevEV)),
                 currentPV: (group) => sum(group.filter((g) => g.hasPvDiff).map((g) => g.currentPV)),
@@ -247,10 +291,8 @@ export class ProjectService {
             // taskDiffs,
             groupBy('assignee', [
                 summarize({
-                    // deltaProgressRate: (group) => this._calcProgressRate(group),
                     deltaPV: (group) => sum(group.map((g) => g.deltaPV)),
                     deltaEV: (group) => sum(group.map((g) => g.deltaEV)),
-                    // deltaSPI: (group) => sumDelta(group.map((g) => g.deltaSPI)), // これはおかしい。
                     prevPV: (group) => sum(group.filter((g) => g.hasPvDiff).map((g) => g.prevPV)),
                     prevEV: (group) => sum(group.filter((g) => g.hasEvDiff).map((g) => g.prevEV)),
                     currentPV: (group) =>

@@ -11,7 +11,6 @@ import {
 import { average, round, sum } from '../../common'
 import { groupBy, summarize, tidy } from '@tidyjs/tidy'
 
-
 export const toGroupBy = (key: AttrType, resourcePlans: ResourcePlan[]): ResourcePlan[] => {
     const unitAttrs = ['ユニットコード', 'ユニット名']
 

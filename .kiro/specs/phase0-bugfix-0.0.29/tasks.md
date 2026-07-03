@@ -1,0 +1,110 @@
+# 実装計画（phase0-bugfix-0.0.29）
+
+> 方針: テスト先行（RED → GREEN → REFACTOR）。日付ヘルパー（Foundation）を最初に確立し、それを利用する TaskRow・ProjectService を Core、CI/ドキュメントを Integration、検証・Issue整理・リリースを Validation に配置する。
+> ブランチ: `feature/170-recent-spi-delta` を develop から worktree で分岐（`--no-track`）。
+
+- [ ] 1. Foundation: 暦日ヘルパーの新設と適用
+- [ ] 1.1 暦日ヘルパーのテーブル駆動テストを追加（RED）
+  - `src/common/__tests__/dateHelpers.test.ts` を新設し、`truncateToLocalDate`・`diffCalendarDays`・`formatRelativeDaysNumber` の期待値を定義
+  - `new Date('2025-07-19')`（UTC解釈）vs `new Date('2025-07-19T00:00:00+09:00')`、深夜/正午/23:59、翌日=+1・前日=-1・同日=0、月跨ぎ・年跨ぎをケース化
+  - 完了条件: 追加テストが未実装ヘルパーに対して RED（失敗）で走ること
+  - _Requirements: 3.1, 3.2, 3.3, 3.6_
+  - _Boundary: DateHelpers_
+- [ ] 1.2 truncateToLocalDate / diffCalendarDays を実装し formatRelativeDaysNumber を再実装（GREEN）
+  - `src/common/utils.ts` に `truncateToLocalDate(date)`・`diffCalendarDays(base, target)` を追加
+  - `formatRelativeDaysNumber` を両ヘルパーで再実装（公開シグネチャ不変、`formatRelativeDays` も間接的に恩恵）
+  - 完了条件: 1.1 のテストが全て GREEN、既存の `formatRelativeDays` 依存テストも緑
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.6_
+  - _Boundary: DateHelpers_
+  - _Depends: 1.1_
+
+- [ ] 2. Core: TaskRow の稼働日PV・完了判定・シリアル一元化
+- [ ] 2.1 TaskRow の finished / isOverdueAt / calculatePVs / toDaySerial のテストを追加（RED）
+  - `finished` 境界（0.9999999→true, 1.0000001→true, 1.2→true, undefined→false, 0.99→false）と `isOverdueAt` の対称性
+  - 親タスク plotMap に土日を含むデータで累積PV が稼働日分のみになること、`isHolidayFn` 注入で祝日も除外されること、leaf 結果不変
+  - baseDate の時刻成分が 0 時以外でも PV/残日数のシリアル比較がずれないこと
+  - 完了条件: 追加テストが現行実装に対して RED
+  - _Requirements: 3.5, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.3, 5.4_
+  - _Boundary: TaskRow_
+  - _Depends: 1.2_
+- [ ] 2.2 finished を許容誤差化し isOverdueAt を対称修正（GREEN）
+  - `PROGRESS_RATE_EPSILON` 定数を定義し、`finished` を `progressRate !== undefined && progressRate >= 1.0 - EPSILON` に、`isOverdueAt` の未完了判定を対称に修正
+  - 完了条件: 2.1 の finished/isOverdueAt ケースが GREEN
+  - _Requirements: 4.1, 4.2, 4.3, 4.4_
+  - _Boundary: TaskRow_
+  - _Depends: 2.1_
+- [ ] 2.3 toDaySerial ラッパ導入と土日/祝日除外を実装（GREEN）
+  - `toDaySerial(date)`（`truncateToLocalDate → date2Sn`）を追加し、`calculatePVs`・`remainingDays` の `date2Sn(baseDate)` 直呼びを置換
+  - `calculatePVs(baseDate, isHolidayFn?)` に任意引数を追加し、plotMap ループで土日 serial と `isHolidayFn` 真の日をスキップ
+  - 完了条件: 2.1 の PV/シリアル/親タスク土日ケースが GREEN、leaf の既存 PV テストが不変で緑
+  - _Requirements: 3.5, 5.1, 5.2, 5.3, 5.4_
+  - _Boundary: TaskRow_
+  - _Depends: 2.2_
+
+- [ ] 3. Core: ProjectService の期間SPI と空 diff 修正
+- [ ] 3.1 calculateRecentSpi の ΔEV/ΔPV テストへ更新（RED）
+  - 既存 `src/domain/__tests__/ProjectService.recent-spi.test.ts` の TC-01（1点→undefined）、TC-02/TC-03（窓端 ΔEV/ΔPV 値）、TC-08 を新仕様の期待値へ書換
+  - ΔPV=0→undefined、ΔPV<0→undefined、窓端いずれかの totalEv/totalPvCalculated undefined→undefined、フィルタ併用（TC-04）で窓端統計に options 適用、期間閾値超で警告+計算継続 のケースを追加
+  - 完了条件: 更新後テストが現行「平均」実装に対して RED
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7_
+  - _Boundary: ProjectService_
+  - _Depends: 2.3_
+- [ ] 3.2 calculateRecentSpi を ΔEV/ΔPV 実装へ置換（GREEN）
+  - baseDate 昇順ソートの最古・最新で `getStatistics(options ?? {})` を取得し、`ΔEV=totalEv差`・`ΔPV=totalPvCalculated差` を算出。`ΔPV<=0`・統計 undefined・1点・空 は undefined
+  - `_warnIfPeriodTooLong` の日数計算を `diffCalendarDays` に置換。シグネチャ・`RecentSpiOptions` は不変
+  - 完了条件: 3.1 のテストが GREEN、`calculateRecentSpi` のシグネチャ差分なし
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8_
+  - _Boundary: ProjectService_
+  - _Depends: 3.1_
+- [ ] 3.3 calculateProjectDiffs の空入力デフォルトのテストと実装（RED→GREEN）
+  - 空配列・全 hasDiff:false 入力で全数値フィールド 0 / `hasDiff:false` のデフォルト ProjectDiff 1件を返すテストを追加し、実装
+  - 非空入力は従来集計を維持（回帰なし）ことを既存テストで確認
+  - 完了条件: 空/フィルタ後空で `undefined` フィールドが生じないこと、非空ケースが不変で緑
+  - _Requirements: 2.1, 2.2, 2.3, 2.4_
+  - _Boundary: ProjectService_
+  - _Depends: 3.2_
+
+- [ ] 4. Integration: CI の TZ 二重実行とドキュメント同期
+- [ ] 4.1 CI に TZ=Asia/Tokyo / TZ=UTC の二重テスト実行を追加
+  - `.github/workflows/ci.yml` にテストを 2 つの TZ で実行するステップ（またはマトリクス次元）を追加し、どちらか失敗でジョブ失敗
+  - 完了条件: PR の CI で両 TZ のテストジョブが走り、両方緑であること
+  - _Requirements: 6.1, 6.2, 6.3_
+  - _Boundary: CI workflow_
+  - _Depends: 3.3_
+- [ ] 4.2 (P) feature 設計書と EVM-MANAGEMENT-GUIDE を改訂
+  - `docs/specs/domain/features/ProjectService.recent-spi.spec.md` を ΔEV/ΔPV 仕様へ改訂し、AC-ID → TC-ID の要件トレーサビリティ表を更新
+  - `docs/EVM-MANAGEMENT-GUIDE.md` の存在しない `Project.calculateRecentSpi(lookbackDays)` 参照を `ProjectService.calculateRecentSpi(projects, options)` 使用例に差し替え
+  - 完了条件: feature 設計書が新仕様と一致し、トレーサビリティ表が grep 可能な AC-ID を含むこと
+  - _Requirements: 7.1, 7.3_
+  - _Boundary: docs/features_
+  - _Depends: 3.2_
+- [ ] 4.3 (P) master 設計書を同期
+  - `docs/specs/domain/master/ProjectService.spec.md`（期間SPI・空diff）、`TaskRow.spec.md`（finished・toDaySerial・calculatePVs 土日/祝日）、必要に応じ `Project.spec.md` に、メソッド仕様・テストシナリオ・変更履歴（バージョン更新）を反映
+  - 完了条件: 各 master 設計書の該当メソッド節と変更履歴が feature 設計書と一致すること
+  - _Requirements: 7.2, 7.4_
+  - _Boundary: docs/master_
+  - _Depends: 3.3, 2.3_
+
+- [ ] 5. Validation: 検証ゲート・結合確認・Issue整理・リリース準備
+- [ ] 5.1 検証ゲートと TZ 二重実行をローカルで通す
+  - `npm run lint && npm run format && npm test && npm run build` を通過させ、`TZ=Asia/Tokyo npm test` と `TZ=UTC npm test` も緑にする
+  - 完了条件: 全コマンドが成功終了し、両 TZ でテストが緑であること
+  - _Requirements: 6.1, 9.3_
+  - _Depends: 4.1_
+- [ ] 5.2 npm pack で結合確認（task リポジトリ）
+  - `npm pack` した tgz を task リポジトリへ file: インストールし、evmtools スキルが期間SPI で正しく動作すること、および task スキル側のデフォルト diff ワークアラウンドが撤去可能であることを確認
+  - 完了条件: 結合確認で期間SPI が新値を返し、デフォルト diff マージなしでも undefined フィールドが出ないことを確認できること
+  - _Requirements: 9.4_
+  - _Depends: 5.1_
+- [ ] 5.3 (P) Issue 整理（GitHub 操作）
+  - `gh issue close` で #161（pbevm-tree 実装済み）と #124（CI 導入済み）をクローズ。#170 はマージ後にクローズ
+  - #41・#27 に WebUI リポジトリへ転記した旨のコメントを付してクローズ。後続フェーズ対象（#171/#166/#165/#160/#153/#138 等）はクローズしない
+  - 完了条件: #161/#124 が closed、#41/#27 が転記コメント付きで closed、対象外 Issue が open のまま
+  - _Requirements: 8.1, 8.2, 8.3, 8.4_
+  - _Boundary: GitHub Issues_
+  - _Depends: 5.1_
+- [ ] 5.4 release/0.0.29 準備（バージョン更新と CHANGELOG）
+  - `package.json` のバージョンを 0.0.29 に更新し、CHANGELOG に期間SPI の戻り値変更を **Behavior Change** として明記
+  - 完了条件: バージョンが 0.0.29、CHANGELOG に Behavior Change 節が存在し、検証ゲートが緑であること
+  - _Requirements: 9.1, 9.2, 9.3_
+  - _Depends: 5.2_

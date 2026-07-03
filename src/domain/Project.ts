@@ -1,5 +1,12 @@
 import { tidy, filter, summarize, groupBy } from '@tidyjs/tidy'
-import { average, dateStr, formatRelativeDaysNumber, generateBaseDates, isHoliday, sum } from '../common'
+import {
+    average,
+    dateStr,
+    formatRelativeDaysNumber,
+    generateBaseDates,
+    isHoliday,
+    sum,
+} from '../common'
 import { TreeNode } from '../common/TreeFormatter'
 import { TaskNode } from './TaskNode'
 import { TaskService } from './TaskService'
@@ -326,7 +333,9 @@ export class Project {
                 assignee: assignee || undefined,
                 totalTasksCount: assigneeTasks.length,
                 totalWorkloadExcel: bac,
-                totalWorkloadCalculated: endDate ? sumCalculatePVs(assigneeTasks, endDate) : undefined,
+                totalWorkloadCalculated: endDate
+                    ? sumCalculatePVs(assigneeTasks, endDate)
+                    : undefined,
                 averageWorkload: averageWorkload(assigneeTasks),
                 baseDate: dateStr(baseDate),
                 totalPvExcel: sumPVs(assigneeTasks),
@@ -360,7 +369,8 @@ export class Project {
         const forecast = this.calculateCompletionForecast(tasks)
 
         // 遅延情報
-        const { delayedTaskCount, averageDelayDays, maxDelayDays } = this._calculateDelayStats(tasks)
+        const { delayedTaskCount, averageDelayDays, maxDelayDays } =
+            this._calculateDelayStats(tasks)
 
         return {
             etcPrime: forecast?.etcPrime,
@@ -536,7 +546,7 @@ export class Project {
             // console.table(result)
 
             for (const row of result) {
-                const name = (row.assignee ?? '(未割当)') as string
+                const name = row.assignee ?? '(未割当)'
                 longFormat.push({
                     assignee: name,
                     baseDate: label,
@@ -939,9 +949,8 @@ export interface TaskFilterOptions {
  * 統計情報取得オプション
  * TaskFilterOptions を継承（フィルタ条件を含む）
  */
-export interface StatisticsOptions extends TaskFilterOptions {
-    // 将来の拡張用（例: includeDelayed, groupBy など）
-}
+// 将来の拡張用（例: includeDelayed, groupBy など）。現状はフィルタ条件のみ。
+export type StatisticsOptions = TaskFilterOptions
 
 /**
  * 計算から除外されたタスクの情報

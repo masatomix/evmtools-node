@@ -42,9 +42,12 @@ describe('cli-pbevm-tree', () => {
         })
 
         testOrSkip('TC-09: --depth と --json の組み合わせが動作する', () => {
-            const result = execSync(`npx ts-node ${cliPath} --path "${testFile}" --depth 1 --json`, {
-                encoding: 'utf-8',
-            })
+            const result = execSync(
+                `npx ts-node ${cliPath} --path "${testFile}" --depth 1 --json`,
+                {
+                    encoding: 'utf-8',
+                }
+            )
 
             // JSON として解析できることを確認
             const parsed = JSON.parse(result)

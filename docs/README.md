@@ -12,8 +12,8 @@ evmtools-node の開発者向けドキュメント一覧です。
 
 | ドキュメント | 内容 |
 |-------------|------|
-| [DEVELOPMENT_WORKFLOW.md](workflow/DEVELOPMENT_WORKFLOW.md) | 開発フロー（Git Flow + 仕様駆動開発） |
-| [SAMPLE_DEVELOPMENT_FLOW.md](workflow/SAMPLE_DEVELOPMENT_FLOW.md) | 実際の開発例 |
+| [CC-SDD_WORKFLOW.md](workflow/CC-SDD_WORKFLOW.md) | 開発フロー（Git Flow + cc-sdd 仕様駆動開発） |
+| [master/INDEX.md](specs/domain/master/INDEX.md) | 全クラス・公開APIカタログ（アプリ全体設計書の入口） |
 
 ## 仕様書
 
@@ -48,16 +48,16 @@ evmtools-node の開発者向けドキュメント一覧です。
 
 | ドキュメント | 内容 |
 |-------------|------|
-| [SAMPLE_DEVELOPMENT_FLOW.md](workflow/SAMPLE_DEVELOPMENT_FLOW.md) | 開発フロー記録サンプル（REQ-TASK-001）、トレーサビリティ具体例 |
+| [attic/SAMPLE_DEVELOPMENT_FLOW.md](attic/SAMPLE_DEVELOPMENT_FLOW.md) | 旧方式の開発フロー記録サンプル（アーカイブ） |
 | [brainstorm-spec-driven-development.md](brainstorm-spec-driven-development.md) | 仕様駆動開発のブレスト記録 |
 
 ## よくある質問
 
 ### Q: 要件から実装を探したい（Forward Traceability）
-→ [SAMPLE_DEVELOPMENT_FLOW.md 具体例1](workflow/SAMPLE_DEVELOPMENT_FLOW.md#具体例1-forward要件から実装テストを追跡)
+→ 旧方式の具体例は [attic/SAMPLE_DEVELOPMENT_FLOW.md](attic/SAMPLE_DEVELOPMENT_FLOW.md)（アーカイブ）を参照
 
 ### Q: コードの存在理由を知りたい（Backward Traceability）
-→ [SAMPLE_DEVELOPMENT_FLOW.md 具体例2](workflow/SAMPLE_DEVELOPMENT_FLOW.md#具体例2-backward1行のコードから要件を追跡)
+→ 現行の追跡は master 設計書のトレーサビリティ表（[master/INDEX.md](specs/domain/master/INDEX.md) から辿る）を参照
 
 ### Q: 新機能を追加する手順は？
-→ [DEVELOPMENT_WORKFLOW.md](workflow/DEVELOPMENT_WORKFLOW.md)
+→ [CC-SDD_WORKFLOW.md](workflow/CC-SDD_WORKFLOW.md)

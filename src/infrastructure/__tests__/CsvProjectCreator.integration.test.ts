@@ -172,11 +172,7 @@ describe('CsvProjectCreator 統合テスト (AC-04)', () => {
             const project = await creator.createProject()
 
             // 田中の2025/01/06-10のタスク
-            const tasks = project.getTaskRows(
-                new Date(2025, 0, 6),
-                new Date(2025, 0, 10),
-                '田中'
-            )
+            const tasks = project.getTaskRows(new Date(2025, 0, 6), new Date(2025, 0, 10), '田中')
 
             expect(tasks.length).toBe(1)
             expect(tasks[0].name).toBe('タスクA')

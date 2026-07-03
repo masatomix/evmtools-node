@@ -5,6 +5,36 @@
 フォーマットは [Keep a Changelog](https://keepachangelog.com/ja/1.0.0/) に基づき、
 [セマンティックバージョニング](https://semver.org/lang/ja/) に準拠しています。
 
+## [0.0.29]
+
+### ⚠️ 挙動変更（Behavior Change）
+- **期間SPI（`ProjectService.calculateRecentSpi`）を仕様準拠に修正** (#170, #139)
+  - 旧: 各スナップショットの「累積SPIの平均」を返していた（仕様と異なるバグ）
+  - 新: 窓端2点（最古・最新）の **ΔEV / ΔPV** を返す（直近の実勢SPI）
+  - スナップショット2点未満、および ΔPV ≤ 0（計画停滞・再計画によるPV減少）の場合は `undefined` を返す
+  - シグネチャは不変。利用側でSPI閾値判定をしている場合は値の変化に注意
+  - 詳細: `docs/specs/domain/master/ProjectService.spec.md` v2.0.0
+
+### 修正
+- **日付境界バグの一括修正**（phase0-bugfix-0.0.29）
+  - `formatRelativeDaysNumber` の時刻成分による遅延日数 off-by-one を解消（`truncateToLocalDate` / `diffCalendarDays` を `evmtools-node/common` に追加）
+  - `TaskRow` の日付比較を日単位シリアル値（`toDaySerial`）に統一し、時刻成分・タイムゾーン差による ±1日ずれを解消
+  - `TaskRow.finished` を許容誤差付き判定に変更（`PROGRESS_RATE_EPSILON` = 1e-9。浮動小数誤差や 1.0 超の入力も完了扱い）。`isOverdueAt` も対称化
+  - `TaskRow.calculatePVs`: 親タスク（`isLeaf === false`）の plotMap に混入していた土日を累積PVから除外（リーフのプロットは尊重）。祝日除外用の `isHolidayFn` オプション引数を追加
+- **`calculateProjectDiffs([])` が全フィールド0のデフォルト ProjectDiff を返すように修正**
+  - 空入力時に PV/EV フィールドが `undefined` になる問題を解消（利用側のデフォルト値マージが不要に）
+
+### 追加
+- CI でテストを TZ=Asia/Tokyo / TZ=UTC の二重実行に（日付境界の回帰防止）
+- `docs/specs/domain/master/INDEX.md`: 全クラス・公開APIカタログ（アプリ全体設計書の入口）
+
+### ドキュメント/プロセス
+- 仕様駆動開発を cc-sdd（Kiro式）に一本化（#65, #66 クローズ）
+  - マスター設計書の維持規約 v2（ポインタモデル・grep 規約）: `.kiro/steering/master-spec-sync.md`
+  - 旧方式の文書は `docs/attic/` へ退避（吸収監査記録付き）
+- v0.0.29〜0.0.34 のロードマップと6フェーズ分の仕様書を `.kiro/specs/` に追加
+- examples の期間SPI 説明を新仕様に改訂
+
 ## [0.0.28]
 
 ### 追加

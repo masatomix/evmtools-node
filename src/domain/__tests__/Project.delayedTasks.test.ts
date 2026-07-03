@@ -107,7 +107,14 @@ describe('Project.getDelayedTasks', () => {
                 progressRate: 0.5,
             })
 
-            const project = new Project([task], baseDate, [], projectStartDate, projectEndDate, 'テストプロジェクト')
+            const project = new Project(
+                [task],
+                baseDate,
+                [],
+                projectStartDate,
+                projectEndDate,
+                'テストプロジェクト'
+            )
 
             expect(project.getDelayedTasks()).toEqual([])
         })
@@ -329,7 +336,14 @@ describe('Project.getDelayedTasks', () => {
                 progressRate: 0.5,
             })
 
-            const project = new Project([task], baseDate, [], projectStartDate, projectEndDate, 'テストプロジェクト')
+            const project = new Project(
+                [task],
+                baseDate,
+                [],
+                projectStartDate,
+                projectEndDate,
+                'テストプロジェクト'
+            )
 
             // delayDays=0 は minDays=0 より大きくないので除外
             expect(project.getDelayedTasks()).toEqual([])
@@ -349,7 +363,14 @@ describe('Project.getDelayedTasks', () => {
                 progressRate: 0.5,
             })
 
-            const project = new Project([task], baseDate, [], projectStartDate, projectEndDate, 'テストプロジェクト')
+            const project = new Project(
+                [task],
+                baseDate,
+                [],
+                projectStartDate,
+                projectEndDate,
+                'テストプロジェクト'
+            )
 
             expect(project.getDelayedTasks()).toEqual([])
         })
@@ -368,7 +389,14 @@ describe('Project.getDelayedTasks', () => {
                 progressRate: 0.5,
             })
 
-            const project = new Project([task], baseDate, [], projectStartDate, projectEndDate, 'テストプロジェクト')
+            const project = new Project(
+                [task],
+                baseDate,
+                [],
+                projectStartDate,
+                projectEndDate,
+                'テストプロジェクト'
+            )
 
             const result = project.getDelayedTasks()
             expect(result.length).toBe(1)
@@ -423,7 +451,14 @@ describe('Project.getDelayedTasks', () => {
         it('空配列を返す', () => {
             const baseDate = new Date('2025-01-20')
 
-            const project = new Project([], baseDate, [], projectStartDate, projectEndDate, 'テストプロジェクト')
+            const project = new Project(
+                [],
+                baseDate,
+                [],
+                projectStartDate,
+                projectEndDate,
+                'テストプロジェクト'
+            )
 
             expect(project.getDelayedTasks()).toEqual([])
         })
@@ -442,7 +477,14 @@ describe('Project.getDelayedTasks', () => {
                 progressRate: 0.5,
             })
 
-            const project = new Project([task], baseDate, [], projectStartDate, projectEndDate, 'テストプロジェクト')
+            const project = new Project(
+                [task],
+                baseDate,
+                [],
+                projectStartDate,
+                projectEndDate,
+                'テストプロジェクト'
+            )
 
             // minDays=5, delayDays=5 → 5 > 5 は false
             expect(project.getDelayedTasks(5)).toEqual([])
@@ -462,7 +504,14 @@ describe('Project.getDelayedTasks', () => {
                 progressRate: 0.5,
             })
 
-            const project = new Project([task], baseDate, [], projectStartDate, projectEndDate, 'テストプロジェクト')
+            const project = new Project(
+                [task],
+                baseDate,
+                [],
+                projectStartDate,
+                projectEndDate,
+                'テストプロジェクト'
+            )
 
             // minDays=5, delayDays=6 → 6 > 5 は true
             const result = project.getDelayedTasks(5)
@@ -483,7 +532,14 @@ describe('Project.getDelayedTasks', () => {
                 progressRate: 0.5,
             })
 
-            const project = new Project([task], baseDate, [], projectStartDate, projectEndDate, 'テストプロジェクト')
+            const project = new Project(
+                [task],
+                baseDate,
+                [],
+                projectStartDate,
+                projectEndDate,
+                'テストプロジェクト'
+            )
 
             // minDays=2 で取得できる（3 > 2）
             expect(project.getDelayedTasks(2).length).toBe(1)
@@ -504,7 +560,14 @@ describe('Project.getDelayedTasks', () => {
                 progressRate: 0.5,
             })
 
-            const project = new Project([task], baseDate, [], projectStartDate, projectEndDate, 'テストプロジェクト')
+            const project = new Project(
+                [task],
+                baseDate,
+                [],
+                projectStartDate,
+                projectEndDate,
+                'テストプロジェクト'
+            )
 
             expect(project.getDelayedTasks()).toEqual([])
         })
@@ -522,7 +585,14 @@ describe('Project.getDelayedTasks', () => {
                 progressRate: 0.5,
             })
 
-            const project = new Project([task], baseDate, [], projectStartDate, projectEndDate, 'テストプロジェクト')
+            const project = new Project(
+                [task],
+                baseDate,
+                [],
+                projectStartDate,
+                projectEndDate,
+                'テストプロジェクト'
+            )
 
             expect(project.getDelayedTasks()).toEqual([])
         })

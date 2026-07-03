@@ -237,8 +237,8 @@ describe('Project.spiOverride (REQ-SPI-002)', () => {
         })
     })
 
-    describe('4.2 ETC\' 計算', () => {
-        describe('TC-05: ETC\' = remainingWork / spiOverride', () => {
+    describe("4.2 ETC' 計算", () => {
+        describe("TC-05: ETC' = remainingWork / spiOverride", () => {
             it('残作業20, spiOverride=0.8 → etcPrime: 25', () => {
                 // 単一タスク: workload=20, ev=0
                 const task = createTaskNode({

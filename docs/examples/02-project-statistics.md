@@ -140,11 +140,13 @@ main()
 
 ---
 
-## 複数スナップショットから平均 SPI を計算する
+## 複数スナップショットから期間 SPI を計算する
 
-複数日のプロジェクトスナップショットから、平均の SPI を計算することができます。通常のSPIはプロジェクト開始からいままでの生産性をあらわす指標ですが、直近のスナップショットを複数渡すことで、最近の生産性をあらわす指標を作成することができます。
+複数日のプロジェクトスナップショットから、**期間SPI（直近の実勢SPI）**を計算することができます。通常のSPI（累積SPI）はプロジェクト開始からいままでの生産性をあらわす指標ですが、過去の実績が母数に含まれるため、直近の回復・失速が平滑化されて見えにくくなります。期間SPIは期間中の増分だけで効率を測るため、最近の生産性を直接あらわします。
 
-`calculateRecentSpi()` は複数のスナップショットを受け取り、各スナップショットのSPIを平均して返します。たとえば直近1週間の日次スナップショットを渡すことで、その期間のSPI平均を取得できます。
+`calculateRecentSpi()` は複数のスナップショットを受け取り、基準日で最古・最新の**窓端2点**から **期間SPI = ΔEV / ΔPV**（EVの増分 ÷ 累積PVの増分）を返します。たとえば直近1週間の日次スナップショットを渡すと、その週の実勢SPIを取得できます（中間のスナップショットは使われません）。
+
+> **v0.0.29 での挙動変更（[#170](https://github.com/masatomix/evmtools-node/issues/170)）**: 以前は「各スナップショットの累積SPIの平均」を返していましたが、[#139](https://github.com/masatomix/evmtools-node/issues/139) の仕様（ΔEV/ΔPV）に修正されました。スナップショットが2点未満の場合、および期間中に計画が進んでいない場合（ΔPV ≤ 0、再計画によるPV減少を含む）は `undefined` を返します。
 
 ### コード例（2スナップショット）
 
@@ -160,11 +162,11 @@ async function main() {
     console.log(`前回基準日: ${projectPrev.baseDate.toLocaleDateString('ja-JP')}`)
     console.log(`今回基準日: ${projectNow.baseDate.toLocaleDateString('ja-JP')}`)
 
-    // ProjectService で直近 SPI を計算
+    // ProjectService で期間 SPI を計算（ΔEV/ΔPV）
     const service = new ProjectService()
     const recentSpi = service.calculateRecentSpi([projectPrev, projectNow])
 
-    console.log(`直近SPI: ${recentSpi?.toFixed(3)}`)
+    console.log(`期間SPI: ${recentSpi?.toFixed(3)}`)
 }
 
 main()
@@ -176,27 +178,31 @@ main()
 前回基準日: 2025/7/4
 今回基準日: 2025/7/25
 
-直近SPI: 1.252
+期間SPI: 1.252
 ```
 
-### コード例（1週間分のスナップショット）
+※ 値は例です。この期間に増えたEV ÷ この期間に増えた計画PV を表します。
+
+### 直近N日の期間SPIを取得する
+
+期間SPIは窓端2点（最古・最新）だけで決まります。したがって「直近1週間の実勢SPI」が欲しい場合、日次スナップショットを全部読み込む必要はなく、**1週間前のファイルと最新のファイルの2つだけ**を渡せば十分です。
 
 ```typescript
-// 直近1週間の日次スナップショットを読み込む
-const files = ['0718.xlsm', '0722.xlsm', '0723.xlsm', '0724.xlsm', '0725.xlsm']
-const projects = await Promise.all(
-    files.map(f => new ExcelProjectCreator(`./${f}`).createProject())
-)
+// 「N日前」と「最新」の2スナップショットを選んで読み込む
+const projectWeekAgo = await new ExcelProjectCreator('./0718.xlsm').createProject()
+const projectNow = await new ExcelProjectCreator('./0725.xlsm').createProject()
 
 const service = new ProjectService()
-const weeklyAvgSpi = service.calculateRecentSpi(projects)
+const weeklySpi = service.calculateRecentSpi([projectWeekAgo, projectNow])
 
-console.log(`直近1週間のSPI平均: ${weeklyAvgSpi?.toFixed(3)}`)
+console.log(`直近1週間の期間SPI: ${weeklySpi?.toFixed(3)}`)
 ```
 
-> 直近 SPI が 1.0 を超えている場合、最近の進捗が予定より早いことを示します。
+> 3点以上を渡すこともできますが、その場合も基準日で最古・最新の2点だけが計算に使われ、中間のスナップショットは無視されます。日次スナップショットの配列を既に持っている場合はそのまま渡しても結果は同じです。
 >
-> **完了予測への活用**: 直近SPIを使った完了予測については [完了予測 - 直近SPIで完了予測する](./04-completion-forecast.md#直近spiで完了予測する) を参照してください。
+> 期間 SPI が 1.0 を超えている場合、最近の進捗が予定より早いことを示します。逆に累積SPIが良好でも期間SPIが低い場合、直近で失速している兆候です。
+>
+> **完了予測への活用**: 期間SPIを使った完了予測については [完了予測 - 直近SPI（期間SPI）で完了予測する](./04-completion-forecast.md#直近spi期間spiで完了予測する) を参照してください。
 
 ---
 
