@@ -291,10 +291,10 @@ main()
 
 累積SPI（0.779）はプロジェクト開始からの全体平均ですが、直近のSPI（生産性）は異なる場合があります。`spiOverride` に直近SPIを指定することで、より現実的な予測ができます。
 
-たとえば、以下の関数で複数スナップショットのSPI平均を算出して使用します（詳細は「[プロジェクト統計 - 複数スナップショットから平均SPIを計算する](./02-project-statistics.md#複数スナップショットから平均-spi-を計算する)」を参照）。
+たとえば、`calculateRecentSpi()` で2スナップショット間の**期間SPI（ΔEV/ΔPV）**を算出して使用します（詳細は「[プロジェクト統計 - 複数スナップショットから期間SPIを計算する](./02-project-statistics.md#複数スナップショットから期間-spi-を計算する)」を参照）。
 
 ```typescript
-// 直近SPIを計算
+// 期間SPI（直近の実勢SPI）を計算
 const service = new ProjectService()
 const recentSpi = service.calculateRecentSpi([projectPrev, projectNow])
 
@@ -317,7 +317,7 @@ const forecastOptimized = project.calculateCompletionForecast({
 - **※2 PV指定**: `dailyPvOverride` で `dailyPv` を指定
   - 1.610 = 総工数（BAC）を総稼働日数で均等に割った値
 - **※3 PV,SPI指定**: さらに `spiOverride` で SPI を指定
-  - 1.252 = 直近2スナップショット間で算出したSPI（最近の生産性）
+  - 1.252 = 2スナップショット間の ΔEV/ΔPV で算出した期間SPI（最近の実勢生産性）
 
 **SPIの違い**:
 
@@ -392,11 +392,11 @@ main()
 
 ---
 
-## 直近SPIで完了予測する
+## 直近SPI（期間SPI）で完了予測する
 
-複数スナップショットから算出した直近SPIを使用すると、より現実的な予測が得られます。
+複数スナップショットから算出した期間SPI（ΔEV/ΔPV）を使用すると、より現実的な予測が得られます。
 
-平均SPIの計算方法については [プロジェクト統計 - 複数スナップショットから平均SPIを計算する](./02-project-statistics.md#複数スナップショットから平均-spi-を計算する) を参照してください。
+期間SPIの計算方法については [プロジェクト統計 - 複数スナップショットから期間SPIを計算する](./02-project-statistics.md#複数スナップショットから期間-spi-を計算する) を参照してください。
 
 ### コード例
 

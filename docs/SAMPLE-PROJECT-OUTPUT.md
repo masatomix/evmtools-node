@@ -141,7 +141,7 @@
 > - 完了予測日 = 2025-08-05 + 14稼働日 = **2025-08-25**
 > - 遅延日数 = **18日**（累積SPI版の4.5倍！）
 >
-> **現状この「直近SPI版」の完了予測は未実装** → [#139](https://github.com/masatomix/evmtools-node/issues/139), [#140](https://github.com/masatomix/evmtools-node/issues/140)
+> **「直近SPI版」の完了予測は v0.0.29 で利用可能**: `ProjectService.calculateRecentSpi(projects)`（期間SPI = ΔEV/ΔPV）の結果を `calculateCompletionForecast({ spiOverride })` に渡す（[#139](https://github.com/masatomix/evmtools-node/issues/139), [#170](https://github.com/masatomix/evmtools-node/issues/170)）。使用例は [docs/examples/04-completion-forecast.md](examples/04-completion-forecast.md) を参照
 
 ---
 

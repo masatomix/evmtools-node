@@ -106,26 +106,52 @@ export const minDate = (dates: (Date | undefined)[]): Date | undefined =>
     maxOrMinDate(dates, Math.min)
 
 /**
+ * 時刻成分を切り捨てて、ローカルタイムゾーンの日付 0時0分0秒 に正規化した Date を返す。
+ * 引数は変更しない。
+ * @param date
+ * @returns
+ */
+export const truncateToLocalDate = (date: Date): Date => {
+    const truncated = new Date(date)
+    truncated.setHours(0, 0, 0, 0)
+    return truncated
+}
+
+/**
+ * baseDate から targetDate までの暦日差（日数）を返す。
+ * 両者をローカル日付に切り詰めてから比較するため、時刻成分による
+ * off-by-one が発生しない。
+ * base 2025/07/19 target 2025/07/18 => -1
+ * @param baseDate
+ * @param targetDate
+ * @returns 暦日差。いずれかが空なら undefined
+ */
+export const diffCalendarDays = (
+    baseDate: Date | string | null | undefined,
+    targetDate: Date | string | null | undefined
+): number | undefined => {
+    if (!baseDate || !targetDate) return undefined
+
+    const base = truncateToLocalDate(new Date(baseDate))
+    const target = truncateToLocalDate(new Date(targetDate))
+
+    const diffMs = target.getTime() - base.getTime()
+    // DST等で1日が24時間でないケースに備え round する
+    return Math.round(diffMs / (1000 * 60 * 60 * 24))
+}
+
+/**
  * baseDate(基準日) に比べて targetDate(おもに期限) が何日後かを計算して返す
  * base 2025/07/19 target 2025/07/18 => -1
  * @param baseDate
  * @param targetDate
- * @param locale
  * @returns
  */
 export const formatRelativeDaysNumber = (
     baseDate: Date | string | null | undefined,
     targetDate: Date | string | null | undefined
 ): number | undefined => {
-    if (!baseDate || !targetDate) return undefined
-
-    const base = new Date(baseDate)
-    const target = new Date(targetDate)
-
-    const diffMs = target.getTime() - base.getTime()
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-
-    return diffDays
+    return diffCalendarDays(baseDate, targetDate)
 }
 
 /**

@@ -243,7 +243,7 @@ async function main() {
     // EV増分の合計を計算
     const totalDeltaEV = taskDiffs.reduce((sum, d) => sum + (d.deltaEV ?? 0), 0)
 
-    // 直近SPIも計算
+    // 期間SPI（ΔEV/ΔPV、窓端2点）も計算
     const recentSpi = service.calculateRecentSpi([projectPrev, projectNow])
 
     console.log('| 項目 | 値 |')
@@ -251,7 +251,7 @@ async function main() {
     console.log(`| 比較期間 | ${daysDiff}日間 |`)
     console.log(`| 期間内EV増分 | ${totalDeltaEV.toFixed(1)}人日 |`)
     console.log(`| 1日あたりEV | ${(totalDeltaEV / daysDiff).toFixed(2)}人日/日 |`)
-    console.log(`| 直近SPI | ${recentSpi?.toFixed(3)} |`)
+    console.log(`| 期間SPI | ${recentSpi?.toFixed(3)} |`)
 }
 
 main()
@@ -265,10 +265,10 @@ main()
 | 比較期間 | 21日間 |
 | 期間内EV増分 | 19.6人日 |
 | 1日あたりEV | 0.93人日/日 |
-| 直近SPI | 1.252 |
+| 期間SPI | 0.653 |
 ```
 
-> 直近SPIが1.0を超えている場合、最近の進捗が予定より早いことを示しています。
+> 期間SPI = ΔEV/ΔPV（この例では 19.6/30.0 ≒ 0.653）。1.0 を下回る場合、期間中の進捗が計画より遅いことを示しています。
 
 ---
 

@@ -1,9 +1,8 @@
 # ProjectService.calculateRecentSpi 詳細設計書
 
-**バージョン**: 1.0.0
-**作成日**: 2026-01-27
-**要件ID**: REQ-SPI-001
-**GitHub Issue**: #139
+- 対象 Issue: [#139](https://github.com/masatomix/evmtools-node/issues/139), [#170](https://github.com/masatomix/evmtools-node/issues/170)
+- 対象バージョン: 0.0.29
+- 関連 spec: `.kiro/specs/phase0-bugfix-0.0.29/`
 
 ---
 
@@ -11,22 +10,25 @@
 
 ### 1.1 目的
 
-複数のProjectスナップショットから直近N日間のSPI（期間SPI）を計算する機能を `ProjectService` に追加する。
+複数の Project スナップショット（同一プロジェクトの異なる基準日の記録）から、**期間SPI（直近の実勢スケジュール効率）**を算出する。累積SPI（ΣEV/ΣPV）は過去全実績が母数に含まれ、終盤に 1.0 へ収束する・直近の回復/失速が平滑化される欠点があるため（Issue #171 知見ⓐⓑ）、期間中の増分のみで効率を測る。
 
 ### 1.2 コンセプト
 
-**「渡したProjectから取得できる最善のSPI」**
+**期間SPI = ΔEV / ΔPV（窓端2点）**
 
-- 渡されたProject群の累積SPIの平均を返す
-- 場合分け不要。常に平均。シンプル。
+- ΔEV = EV(最新スナップショット) − EV(最古スナップショット)
+- ΔPV = 累積PV(最新) − 累積PV(最古)
+- 窓端2点のみを使用し、中間スナップショットは参照しない
+- ΔPV ≤ 0（計画が進んでいない・再計画でPV減少）は効率が定義できないため `undefined`
+- 2点未満は期間が定義できないため `undefined`
+
+> **v0.0.28 以前からの Behavior Change（#170）**: 旧実装は「各スナップショットの累積SPIの単純平均」を返しており、#139 の仕様と異なっていた。0.0.29 で仕様どおりの ΔEV/ΔPV に修正。シグネチャは不変で戻り値のみ変わる。
+
+> **設計判断**: `Project.calculateRecentSpi(lookbackDays)` という Project 単体の API は提供しない。Project は単一スナップショットであり EV の履歴を持たないため、期間SPI は複数スナップショットを受け取る ProjectService 側でのみ算出可能。
 
 ### 1.3 対象クラス
 
-| 項目 | 値 |
-|------|-----|
-| クラス | `ProjectService` |
-| ファイル | `src/domain/ProjectService.ts` |
-| 追加メソッド | `calculateRecentSpi()` |
+- `src/domain/ProjectService.ts` — `calculateRecentSpi(projects, options?)`
 
 ---
 
@@ -35,35 +37,18 @@
 ### 2.1 メソッドシグネチャ
 
 ```typescript
-/**
- * 複数のProjectスナップショットから期間SPIを計算する
- * 渡されたProject群の累積SPIの平均を返す
- *
- * @param projects Project配列
- * @param options オプション（フィルタ条件、警告閾値）
- * @returns 期間SPI。計算不能な場合はundefined
- */
-calculateRecentSpi(
-  projects: Project[],
-  options?: RecentSpiOptions
-): number | undefined
+calculateRecentSpi(projects: Project[], options?: RecentSpiOptions): number | undefined
 ```
 
 ### 2.2 型定義
 
 ```typescript
-import { TaskFilterOptions } from './Project'
-
-/**
- * 期間SPI計算オプション
- */
-interface RecentSpiOptions extends TaskFilterOptions {
-  /**
-   * 期間警告の閾値（日数）
-   * この日数を超えると警告ログを出力
-   * @default 30
-   */
-  warnThresholdDays?: number
+export interface RecentSpiOptions extends TaskFilterOptions {
+    /**
+     * 期間警告の閾値（日数）。この日数を超えると警告ログを出力
+     * @default 30
+     */
+    warnThresholdDays?: number
 }
 ```
 
@@ -71,9 +56,11 @@ interface RecentSpiOptions extends TaskFilterOptions {
 
 | 条件 | 戻り値 |
 |------|--------|
-| 正常計算 | `number`（期間SPI） |
-| projects が空配列 | `undefined` |
-| 全ProjectのSPIがundefined | `undefined` |
+| スナップショット2点以上・ΔPV > 0 | `ΔEV / ΔPV` |
+| スナップショット2点未満（空配列・1点） | `undefined` |
+| ΔPV ≤ 0（同一基準日・再計画によるPV減少） | `undefined` |
+| 窓端いずれかの統計（`totalEv` / `totalPvCalculated`）が取得不能 | `undefined` |
+| ΔEV = 0（期間中出来高なし） | `0`（有効値） |
 
 ---
 
@@ -81,118 +68,63 @@ interface RecentSpiOptions extends TaskFilterOptions {
 
 ### 3.1 メインロジック
 
-```typescript
-calculateRecentSpi(
-  projects: Project[],
-  options?: RecentSpiOptions
-): number | undefined {
-  // 1. 空配列チェック
-  if (projects.length === 0) return undefined
-
-  // 2. 期間チェックと警告
-  this._warnIfPeriodTooLong(projects, options?.warnThresholdDays ?? 30)
-
-  // 3. 各ProjectのSPIを取得
-  const spis = projects
-    .map(p => p.getStatistics(options ?? {}).spi)
-    .filter((spi): spi is number => spi !== undefined)
-
-  // 4. 全てundefinedなら計算不能
-  if (spis.length === 0) return undefined
-
-  // 5. 平均を返す
-  return spis.reduce((a, b) => a + b, 0) / spis.length
-}
 ```
+1. projects.length < 2 なら undefined
+2. _warnIfPeriodTooLong(projects, warnThresholdDays ?? 30) で期間チェック（警告のみ、計算は続行）
+3. baseDate 昇順にソートし、最古(oldest)・最新(newest)の getStatistics(options) を取得
+4. いずれかの totalEv / totalPvCalculated が undefined なら undefined
+5. ΔEV = newest.totalEv - oldest.totalEv
+   ΔPV = newest.totalPvCalculated - oldest.totalPvCalculated
+6. ΔPV <= 0 なら undefined
+7. ΔEV / ΔPV を返す
+```
+
+- フィルタ（`options.filter`）は窓端2点の `getStatistics(options)` に適用されるため、サブプロジェクト単位の期間SPIが算出できる
+- 渡し順は問わない（内部で baseDate ソート）
 
 ### 3.2 期間チェック（内部メソッド）
 
-```typescript
-private _warnIfPeriodTooLong(
-  projects: Project[],
-  thresholdDays: number
-): void {
-  if (projects.length < 2) return
-
-  // baseDateでソートして最古と最新を取得
-  const sorted = [...projects].sort(
-    (a, b) => a.baseDate.getTime() - b.baseDate.getTime()
-  )
-  const oldest = sorted[0].baseDate
-  const newest = sorted[sorted.length - 1].baseDate
-
-  // 日数差を計算
-  const diffMs = newest.getTime() - oldest.getTime()
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-
-  if (diffDays > thresholdDays) {
-    logger.warn(
-      `calculateRecentSpi: 期間が ${diffDays} 日と長いです。` +
-      `直近SPIとしては不適切な可能性があります（閾値: ${thresholdDays} 日）`
-    )
-  }
-}
-```
-
-### 3.3 処理フロー図
-
-```
-calculateRecentSpi(projects, options)
-    │
-    ├── projects.length === 0 ?
-    │       └── Yes → return undefined
-    │
-    ├── _warnIfPeriodTooLong(projects, threshold)
-    │       └── 期間 > threshold → logger.warn()
-    │
-    ├── 各ProjectのSPIを取得
-    │       └── p.getStatistics(options).spi
-    │
-    ├── 有効なSPIをフィルタ
-    │       └── .filter(spi => spi !== undefined)
-    │
-    ├── spis.length === 0 ?
-    │       └── Yes → return undefined
-    │
-    └── return average(spis)
-```
+`_warnIfPeriodTooLong`: 最古と最新の baseDate の暦日差（`diffCalendarDays`、時刻成分によるoff-by-oneなし）が閾値を超えたら警告ログを出す。計算は続行する。
 
 ---
 
 ## 4. テストケース
 
-### 4.1 正常系
+テスト実体: `src/domain/__tests__/ProjectService.recent-spi.test.ts`
+
+### 4.1 正常系（ΔEV/ΔPV）
 
 | TC-ID | テストケース | 入力 | 期待結果 |
 |-------|-------------|------|----------|
-| TC-01 | 1点渡し | `[project]` (SPI=0.8) | `0.8` |
-| TC-02 | 2点渡し | `[p1, p2]` (SPI=0.8, 1.0) | `0.9` |
-| TC-03 | N点渡し | `[p1, p2, p3]` (SPI=0.8, 0.9, 1.0) | `0.9` |
-| TC-04 | フィルタ付き | `[p1, p2], { filter: "認証" }` | フィルタ結果のSPI平均 |
+| TC-01 | 1点渡し | `[project]` | `undefined`（期間が定義できない） |
+| TC-02 | 2点渡し | p1(PV=7,EV=7), p2(PV=10,EV=8.5) | `0.5`（=1.5/3。累積SPI平均0.925ではない） |
+| TC-03 | N点渡し | 中間に異常値を挟む3点 | 窓端2点のみで `0.5`（中間無視） |
+| TC-03b | 逆順渡し | `[p2, p1]` | baseDateソートで `0.5` |
+| TC-04 | フィルタ付き | `{ filter: "認証" }` | フィルタ後集合の ΔEV/ΔPV |
 
 ### 4.2 境界値
 
 | TC-ID | テストケース | 入力 | 期待結果 |
 |-------|-------------|------|----------|
 | TC-05 | 空配列 | `[]` | `undefined` |
-| TC-06 | 全SPIがundefined | `[p1, p2]` (両方SPI=undefined) | `undefined` |
-| TC-07 | 一部SPIがundefined | `[p1, p2]` (SPI=0.8, undefined) | `0.8` |
-| TC-08 | SPI=0のProject | `[p1, p2]` (SPI=0, 1.0) | `0.5` |
+| TC-06 | ΔPV=0（同一基準日2点） | `[p1, p2]`（同baseDate） | `undefined` |
+| TC-07 | ΔPV<0（再計画でPV減少） | 後ろ倒し再計画 | `undefined` |
+| TC-08 | ΔEV=0 | EV変化なしの2点 | `0`（有効値） |
 
 ### 4.3 警告テスト
 
 | TC-ID | テストケース | 入力 | 期待結果 |
 |-------|-------------|------|----------|
-| TC-09 | 期間30日以内 | 期間=7日 | 警告なし、計算成功 |
+| TC-09 | 期間30日以内 | 期間=6日 | 警告なし |
 | TC-10 | 期間30日超 | 期間=45日 | 警告あり、計算成功 |
 | TC-11 | 閾値カスタム | 期間=20日, threshold=15 | 警告あり |
-| TC-12 | 1点のみ | `[project]` | 警告なし（チェック対象外） |
+| TC-12 | 1点のみ | `[project]` | 警告なし、`undefined` |
 
 ### 4.4 既存機能への影響
 
 | TC-ID | テストケース | 期待結果 |
 |-------|-------------|----------|
-| TC-13 | 既存テストが全てPASS | 既存テスト223件がPASS |
+| TC-13 | 全テストスイート（TZ=Asia/Tokyo, TZ=UTC の二重実行） | 全件PASS |
 
 ---
 
@@ -200,82 +132,66 @@ calculateRecentSpi(projects, options)
 
 | 要件ID | 受け入れ基準 | 対応テストケース | 結果 |
 |--------|-------------|-----------------|------|
-| REQ-SPI-001 AC-01 | メソッドが追加されている | TC-01〜TC-04 | ✅ PASS |
-| REQ-SPI-001 AC-02 | 累積SPIの平均を返す | TC-01, TC-02, TC-03 | ✅ PASS |
-| REQ-SPI-001 AC-03 | 1点渡しで累積SPIを返す | TC-01 | ✅ PASS |
+| REQ-SPI-001 AC-01 | メソッドが提供されている（シグネチャ不変） | TC-01〜TC-04 | ✅ PASS |
+| REQ-SPI-001 AC-02 | 期間SPI = ΔEV/ΔPV（窓端2点）を返す | TC-02, TC-03, TC-03b | ✅ PASS |
+| REQ-SPI-001 AC-03 | 2点未満は undefined | TC-01, TC-05, TC-12 | ✅ PASS |
 | REQ-SPI-001 AC-04 | フィルタ条件を指定できる | TC-04 | ✅ PASS |
-| REQ-SPI-001 AC-05 | 全SPIがundefinedならundefined | TC-05, TC-06 | ✅ PASS |
+| REQ-SPI-001 AC-05 | ΔPV<=0・統計取得不能は undefined | TC-06, TC-07 | ✅ PASS |
 | REQ-SPI-001 AC-06 | 期間超過で警告、計算続行 | TC-09, TC-10, TC-11 | ✅ PASS |
-| REQ-SPI-001 AC-07 | 既存テストに影響なし | 全235件PASS | ✅ PASS |
+| REQ-SPI-001 AC-07 | 既存テストに影響なし | TC-13（301件PASS） | ✅ PASS |
 | REQ-SPI-001 AC-08 | 単体テストが全てPASS | TC-01〜TC-12 | ✅ PASS |
 
 ---
 
 ## 6. 実装上の注意点
 
-### 6.1 ロガーの取得
+### 6.1 統計の取得
 
-```typescript
-import { getLogger } from '../logger'
-const logger = getLogger('ProjectService')
-```
+窓端2点の統計は `Project.getStatistics(options)` の `totalEv` / `totalPvCalculated` を使用する（安定 API）。`spi` フィールド（累積SPI）は使用しない。
 
 ### 6.2 TaskFilterOptions の再利用
 
-`RecentSpiOptions` は `TaskFilterOptions` を拡張する。
-`Project.getStatistics(options)` にそのまま渡せる設計。
+`RecentSpiOptions extends TaskFilterOptions` により、既存のフィルタ機構をそのまま利用する。
 
 ### 6.3 日付差の計算
 
-```typescript
-// ミリ秒から日数へ変換
-const diffMs = newest.getTime() - oldest.getTime()
-const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-```
+期間警告の日数計算は `diffCalendarDays`（`src/common/utils.ts`）を使用する。時刻成分・タイムゾーン差による off-by-one を防ぐため、`Math.floor(diffMs/86400000)` による直接計算はしない。
 
 ---
 
 ## 7. 使用例
 
-### 7.1 基本的な使い方
+### 7.1 基本的な使い方（完了予測への接続）
 
 ```typescript
 import { ProjectService } from 'evmtools-node/domain'
-import { ExcelProjectCreator } from 'evmtools-node/infrastructure'
 
 const service = new ProjectService()
 
-const projectNow = await new ExcelProjectCreator('now.xlsx').createProject()
-const projectPrev = await new ExcelProjectCreator('prev.xlsx').createProject()
+// 直近2時点のスナップショットから期間SPIを算出
+const periodSpi = service.calculateRecentSpi([prevProject, nowProject])
 
-// 2点の平均SPI
-const recentSpi = service.calculateRecentSpi([projectPrev, projectNow])
-console.log(`直近SPI: ${recentSpi}`)
+// 直近の実勢ペースで完了予測（悲観シナリオ等に使用）
+const forecast = nowProject.calculateCompletionForecast({ spiOverride: periodSpi })
 ```
 
-### 7.2 フィルタ付き
+### 7.2 フィルタ付き（サブプロジェクト単位）
 
 ```typescript
-const filteredSpi = service.calculateRecentSpi(
-  [projectPrev, projectNow],
-  { filter: "認証機能" }
-)
+const spi = service.calculateRecentSpi([prev, now], { filter: '認証' })
 ```
 
 ### 7.3 警告閾値をカスタマイズ
 
 ```typescript
-const spi = service.calculateRecentSpi(
-  [projectPrev, projectNow],
-  { warnThresholdDays: 14 }  // 14日で警告
-)
+const spi = service.calculateRecentSpi([prev, now], { warnThresholdDays: 14 })
 ```
 
 ---
 
 ## 8. 変更履歴
 
-| バージョン | 日付 | 変更内容 | 担当 |
-|-----------|------|---------|------|
-| 1.0.0 | 2026-01-27 | 初版作成 | Claude Code |
-| 1.1.0 | 2026-01-27 | 実装完了、要件トレーサビリティ更新 | Claude Code |
+| バージョン | 日付 | 変更内容 |
+|-----------|------|----------|
+| 1.0 | 2026-01-26 | 初版（累積SPIの平均として実装） |
+| 2.0 | 2026-07-03 | #170 対応: 期間SPI（ΔEV/ΔPV、窓端2点）へ仕様準拠修正。1点渡し・ΔPV<=0 は undefined に変更（Behavior Change）。テストケース・トレーサビリティ全面改訂 |
