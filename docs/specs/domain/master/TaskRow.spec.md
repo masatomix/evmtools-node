@@ -100,15 +100,12 @@
 | プロパティ | 戻り型 | 説明 |
 |-----------|--------|------|
 | `workloadPerDay` | `number \| undefined` | 予定工数 / 稼働予定日数 |
-| `fullName` | `string \| undefined` | フルパス名キャッシュ（`setFullName` で格納。1.3.0〜） |
 | `finished` | `boolean` | 進捗率が1.0ならtrue |
 | `validStatus` | `ValidStatus` | データの有効性チェック結果 |
 
 ### 3.3 内部キャッシュ
 
-| フィールド | 型 | 説明 |
-|-----------|-----|------|
-| `_fullName` | `string \| undefined` | フルパス名（"/"連結）の遅延キャッシュ。`Project.getFullTaskName()` が初回算出時に `setFullName()` で書き込む。Project 内でツリー不変・id 一意の前提で無効化しない（1.3.0〜） |
+該当なし
 
 ---
 
@@ -849,4 +846,3 @@ Tests:       59 passed, 59 total
 | 1.1.0 | 2026-01-23 | `remainingDays`, `pvTodayActual` メソッド追加 | REQ-PV-TODAY-001 |
 | 1.1.1 | 2026-01-28 | `remainingDays` 定義修正: 基準日を含まない（基準日終了時点の解釈）#156 | REQ-PV-TODAY-001 |
 | 1.2.0 | 2026-07-03 | 0.0.29 / phase0-bugfix-0.0.29: `finished` を許容誤差付き（`PROGRESS_RATE_EPSILON`=1e-9、公開定数）に変更、`isOverdueAt` を `!finished` で対称化。日付比較を `toDaySerial`（日単位整数シリアル）に統一（date2Sn のローカル時刻小数部による±1日ずれを解消）。`calculatePVs` に親タスク限定の土日/祝日除外と `isHolidayFn?` 引数を追加 | #170 関連, phase0 要件3〜5 |
-| 1.3.0 | 2026-07-04 | phase1-minor-issues-0.0.30: フルパス名キャッシュ（`_fullName` / `setFullName()` / `get fullName`）を追加（#153 要件3）。書き込みは `Project.getFullTaskName()` からのみ | phase1-minor-issues-0.0.30 要件3 |

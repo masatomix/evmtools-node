@@ -108,7 +108,6 @@ type DiffType = 'modified' | 'added' | 'removed' | 'none'
 | `hasDiff` | `boolean` | 差分があるか |
 | `hasProgressRateDiff` / `hasPvDiff` / `hasEvDiff` | `boolean` | 個別の差分フラグ |
 | `diffType` | `DiffType` | 差分タイプ |
-| `isReschedule` | `boolean` | リスケ検知（`deltaPV !== undefined && deltaPV < 0`）。removed タスクは deltaPV が負でも `false` 固定（削除とリスケの誤検知回避）。2.1.0〜 |
 | `finished` | `boolean` | 完了フラグ |
 | `isOverdueAt` | `boolean` | 期限切れフラグ |
 | `workload` | `number?` | 予定工数 |
@@ -653,4 +652,3 @@ Tests:       27 passed, 27 total
 | 1.0.0 | 2025-12-16 | 初版作成 | - |
 | 1.1.0 | 2026-01-27 | calculateRecentSpi()メソッド追加 | REQ-SPI-001 |
 | 2.0.0 | 2026-07-03 | #170 対応（0.0.29 / phase0-bugfix-0.0.29）: calculateRecentSpi を期間SPI（窓端2点の ΔEV/ΔPV）へ仕様準拠修正（Behavior Change）。calculateProjectDiffs の空入力デフォルト ProjectDiff を追加 | REQ-SPI-001, #139, #170 |
-| 2.1.0 | 2026-07-04 | phase1-minor-issues-0.0.30: `TaskDiff.isReschedule`（readonly 非オプショナル）を追加（#138 要件2）。ProjectDiff/AssigneeDiff には付与せず集計不変 | phase1-minor-issues-0.0.30 要件2 |

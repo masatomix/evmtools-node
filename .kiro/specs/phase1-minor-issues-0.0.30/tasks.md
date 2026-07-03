@@ -6,14 +6,14 @@
 >
 > ブランチ: CLAUDE.md 準拠で各 Issue の feature ブランチを develop から worktree で分岐（`--no-track`）。独立実装のため Issue 単位でブランチを分けてよい。
 
-- [x] 1. (P) #166: getNameWithGreeting を取り込み・照合する
+- [x] ~~1. (P) #166: getNameWithGreeting を取り込み・照合する~~ **取り下げ**（公開 API 追加基準の適用。実装後にスコープ外しで除去、#166 はクローズ）
   - 既存コミット `e8c497b`（`origin/worktree-evmtools`）の `Project.getNameWithGreeting()` とテスト `src/domain/__tests__/Project.nameWithGreeting.test.ts`（TC-01〜TC-04）を取り込む（cherry-pick 相当。整形差分が混在する場合は該当メソッドとテストのみ手動取り込み）
   - name が英字/空文字/日本語で `{name} Hello World.` を返し、name 未設定時は先頭スペースの ` Hello World.` を返すこと、呼び出し後も `name` が不変であることを要件 1 と照合
   - 観測可能な完了条件: `Project.nameWithGreeting.test.ts` の 4 ケースが GREEN、全体テストが回帰なしで緑
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
   - _Boundary: Project_
 
-- [x] 2. Core: #138 リスケ検知（TaskDiff.isReschedule）
+- [x] ~~2. Core: #138 リスケ検知（TaskDiff.isReschedule）~~ **取り下げ**（deltaPV から利用側で判定可能・公開型の構築側破壊的変更を回避。実装後にスコープ外しで除去、#138 はクローズ）
 - [x] 2.1 (P) isReschedule のテストを追加（RED）
   - `deltaPV < 0` → true、`deltaPV = 0`/正 → false、`deltaPV = undefined` → false、removed タスク → false 固定 のテストを追加
   - 観測可能な完了条件: プロパティ未追加の現行実装に対して型/アサーションで RED になること
@@ -28,7 +28,7 @@
   - _Boundary: ProjectService, pbevm-diff-usecase テストヘルパー_
   - _Depends: 2.1_
 
-- [x] 3. Core: #153 フルパス名キャッシュ
+- [x] 3. Core: #153 フルパス名キャッシュ（**内部メモ化に再スコープ**: 公開 fullName/setFullName は追加せず、Project 内部の private Map でメモ化。I/F 完全不変）
 - [x] 3.1 (P) TaskRow キャッシュと getFullTaskName メモ化のテストを追加（RED）
   - `setFullName`/`fullName` の格納・取得、`getFullTaskName` の 2 回目キャッシュ返却・結果不変・ルートタスクは自名のみ を検証するテストを追加
   - 2 回目に再走査しないことを `getTask` 呼び出し回数のスパイ等で観測
@@ -48,7 +48,7 @@
   - _Boundary: Project_
   - _Depends: 3.2_
 
-- [x] 4. Core: #165 今日までの未完了タスク取得
+- [x] ~~4. Core: #165 今日までの未完了タスク取得~~ **取り下げ**（getDelayedTasks + getTaskRows の合成で利用側実現可能。実装後にスコープ外しで除去、#165 は保留のままオープン）
   - 着手前ゲート: phase0-bugfix-0.0.29（`PROGRESS_RATE_EPSILON` による `finished`・暦日ヘルパー）が develop にマージ済みであることを確認してから着手する
 - [x] 4.1 (P) getIncompleteTasksUpToToday のテストを追加（RED）
   - 着手前ゲート: phase0 が develop にマージ済みであること（未マージなら着手不可）
@@ -112,3 +112,4 @@
 - タスク4: 遅延集合と当日集合は同一 today 基準では互いに素（Map dedup は設計指定の防御コード＝等価ミュータント）。遅延判定は getDelayedTasks とロジック重複（設計指定の帰結）— 将来 private getDelayedTasksAsOf(today, minDays) への共通化を推奨
 - タスク6.1: 旧 features/ への設計書新設は sdd-consolidation のポインタモデルに読み替え（テスト・サンプル冒頭に feature 名+要件番号を記載、git grep で横断可能に）
 - PR レビュー指摘: TaskDiff.isReschedule（非オプショナル）は TaskDiff を自前構築する外部利用者に型的破壊的変更。release/0.0.30 の CHANGELOG に「構築側は isReschedule の付与が必要」を明記すること（読む側は完全互換）
+- スコープ外し（2026-07-04、ユーザー判断）: マージ直前の価値再審査で #166/#138/#165 を除去。判断基準を steering（master-spec-sync.md「公開 API 追加の基準」）に明文化。残置は #153（内部メモ化のみ・I/F 不変）と #160（サンプル/docs）。実装・レビュー済みコードは git 履歴（コミット参照）に保全されており、必要になれば復活可能

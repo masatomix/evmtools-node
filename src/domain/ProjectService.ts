@@ -165,7 +165,6 @@ export class ProjectService {
                 baseDate,
                 daysOverdueAt,
                 daysStrOverdueAt,
-                isReschedule: deltaPV !== undefined && deltaPV < 0,
                 currentTask: nowTask,
                 prevTask,
             })
@@ -226,8 +225,6 @@ export class ProjectService {
                 baseDate,
                 daysOverdueAt,
                 daysStrOverdueAt,
-                // removed タスクは deltaPV が負値になりうるが、リスケではないため false 固定
-                isReschedule: false,
                 currentTask: undefined,
                 prevTask,
             })
@@ -462,6 +459,4 @@ export type TaskDiff = {
     readonly baseDate?: Date
     readonly daysOverdueAt?: number
     readonly daysStrOverdueAt?: string
-    /** deltaPV < 0 でリスケ検知。removed タスクは false 固定（Issue #138） */
-    readonly isReschedule: boolean
 } & TaskDiffBase

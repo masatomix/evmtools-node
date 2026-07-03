@@ -65,16 +65,6 @@ export class Project {
         return this._name
     }
 
-    /**
-     * プロジェクト名の末尾に「 Hello World.」を付加した文字列を返す
-     *
-     * @returns `${this.name} Hello World.` 形式の文字列
-     * @see docs/specs/domain/master/Project.spec.md 5.17（phase1-minor-issues-0.0.30 要件1）
-     */
-    getNameWithGreeting(): string {
-        return `${this._name ?? ''} Hello World.`
-    }
-
     get holidayDatas() {
         return this._holidayDatas
     }
@@ -100,24 +90,18 @@ export class Project {
 
     /**
      * 親を遡って、名前を"/"でjoinする
-     * 算出結果は TaskRow 側（task.fullName）に遅延メモ化され、
-     * 2回目以降はタスクツリーを再走査せずキャッシュ値を返す（#153）。
-     * 戻り値は従来（親名を "/" 連結した文字列）と同一。
      * @param task  子のタスク
+     * @param taskMap 親のタスクIDも存在する、<id,TaskRow>なMap
      * @returns
      */
     getFullTaskName(task?: TaskRow): string {
-        if (!task) {
-            return ''
-        }
+        if (!task) return ''
 
-        // キャッシュ済みなら再走査せず返す（要件 3.1）
-        const cached = task.fullName
-        if (cached !== undefined) {
-            return cached
-        }
+        // 内部メモ化: Project 内ではツリー不変・id 一意のため、id をキーに結果をキャッシュする。
+        // 公開シグネチャ・戻り値は従来と同一（#153 は性能改善のみ、公開 API 追加なし）
+        const cached = this._fullNameCache.get(task.id)
+        if (cached !== undefined) return cached
 
-        // 従来ロジック: 親を遡って名前を "/" で連結（要件 3.2, 3.3）
         const names: string[] = []
         let current: TaskRow | undefined = task
 
@@ -127,9 +111,12 @@ export class Project {
         }
 
         const fullName = names.join('/')
-        task.setFullName(fullName) // 遅延メモ化（要件 3.1）
+        this._fullNameCache.set(task.id, fullName)
         return fullName
     }
+
+    /** getFullTaskName の内部キャッシュ（task.id → フルパス名）。外部非公開 */
+    private _fullNameCache = new Map<number, string>()
 
     /**
      * 指定された期間、担当者のタスク配列を返す。親タスクは除外しています。
@@ -872,56 +859,6 @@ export class Project {
             .filter((task) => task.endDate !== undefined)
             .filter((task) => calcDelayDays(task) > minDays)
             .sort((a, b) => calcDelayDays(b) - calcDelayDays(a))
-    }
-
-    /**
-     * 今日時点で対応が必要な未完了タスクの一覧を取得（#165）
-     *
-     * 「今日時点で遅延している未完了タスク」と「今日稼働予定の未完了タスク」を
-     * マージし、同一 id の重複を排除した TaskRow 配列を返す。
-     *
-     * @param baseDate 「今日」として用いる基準日（未指定時は Project の baseDate）
-     * @returns 遅延日数降順・遅延日数が等しい場合は id 昇順にソートされた TaskRow 配列
-     *
-     * @remarks
-     * - 完了タスク（finished === true、許容誤差付き判定）を除外する（要件 4.2）
-     * - isLeaf === true のタスクのみを対象とする（要件 4.3）
-     * - 遅延判定・当日判定はともに引数の「今日」基準で行う（要件 4.5）。
-     *   getDelayedTasks() は this.baseDate 固定のため、遅延集合は本メソッド内で
-     *   同じ today 基準で算出する（素朴な連結による重複・基準ずれを回避）
-     * - 該当タスクがない場合は空配列を返す（例外を投げない）
-     */
-    getIncompleteTasksUpToToday(baseDate?: Date): TaskRow[] {
-        const today = baseDate ?? this._baseDate
-
-        // 遅延日数を計算するヘルパー関数（getDelayedTasks と同じ経路）
-        // formatRelativeDaysNumber は endDate - today を返すので符号反転
-        const calcDelayDays = (task: TaskRow): number => {
-            return -(formatRelativeDaysNumber(today, task.endDate) ?? 0)
-        }
-
-        // 今日時点で遅延している未完了 leaf タスク（today 基準で算出。要件 4.1〜4.3, 4.5）
-        const delayedTasks = this.toTaskRows()
-            .filter((task) => task.isLeaf)
-            .filter((task) => !task.finished)
-            .filter((task) => task.endDate !== undefined)
-            .filter((task) => calcDelayDays(task) > 0)
-
-        // 今日稼働予定の未完了 leaf タスク（要件 4.1, 4.2）
-        const todaysTasks = this.getTaskRows(today).filter((task) => !task.finished)
-
-        // id で union（重複排除。要件 4.1）
-        const merged = new Map<number, TaskRow>()
-        for (const task of [...delayedTasks, ...todaysTasks]) {
-            if (!merged.has(task.id)) {
-                merged.set(task.id, task)
-            }
-        }
-
-        // 遅延日数降順・同値は id 昇順（要件 4.4）
-        return Array.from(merged.values()).sort(
-            (a, b) => calcDelayDays(b) - calcDelayDays(a) || a.id - b.id
-        )
     }
 }
 
