@@ -43,6 +43,7 @@ const createTaskDiff = (
         hasPvDiff: false,
         hasEvDiff: false,
         isOverdueAt: false,
+        isReschedule: false,
         hasDiff,
         finished: false,
         prevPV: 10,

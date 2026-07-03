@@ -13,13 +13,13 @@
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
   - _Boundary: Project_
 
-- [ ] 2. Core: #138 リスケ検知（TaskDiff.isReschedule）
-- [ ] 2.1 (P) isReschedule のテストを追加（RED）
+- [x] 2. Core: #138 リスケ検知（TaskDiff.isReschedule）
+- [x] 2.1 (P) isReschedule のテストを追加（RED）
   - `deltaPV < 0` → true、`deltaPV = 0`/正 → false、`deltaPV = undefined` → false、removed タスク → false 固定 のテストを追加
   - 観測可能な完了条件: プロパティ未追加の現行実装に対して型/アサーションで RED になること
   - _Requirements: 2.1, 2.2, 2.3_
   - _Boundary: ProjectService_
-- [ ] 2.2 TaskDiff に isReschedule を追加し判定を実装（GREEN）
+- [x] 2.2 TaskDiff に isReschedule を追加し判定を実装（GREEN）
   - `TaskDiff` 型に `readonly isReschedule: boolean`（非オプショナル）を追加。TaskDiff を完全リテラルで構築する **計 3 箇所** すべてに値を設定する: (1) 通常 diff 生成に `deltaPV !== undefined && deltaPV < 0`、(2) removed diff 生成に `false` 固定、(3) 既存テストヘルパー `src/usecase/__tests__/pbevm-diff-usecase.test.ts` の `const base: TaskDiff = {...}`（33 行付近、キャストなし）に `false`
   - 3 箇所目（usecase テストヘルパー）の設定漏れは型エラー（コンパイルエラー）になるため必ず対応する
   - 集約型 `ProjectDiff` / `AssigneeDiff` には付与せず、既存の差分集計を回帰させないこと
@@ -107,3 +107,4 @@
 
 ## Implementation Notes
 - タスク1: 要件1.2 の undefined 分岐に専用TCなし（TC-02は空文字のみ。実装は `?? ''` で対応、レビュアーが手動確認済み）。タスク6のトレーサビリティ整理時に AC 1.2 の undefined 分岐の扱いを明記すること
+- タスク2: RED専用テストの単独コミットはブランチを赤にするため、2.1+2.2 を1レビュー・1コミット単位に統合した（以後の RED/GREEN ペアも同様とする）
