@@ -270,7 +270,7 @@ export interface DailyPvTaskDetail {
 /** 担当者×日ごとの日次PVエントリ */
 export interface DailyPvEntry {
   assignee: string             // 未割当は '(未割当)'
-  date: string                 // dateStr(baseDate) 'YYYY-MM-DD'
+  date: string                 // dateStr(baseDate) 'YYYY/MM/DD'（ja-JP）
   pv: number                   // 明細PVの合算（小数第3位で丸め）
   taskCount: number            // 明細タスク数（pv>0 のもの）
   tasks: DailyPvTaskDetail[]
