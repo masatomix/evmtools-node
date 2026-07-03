@@ -154,6 +154,29 @@ export class TaskRow {
     ) {}
 
     /**
+     * フルパス名（親名を "/" で連結した名称）のキャッシュ（#153）。
+     * readonly なコンストラクタ引数とは別の可変クラスフィールド。
+     * 書き込みは Project.getFullTaskName() からのみ行う想定。
+     */
+    private _fullName?: string
+
+    /**
+     * キャッシュ済みのフルパス名を返す。未キャッシュなら undefined。
+     * @see docs/specs/domain/features/Project.fullNameCache（REQ 3.2）
+     */
+    get fullName(): string | undefined {
+        return this._fullName
+    }
+
+    /**
+     * フルパス名をキャッシュに格納する。
+     * @param fullName 親名を "/" で連結したフルパス名
+     */
+    setFullName(fullName: string): void {
+        this._fullName = fullName
+    }
+
+    /**
      * 予定工数 / 稼働予定日数 による一日あたりの工数（任意）
      * 計算不能な場合は undefined
      */

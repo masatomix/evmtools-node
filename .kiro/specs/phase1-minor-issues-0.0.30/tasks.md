@@ -28,20 +28,20 @@
   - _Boundary: ProjectService, pbevm-diff-usecase テストヘルパー_
   - _Depends: 2.1_
 
-- [ ] 3. Core: #153 フルパス名キャッシュ
-- [ ] 3.1 (P) TaskRow キャッシュと getFullTaskName メモ化のテストを追加（RED）
+- [x] 3. Core: #153 フルパス名キャッシュ
+- [x] 3.1 (P) TaskRow キャッシュと getFullTaskName メモ化のテストを追加（RED）
   - `setFullName`/`fullName` の格納・取得、`getFullTaskName` の 2 回目キャッシュ返却・結果不変・ルートタスクは自名のみ を検証するテストを追加
   - 2 回目に再走査しないことを `getTask` 呼び出し回数のスパイ等で観測
   - 観測可能な完了条件: メモ化未実装の現行実装に対して RED になること
   - _Requirements: 3.1, 3.2, 3.3_
   - _Boundary: TaskRow, Project_
-- [ ] 3.2 TaskRow に fullName キャッシュフィールドを追加（GREEN）
+- [x] 3.2 TaskRow に fullName キャッシュフィールドを追加（GREEN）
   - 可変フィールド `_fullName` と `setFullName(name)` / `get fullName()` を追加（readonly 構築引数とは別）
   - 観測可能な完了条件: `TaskRow.fullName` の格納・取得テストが GREEN
   - _Requirements: 3.2_
   - _Boundary: TaskRow_
   - _Depends: 3.1_
-- [ ] 3.3 getFullTaskName を遅延メモ化（GREEN）
+- [x] 3.3 getFullTaskName を遅延メモ化（GREEN）
   - キャッシュがあれば返し、なければ従来ロジックで算出して `setFullName` に書き込んでから返す。戻り値は従来（親名を "/" 連結）と同一
   - 観測可能な完了条件: 3.1 のメモ化ケースが GREEN、既存の `fullName` 利用（TaskDiff の `fullName`）が回帰なし
   - _Requirements: 3.1, 3.2, 3.4_
@@ -108,3 +108,4 @@
 ## Implementation Notes
 - タスク1: 要件1.2 の undefined 分岐に専用TCなし（TC-02は空文字のみ。実装は `?? ''` で対応、レビュアーが手動確認済み）。タスク6のトレーサビリティ整理時に AC 1.2 の undefined 分岐の扱いを明記すること
 - タスク2: RED専用テストの単独コミットはブランチを赤にするため、2.1+2.2 を1レビュー・1コミット単位に統合した（以後の RED/GREEN ペアも同様とする）
+- タスク3: キャッシュは無効化されない前提（Project 内でツリー不変・id 一意）を design が明示。TaskRow.fullName.test.ts は Project.fullNameCache.test.ts に統合（機能的に同等のカバレッジ）

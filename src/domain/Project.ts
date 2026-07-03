@@ -100,20 +100,35 @@ export class Project {
 
     /**
      * 親を遡って、名前を"/"でjoinする
+     * 算出結果は TaskRow 側（task.fullName）に遅延メモ化され、
+     * 2回目以降はタスクツリーを再走査せずキャッシュ値を返す（#153）。
+     * 戻り値は従来（親名を "/" 連結した文字列）と同一。
      * @param task  子のタスク
-     * @param taskMap 親のタスクIDも存在する、<id,TaskRow>なMap
      * @returns
      */
     getFullTaskName(task?: TaskRow): string {
+        if (!task) {
+            return ''
+        }
+
+        // キャッシュ済みなら再走査せず返す（要件 3.1）
+        const cached = task.fullName
+        if (cached !== undefined) {
+            return cached
+        }
+
+        // 従来ロジック: 親を遡って名前を "/" で連結（要件 3.2, 3.3）
         const names: string[] = []
-        let current = task
+        let current: TaskRow | undefined = task
 
         while (current) {
             names.unshift(current.name) // 先頭に名前追加
             current = current.parentId ? this.getTask(current.parentId) : undefined
         }
 
-        return names.join('/')
+        const fullName = names.join('/')
+        task.setFullName(fullName) // 遅延メモ化（要件 3.1）
+        return fullName
     }
 
     /**
