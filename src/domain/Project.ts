@@ -860,6 +860,93 @@ export class Project {
             .filter((task) => calcDelayDays(task) > minDays)
             .sort((a, b) => calcDelayDays(b) - calcDelayDays(a))
     }
+
+    /**
+     * 担当者ごと・稼働日ごとの計画価値（PV）をタスク明細付きで集計する
+     *
+     * spec: phase2-skill-integration-0.0.31 要件1（AC 1.1〜1.12）
+     * 参照実装: task リポジトリ evmtools スキル check-daily-pv.ts の
+     * calculateDailyPvByAssignee（数値一致のオラクル）
+     *
+     * @param options フィルタ（fullTaskName 部分一致）・担当者（完全一致）・期間
+     * @returns 担当者×稼働日ごとの DailyPvEntry 配列
+     *
+     * @remarks
+     * - 集計対象はリーフタスク（isLeaf === true）のみ（AC 1.11）
+     * - 休日（isHoliday）はスキップする（AC 1.2）
+     * - 担当者未設定は「(未割当)」に正規化する（AC 1.3）
+     * - 明細は calculatePV が 0 超のタスクのみ。明細 pv は小数第3位で丸め、
+     *   合算は未丸め値を合算して最後に小数第3位で丸める（AC 1.4, 1.5）
+     * - 対象タスクを持つ担当者は、正の PV が無い稼働日でも PV=0 のエントリを
+     *   出力する（PV=0 レンジ集約のため、AC 1.6）
+     * - 期間は from ?? startDate / to ?? endDate。いずれかが決定できない場合は
+     *   Error を送出する（AC 1.9, 1.10）
+     */
+    getDailyPvByAssignee(options?: DailyPvByAssigneeOptions): DailyPvEntry[] {
+        // リーフ解決 + filter 部分一致（AC 1.7, 1.11）
+        let tasks = this._resolveTasks(options)
+
+        // 担当者の完全一致絞り込み（AC 1.8）
+        if (options?.assignee !== undefined) {
+            tasks = tasks.filter((task) => task.assignee === options.assignee)
+        }
+
+        // 期間決定（AC 1.9, 1.10）
+        const from = options?.from ?? this._startDate
+        const to = options?.to ?? this._endDate
+        if (!(from && to)) {
+            throw new Error('fromかtoが取得できませんでした')
+        }
+
+        // 担当者でグルーピング（AC 1.3。参照実装同様 Map で行い挿入順を保つ）
+        const byAssignee = new Map<string, TaskRow[]>()
+        for (const task of tasks) {
+            const assignee = task.assignee ?? '(未割当)'
+            if (!byAssignee.has(assignee)) {
+                byAssignee.set(assignee, [])
+            }
+            byAssignee.get(assignee)!.push(task)
+        }
+
+        const entries: DailyPvEntry[] = []
+        const round3 = (x: number): number => Math.round(x * 1000) / 1000
+
+        for (const baseDate of generateBaseDates(from, to)) {
+            // 休日はスキップ（AC 1.2）
+            if (this.isHoliday(baseDate)) continue
+
+            const label = dateStr(baseDate)
+
+            for (const [assignee, assigneeTasks] of byAssignee) {
+                let totalPv = 0
+                const taskDetails: DailyPvTaskDetail[] = []
+
+                for (const task of assigneeTasks) {
+                    const pv = task.calculatePV(baseDate)
+                    if (pv !== undefined && pv > 0) {
+                        // 明細は個別丸め・合算は未丸め値を最後に丸める（AC 1.4, 1.5）
+                        totalPv += pv
+                        taskDetails.push({
+                            name: task.name ?? '',
+                            fullName: this.getFullTaskName(task),
+                            pv: round3(pv),
+                        })
+                    }
+                }
+
+                // 対象タスクを持つ担当者は PV=0 の日もエントリ出力（AC 1.6）
+                entries.push({
+                    assignee,
+                    date: label,
+                    pv: round3(totalPv),
+                    taskCount: taskDetails.length,
+                    tasks: taskDetails,
+                })
+            }
+        }
+
+        return entries
+    }
 }
 
 const sumWorkload = (group: TaskRow[]) => sum(group.map((d) => d.workload))
@@ -963,6 +1050,49 @@ export interface TaskFilterOptions {
  */
 // 将来の拡張用（例: includeDelayed, groupBy など）。現状はフィルタ条件のみ。
 export type StatisticsOptions = TaskFilterOptions
+
+/**
+ * 日次PV明細のタスク項目
+ * spec: phase2-skill-integration-0.0.31 要件1
+ */
+export interface DailyPvTaskDetail {
+    /** タスク名（未設定時は空文字） */
+    name: string
+    /** フルタスク名（getFullTaskName(task)） */
+    fullName: string
+    /** このタスクの計算PV（小数第3位で丸め） */
+    pv: number
+}
+
+/**
+ * 担当者×日ごとの日次PVエントリ
+ * spec: phase2-skill-integration-0.0.31 要件1
+ */
+export interface DailyPvEntry {
+    /** 担当者名。未割当は '(未割当)' */
+    assignee: string
+    /** 基準日ラベル（dateStr(baseDate)） */
+    date: string
+    /** 明細PVの合算（未丸め値を合算し小数第3位で丸め） */
+    pv: number
+    /** 明細タスク数（calculatePV が 0 超のもの） */
+    taskCount: number
+    /** タスク明細 */
+    tasks: DailyPvTaskDetail[]
+}
+
+/**
+ * 日次PV集計オプション
+ * spec: phase2-skill-integration-0.0.31 要件1
+ */
+export interface DailyPvByAssigneeOptions extends TaskFilterOptions {
+    /** 特定担当者のみ集計する（完全一致） */
+    assignee?: string
+    /** 集計開始日（省略時はプロジェクト開始日） */
+    from?: Date
+    /** 集計終了日（省略時はプロジェクト終了日） */
+    to?: Date
+}
 
 /**
  * 計算から除外されたタスクの情報
