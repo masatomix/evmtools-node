@@ -94,12 +94,12 @@
   - _Depends: 5_
 
 - [ ] 7. Validation: 検証ゲート・リリース準備
-- [ ] 7.1 検証ゲートと TZ 二重実行をローカルで通す
+- [x] 7.1 検証ゲートと TZ 二重実行をローカルで通す
   - `npm run lint && npm run format && npm test && npm run build` を通過させ、`TZ=Asia/Tokyo npm test` と `TZ=UTC npm test` も緑にする。サブパス export（domain/infrastructure/usecase/common/resource）と既存公開 API の後方互換を確認
   - 観測可能な完了条件: 全コマンドが成功終了し、両 TZ でテストが緑であること
   - _Requirements: 7.3, 7.4_
   - _Depends: 6.2, 6.3_
-- [ ] 7.2 release/0.0.30 準備（バージョン更新と CHANGELOG）
+- [ ] 7.2 release/0.0.30 準備（バージョン更新と CHANGELOG）※phase0 と同様、feature ブランチではなく release/0.0.30 ブランチで実施する（読み替え）
   - `package.json` のバージョンを 0.0.30 に更新し、CHANGELOG に 5 件の追加（`getNameWithGreeting` / `isReschedule` / フルパス名キャッシュ / `getIncompleteTasksUpToToday` / 今日のPV サンプル）を追記
   - 観測可能な完了条件: バージョンが 0.0.30、CHANGELOG に 5 件の追記が存在し、検証ゲートが緑であること
   - _Requirements: 7.1, 7.2_
