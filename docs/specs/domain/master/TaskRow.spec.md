@@ -1,8 +1,8 @@
 # TaskRow 仕様書
 
-**バージョン**: 1.1.1
+**バージョン**: 1.2.0
 **作成日**: 2025-12-16
-**更新日**: 2026-01-28
+**更新日**: 2026-07-03
 **ソースファイル**: `src/domain/TaskRow.ts`
 
 ---
@@ -244,9 +244,9 @@ isOverdueAt(baseDate: Date): boolean
 
 | ID | 条件 |
 |----|------|
-| POST-OD-01 | endDate <= baseDate かつ 未完了（progressRate < 1.0 または undefined）の場合はtrue |
+| POST-OD-01 | endDate <= baseDate かつ 未完了（`!finished`。許容誤差込みの対称判定）の場合はtrue |
 | POST-OD-02 | endDateがundefinedの場合はfalse |
-| POST-OD-03 | 完了済み（progressRate === 1.0）の場合はfalse |
+| POST-OD-03 | 完了済み（`finished` = 許容誤差込みで progressRate >= 1.0）の場合はfalse |
 
 #### ビジネスルール
 

@@ -137,7 +137,7 @@ class TaskRow {
 
 | ドキュメント | パス |
 |-------------|------|
-| 設計書 | [`TaskRow.pv-today.spec.md`](../domain/features/TaskRow.pv-today.spec.md) |
+| 設計書 | [`TaskRow.pv-today.spec.md`](../../attic/features/TaskRow.pv-today.spec.md) |
 | テスト | [`TaskRow.pv-today.test.ts`](../../../src/domain/__tests__/TaskRow.pv-today.test.ts) |
 | 実装 | [`TaskRow.ts`](../../../src/domain/TaskRow.ts) |
 | 用語集 | [`GLOSSARY.md`](../../../docs/GLOSSARY.md) |

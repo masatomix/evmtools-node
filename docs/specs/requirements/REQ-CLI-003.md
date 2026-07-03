@@ -102,7 +102,7 @@ console.table(displayData);
 |-------------|------|------|
 | GitHub Issue | #73 | pbevm-diff出力から不要なプロパティを除去 |
 | 関連Issue | #72 | CLI出力から不要なプロパティを除去 |
-| 詳細仕様書 | [`CLI.pbevm-diff-output.spec.md`](../domain/features/CLI.pbevm-diff-output.spec.md) | 変更仕様 |
+| 詳細仕様書 | [`CLI.pbevm-diff-output.spec.md`](../../attic/features/CLI.pbevm-diff-output.spec.md) | 変更仕様 |
 | テストコード | [`pbevm-diff-usecase.test.ts`](../../../src/usecase/__tests__/pbevm-diff-usecase.test.ts) | 単体テスト（7件） |
 | 実装 | [`pbevm-diff-usecase.ts`](../../../src/usecase/pbevm-diff-usecase.ts) | formatTaskDiffsForDisplay関数 |
 | CLI実装 | [`cli-pbevm-diff.ts`](../../../src/presentation/cli-pbevm-diff.ts) | pbevm-diffエントリーポイント |

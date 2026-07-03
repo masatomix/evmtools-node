@@ -1,8 +1,8 @@
 # ProjectService 仕様書
 
-**バージョン**: 1.1.0
+**バージョン**: 2.0.0
 **作成日**: 2025-12-16
-**更新日**: 2026-01-27
+**更新日**: 2026-07-03
 **ソースファイル**: `src/domain/ProjectService.ts`
 
 ---
@@ -28,7 +28,7 @@
 | 担当者差分 | `AssigneeDiff` | タスク差分を担当者別に集約した結果 |
 | 差分タイプ | `DiffType` | 'modified' / 'added' / 'removed' / 'none' |
 | プロジェクト統計 | `ProjectStatistics` | 基準日ごとのプロジェクト統計情報 |
-| 期間SPI | `RecentSpi` | 複数Projectスナップショットの累積SPIの平均 |
+| 期間SPI | `RecentSpi` | 複数Projectスナップショットの窓端2点による ΔEV/ΔPV（直近の実勢SPI） |
 | 期間SPIオプション | `RecentSpiOptions` | 期間SPI計算のオプション（フィルタ、警告閾値） |
 
 ### 1.3 境界づけられたコンテキスト（所属ドメイン）
@@ -599,10 +599,10 @@ Scenario: 期間30日超で警告が出るが計算は成功する
 | 要件ID | 受け入れ基準 | 対応テストケース | 結果 |
 |--------|-------------|-----------------|------|
 | REQ-SPI-001 AC-01 | メソッドが追加されている | TC-01〜TC-04 | ✅ PASS |
-| REQ-SPI-001 AC-02 | 累積SPIの平均を返す | TC-01, TC-02, TC-03 | ✅ PASS |
-| REQ-SPI-001 AC-03 | 1点渡しで累積SPIを返す | TC-01 | ✅ PASS |
+| REQ-SPI-001 AC-02 | 期間SPI = ΔEV/ΔPV（窓端2点）を返す（#170 で仕様準拠修正） | TC-02, TC-03, TC-03b | ✅ PASS |
+| REQ-SPI-001 AC-03 | 2点未満（1点・空配列）は undefined | TC-01, TC-05, TC-12 | ✅ PASS |
 | REQ-SPI-001 AC-04 | フィルタ条件を指定できる | TC-04 | ✅ PASS |
-| REQ-SPI-001 AC-05 | 全SPIがundefinedならundefined | TC-05, TC-06 | ✅ PASS |
+| REQ-SPI-001 AC-05 | ΔPV<=0・窓端統計取得不能は undefined | TC-06, TC-07 | ✅ PASS |
 | REQ-SPI-001 AC-06 | 期間超過で警告、計算続行 | TC-09, TC-10, TC-11 | ✅ PASS |
 | REQ-SPI-001 AC-07 | 既存テストに影響なし | 全235件PASS | ✅ PASS |
 | REQ-SPI-001 AC-08 | 単体テストが全てPASS | TC-01〜TC-12 | ✅ PASS |
@@ -620,7 +620,8 @@ Scenario: 期間30日超で警告が出るが計算は成功する
 | ファイル | 説明 | テスト数 |
 |---------|------|---------|
 | `src/domain/__tests__/ProjectService.test.ts` | 差分計算・マージ等の単体テスト | 15件 |
-| `src/domain/__tests__/ProjectService.recent-spi.test.ts` | calculateRecentSpi単体テスト | 12件 |
+| `src/domain/__tests__/ProjectService.recent-spi.test.ts` | calculateRecentSpi単体テスト（期間SPI） | 13件 |
+| `src/domain/__tests__/ProjectService.empty-diffs.test.ts` | calculateProjectDiffs 空入力デフォルト | 3件 |
 
 ### 11.2 テストフィクスチャ
 

@@ -92,7 +92,7 @@ console.table(displayData);
 
 | 成果物 | パス |
 |--------|------|
-| 案件設計書 | [`PbevmShowPvUsecase.cli-output-cleanup.spec.md`](../domain/features/PbevmShowPvUsecase.cli-output-cleanup.spec.md) |
+| 案件設計書 | [`PbevmShowPvUsecase.cli-output-cleanup.spec.md`](../../attic/features/PbevmShowPvUsecase.cli-output-cleanup.spec.md) |
 | テストコード | [`pbevm-show-pv-usecase.test.ts`](../../../src/usecase/__tests__/pbevm-show-pv-usecase.test.ts) |
 | 実装 | [`pbevm-show-pv-usecase.ts`](../../../src/usecase/pbevm-show-pv-usecase.ts) |
 

@@ -176,7 +176,7 @@ class Project {
 |-------------|------|
 | ブレストファイル | [`docs/brainstorm-evm-indicators.md`](../../brainstorm-evm-indicators.md) |
 | 用語集 | [`docs/GLOSSARY.md`](../../GLOSSARY.md) |
-| 設計書 | [`Project.completionForecast.spec.md`](../domain/features/Project.completionForecast.spec.md) |
+| 設計書 | [`Project.completionForecast.spec.md`](../../attic/features/Project.completionForecast.spec.md) |
 | テスト | [`Project.completionForecast.test.ts`](../../../src/domain/__tests__/Project.completionForecast.test.ts) |
 
 ---
