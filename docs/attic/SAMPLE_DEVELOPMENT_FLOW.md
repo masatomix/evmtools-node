@@ -1,3 +1,5 @@
+> **アーカイブ（廃止済み）**: 本文書は旧・独自SDD方式のものです。現行の開発フローは [docs/workflow/CC-SDD_WORKFLOW.md](../workflow/CC-SDD_WORKFLOW.md)、規約は [.kiro/steering/master-spec-sync.md](../../.kiro/steering/master-spec-sync.md) を参照してください。
+
 # 開発フロー記録サンプル: REQ-TASK-001
 
 **案件名**: 計算除外レコードの可視化

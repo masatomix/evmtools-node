@@ -319,7 +319,7 @@ npm run lint          # ESLintチェック
 npm run format        # Prettierチェック
 ```
 
-詳細な開発フローは [DEVELOPMENT_WORKFLOW.md](docs/workflow/DEVELOPMENT_WORKFLOW.md) を参照してください。
+詳細な開発フローは [CC-SDD_WORKFLOW.md](docs/workflow/CC-SDD_WORKFLOW.md) を参照してください。
 
 ## 改訂履歴
 - 0.0.28 pbevm-treeコマンド追加（ツリー構造表示）

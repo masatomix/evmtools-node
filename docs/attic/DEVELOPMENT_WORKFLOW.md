@@ -1,3 +1,5 @@
+> **アーカイブ（廃止済み）**: 本文書は旧・独自SDD方式のものです。現行の開発フローは [docs/workflow/CC-SDD_WORKFLOW.md](../workflow/CC-SDD_WORKFLOW.md)、規約は [.kiro/steering/master-spec-sync.md](../../.kiro/steering/master-spec-sync.md) を参照してください。
+
 # 開発ワークフロー
 
 **作成日**: 2025-12-16

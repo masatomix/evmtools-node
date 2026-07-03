@@ -194,7 +194,7 @@ npx pbevm-tree --help
 | ドキュメント | パス | 説明 |
 |-------------|------|------|
 | GitHub Issue | [#161](https://github.com/masatomix/evmtools-node/issues/161) | 機能要望 |
-| 詳細仕様書 | `docs/specs/domain/features/CLI.tree.spec.md` | 詳細設計（作成予定） |
+| 詳細仕様書 | `docs/attic/features/CLI.tree.spec.md`（アーカイブ） | 詳細設計（作成予定） |
 | TaskNode | `src/domain/TaskNode.ts` | ツリー構造のドメインモデル |
 | 既存CLI参考 | `src/presentation/cli-pbevm-show-project.ts` | CLIコマンドの実装例 |
 

@@ -138,6 +138,14 @@ These checks apply at the feature level. Use command output as the primary signa
 - Check for any tasks still marked `_Blocked:_` — report why and assess impact on feature completeness
 - Review `## Implementation Notes` in tasks.md for cross-cutting insights that need attention
 
+**I. Master Spec Sync (project rule — see `.kiro/steering/master-spec-sync.md`)**
+- For every class whose public interface, behavior, or tests changed, verify
+  `docs/specs/domain/master/{Class}.spec.md` reflects the change (method specs, test scenarios,
+  change history entry with version/date/feature name)
+- Verify every added or changed public symbol appears in `docs/specs/domain/master/INDEX.md`
+- Flag any new or modified files under `docs/specs/domain/features/` (legacy location, retired —
+  content belongs in `.kiro/specs/{feature}/` and the master docs)
+
 ### Step 4: Generate Report
 
 Before returning `GO`, apply the `kiro-verify-completion` protocol to the feature-level claim. Tests alone are insufficient: include full-suite, runtime liveness, coverage, integration, design-alignment, and blocked-task status in the evidence.

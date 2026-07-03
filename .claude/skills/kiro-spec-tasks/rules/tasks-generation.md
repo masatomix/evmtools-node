@@ -220,3 +220,21 @@ Before writing `tasks.md`, review the draft task plan and repair local issues un
 Use `N.M`-style numeric requirement IDs where `N` is the top-level requirement number from requirements.md (for example, Requirement 1 → 1.1, 1.2; Requirement 2 → 2.1, 2.2), and `M` is a local index within that requirement group.
 
 Document any intentionally deferred requirements with rationale.
+
+## Master Spec Sync Task (Mandatory, project rule)
+
+This project maintains permanent master design docs (`docs/specs/domain/master/`) alongside
+per-feature specs. See `.kiro/steering/master-spec-sync.md` (v2).
+
+**Every generated tasks.md MUST include, after the implementation tasks and before release/PR tasks,
+a master-sync task** with these details:
+
+- Update `docs/specs/domain/master/{Class}.spec.md` for every class whose public interface,
+  behavior, or tests changed (method specs, test scenarios, change history with version/date/feature name)
+- Create `{Class}.spec.md` if the feature introduces a new class
+- Update `docs/specs/domain/master/INDEX.md` (class list / public API catalog) for every added or
+  changed public symbol
+- Link the task to the spec's documentation-sync requirement via `_Requirements:`
+
+Do NOT generate tasks that create or modify `docs/specs/domain/features/*.spec.md`
+(the legacy per-case spec location is retired; new requirements live in `.kiro/specs/{feature}/`).

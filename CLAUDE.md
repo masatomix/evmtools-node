@@ -190,7 +190,7 @@ git branch -d feature/機能名  # ローカルブランチも削除
 - `main`ブランチからのfeatureブランチ作成
 - developを経由しないマージ
 
-詳細は [`docs/workflow/DEVELOPMENT_WORKFLOW.md`](docs/workflow/DEVELOPMENT_WORKFLOW.md) を参照。
+詳細は [`docs/workflow/CC-SDD_WORKFLOW.md`](docs/workflow/CC-SDD_WORKFLOW.md) を参照。
 
 ## 注意事項
 
@@ -244,14 +244,18 @@ git branch -d feature/機能名  # ローカルブランチも削除
 └── settings/templates/          # 各種テンプレート
 ```
 
-### 既存仕様書との共存
+### マスター設計書との関係（重要）
 
-既存の `docs/specs/` 配下の仕様書はそのまま維持する。新規機能は `.kiro/specs/` に配置。
+feature spec（`.kiro/specs/`）は開発のための一時文書。恒久的な仕様は**マスター設計書**に置き、
+実装完了後・PR マージ前の同期が必須（規約: [`.kiro/steering/master-spec-sync.md`](.kiro/steering/master-spec-sync.md)）。
 
 | 配置場所 | 用途 |
 |---------|------|
-| `docs/specs/` | 旧SDDで作成された既存仕様書（参照用） |
-| `.kiro/specs/` | kiro式SDDで新規作成する仕様書 |
+| `.kiro/specs/{feature}/` | 機能単位の開発文書（requirements/design/tasks。マージ後は履歴） |
+| `docs/specs/domain/master/` | クラス単位の永続リファレンス + [`INDEX.md`](docs/specs/domain/master/INDEX.md)（全クラス・公開APIカタログ） |
+| `docs/attic/` | 廃止済み旧方式の文書（歴史資料。参照しない） |
+
+旧方式の案件設計書（`docs/specs/domain/features/`）は**廃止済み・新規作成禁止**。
 
 ### 参照すべきドキュメント
 
@@ -260,4 +264,4 @@ git branch -d feature/機能名  # ローカルブランチも削除
 | kiro SDDワークフロー定義 | [`.kiro/CLAUDE.md`](.kiro/CLAUDE.md) | スキル構成・最小ワークフロー |
 | cc-sdd 開発ワークフロー | [`CC-SDD_WORKFLOW.md`](docs/workflow/CC-SDD_WORKFLOW.md) | 全体フロー・コマンド早見表・旧SDDとの対応 |
 | コア用語集 | [`GLOSSARY.md`](docs/GLOSSARY.md) | EVM用語、クラス詳細仕様、稼働日計算ロジック |
-| 旧SDD 開発ワークフロー | [`DEVELOPMENT_WORKFLOW.md`](docs/workflow/DEVELOPMENT_WORKFLOW.md) | 旧方式の参照用 |
+| 全クラス・公開APIカタログ | [`INDEX.md`](docs/specs/domain/master/INDEX.md) | アプリ全体設計書の入口（マスター設計書の索引） |
