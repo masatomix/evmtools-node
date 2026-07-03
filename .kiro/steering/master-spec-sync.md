@@ -55,14 +55,17 @@ tasks.md 生成時（`/kiro-spec-tasks`）は**マスター同期タスクを必
 3. マージ後の feature spec は履歴として `.kiro/specs/` に残す（更新しない）。
    同じ領域の追加開発は新しい feature spec を切る。
 
-## 旧方式の資産の扱い
+## 旧方式の資産の扱い（Attic 方式）
+
+現役ディレクトリに新旧文書を並べない。**廃止文書は `docs/attic/` へ物理退避**（`git mv` で履歴保持）し、
+「どちらが現行か」を迷わせない。attic 配下は読み取り専用の歴史資料であり、更新もリンク先としての参照もしない。
 
 | 資産 | 扱い |
 |------|------|
-| `docs/specs/domain/features/*.spec.md` | 凍結（冒頭にアーカイブ注記）。新規作成禁止。内容の最新版はマスター側 |
-| `docs/specs/domain/master/*.spec.yaml` | 削除（#65） |
-| `docs/workflow/DEVELOPMENT_WORKFLOW.md` / `SAMPLE_DEVELOPMENT_FLOW.md` | アーカイブ注記（現行フローは `CC-SDD_WORKFLOW.md`） |
-| `docs/specs/requirements/REQ-*.md` | 既存分は履歴として保持。新規要件は `.kiro/specs/{feature}/requirements.md` に書く |
+| `docs/specs/domain/features/*.spec.md` | **2段階で処分**: (1) 吸収監査 — 内容がマスター設計書に反映済みか突き合わせ、未反映の仕様・テストケース・トレーサビリティを master に吸収 → (2) `docs/attic/features/` へ退避。新規作成は禁止 |
+| `docs/specs/domain/master/*.spec.yaml` | 削除（#65。Git 履歴に残るため attic 不要） |
+| `docs/workflow/DEVELOPMENT_WORKFLOW.md` / `SAMPLE_DEVELOPMENT_FLOW.md` | `docs/attic/` へ退避（冒頭に「現行フローは `docs/workflow/CC-SDD_WORKFLOW.md`」の注記付き）。`docs/workflow/` には現行文書のみ残す |
+| `docs/specs/requirements/REQ-*.md` | 当面現位置で保持（master のトレーサビリティ表が参照する要件原本のため）。吸収監査で master 側に要件要旨が揃った時点で attic 退避を判断。新規要件は `.kiro/specs/{feature}/requirements.md` に書く |
 
 ---
 _kiro spec は機能を記述し、マスター設計書はアプリ全体（クラスと公開API）の恒久的な全体像を記述する。両者は補完関係にある。_

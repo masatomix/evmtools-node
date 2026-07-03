@@ -32,11 +32,15 @@ steering v2（改訂済み）を規範とし、4段階で移行する。
 - 既存 master spec が無いクラスの洗い出し（例: TreeFormatter, TaskService の網羅性確認）と、不足分の master spec 新設（コードからの逆起こし）
 - GLOSSARY.md から INDEX.md への相互リンク
 
-### M3: 旧方式の廃止処理
-- `docs/specs/domain/master/*.spec.yaml` 9本を削除（#65 をクローズ）
-- `docs/specs/domain/features/*.spec.md` 全件の冒頭にアーカイブ注記を追加（「本文書は旧方式の案件設計書。最新仕様はマスター設計書と .kiro/specs を参照」）。新規作成禁止
-- `docs/workflow/DEVELOPMENT_WORKFLOW.md` / `SAMPLE_DEVELOPMENT_FLOW.md` の冒頭にアーカイブ注記（現行は CC-SDD_WORKFLOW.md）
-- CLAUDE.md の「仕様駆動開発」セクションを cc-sdd + master 維持規約の案内に全面書き換え（features 必須セクション規定を削除し、master-spec-sync v2 への参照に置換）。README の参照も更新
+### M3: 旧方式の廃止処理（Attic 方式: 現役ディレクトリに新旧を並べない）
+- `docs/attic/` を新設（README.md に「歴史資料。現行文書は docs/workflow/CC-SDD_WORKFLOW.md と docs/specs/domain/master/ を参照」を明記）
+- **細切れ設計書の2段階処分**: `docs/specs/domain/features/*.spec.md` 全件について、
+  (1) **吸収監査** — 各 spec のインターフェース仕様・テストケース・要件トレーサビリティが対応する `master/{Class}.spec.md` に反映済みか突き合わせ、未反映分を master に吸収（監査結果は表で記録）
+  (2) 吸収確認後に `git mv` で `docs/attic/features/` へ退避。`docs/specs/domain/` には master 体系のみが残る
+- `docs/workflow/DEVELOPMENT_WORKFLOW.md` / `SAMPLE_DEVELOPMENT_FLOW.md` を `git mv` で `docs/attic/` へ退避（冒頭に現行文書への誘導注記）。`docs/workflow/` は CC-SDD_WORKFLOW.md のみに
+- `docs/specs/domain/master/*.spec.yaml` 9本を削除（#65 をクローズ。Git 履歴に残るため attic 不要）
+- `docs/specs/requirements/REQ-*.md` は当面現位置（master のトレーサビリティが参照する要件原本）。吸収監査の結果を見て attic 退避を判断
+- CLAUDE.md の「仕様駆動開発」セクションを cc-sdd + master 維持規約の案内に全面書き換え（features 必須セクション規定を削除し、master-spec-sync v2 への参照に置換）。README・GLOSSARY 等から旧文書へのリンクを全 grep して現行文書に張り替え
 - #66（SDDワークフローのテンプレート化）は cc-sdd 一本化により再定義 or クローズ判断
 
 ### M4: 運用開始と検証
