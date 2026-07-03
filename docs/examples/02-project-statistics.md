@@ -140,11 +140,13 @@ main()
 
 ---
 
-## 複数スナップショットから平均 SPI を計算する
+## 複数スナップショットから期間 SPI を計算する
 
-複数日のプロジェクトスナップショットから、平均の SPI を計算することができます。通常のSPIはプロジェクト開始からいままでの生産性をあらわす指標ですが、直近のスナップショットを複数渡すことで、最近の生産性をあらわす指標を作成することができます。
+複数日のプロジェクトスナップショットから、**期間SPI（直近の実勢SPI）**を計算することができます。通常のSPI（累積SPI）はプロジェクト開始からいままでの生産性をあらわす指標ですが、過去の実績が母数に含まれるため、直近の回復・失速が平滑化されて見えにくくなります。期間SPIは期間中の増分だけで効率を測るため、最近の生産性を直接あらわします。
 
-`calculateRecentSpi()` は複数のスナップショットを受け取り、各スナップショットのSPIを平均して返します。たとえば直近1週間の日次スナップショットを渡すことで、その期間のSPI平均を取得できます。
+`calculateRecentSpi()` は複数のスナップショットを受け取り、基準日で最古・最新の**窓端2点**から **期間SPI = ΔEV / ΔPV**（EVの増分 ÷ 累積PVの増分）を返します。たとえば直近1週間の日次スナップショットを渡すと、その週の実勢SPIを取得できます（中間のスナップショットは使われません）。
+
+> **v0.0.29 での挙動変更（[#170](https://github.com/masatomix/evmtools-node/issues/170)）**: 以前は「各スナップショットの累積SPIの平均」を返していましたが、[#139](https://github.com/masatomix/evmtools-node/issues/139) の仕様（ΔEV/ΔPV）に修正されました。スナップショットが2点未満の場合、および期間中に計画が進んでいない場合（ΔPV ≤ 0、再計画によるPV減少を含む）は `undefined` を返します。
 
 ### コード例（2スナップショット）
 
@@ -160,11 +162,11 @@ async function main() {
     console.log(`前回基準日: ${projectPrev.baseDate.toLocaleDateString('ja-JP')}`)
     console.log(`今回基準日: ${projectNow.baseDate.toLocaleDateString('ja-JP')}`)
 
-    // ProjectService で直近 SPI を計算
+    // ProjectService で期間 SPI を計算（ΔEV/ΔPV）
     const service = new ProjectService()
     const recentSpi = service.calculateRecentSpi([projectPrev, projectNow])
 
-    console.log(`直近SPI: ${recentSpi?.toFixed(3)}`)
+    console.log(`期間SPI: ${recentSpi?.toFixed(3)}`)
 }
 
 main()
@@ -176,8 +178,10 @@ main()
 前回基準日: 2025/7/4
 今回基準日: 2025/7/25
 
-直近SPI: 1.252
+期間SPI: 1.252
 ```
+
+※ 値は例です。この期間に増えたEV ÷ この期間に増えた計画PV を表します。
 
 ### コード例（1週間分のスナップショット）
 
@@ -189,14 +193,15 @@ const projects = await Promise.all(
 )
 
 const service = new ProjectService()
-const weeklyAvgSpi = service.calculateRecentSpi(projects)
+// 最古(0718)と最新(0725)の2点から週間の期間SPIを算出（中間の日は使われない）
+const weeklySpi = service.calculateRecentSpi(projects)
 
-console.log(`直近1週間のSPI平均: ${weeklyAvgSpi?.toFixed(3)}`)
+console.log(`直近1週間の期間SPI: ${weeklySpi?.toFixed(3)}`)
 ```
 
-> 直近 SPI が 1.0 を超えている場合、最近の進捗が予定より早いことを示します。
+> 期間 SPI が 1.0 を超えている場合、最近の進捗が予定より早いことを示します。
 >
-> **完了予測への活用**: 直近SPIを使った完了予測については [完了予測 - 直近SPIで完了予測する](./04-completion-forecast.md#直近spiで完了予測する) を参照してください。
+> **完了予測への活用**: 期間SPIを使った完了予測については [完了予測 - 直近SPI（期間SPI）で完了予測する](./04-completion-forecast.md#直近spi期間spiで完了予測する) を参照してください。
 
 ---
 
