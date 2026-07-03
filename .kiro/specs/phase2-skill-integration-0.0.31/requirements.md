@@ -1,5 +1,16 @@
 # 要件定義書
 
+> **スコープ改訂（2026-07-04、ユーザー判断）**: steering「公開 API 追加の基準」の適用により、
+> **要件2（AlertService）と要件3（detectActiveSubprojects）は取り下げ**。
+> いずれも公開 API（getStatisticsByName / getDelayedTasks / calculateRecentSpi / getTree / calculateTaskDiffs）
+> だけで利用側が合成可能であり、閾値・文言・「アクティブ」定義は利用側固有のポリシーのため。
+> **要件1（getDailyPvByAssignee）のみ実施**。合成できない理由（基準4）: ライブラリ内部の同一 EVM 計算
+> （_internalPvByNameLong 相当）をスキルが再実装しており、丸め・(未割当)・日付ラベルの細部乖離による
+> **数値不一致リスクの解消（計算の単一ソース化）**。getStatistics({filter})（#393→0.0.25）と同一パターン。
+> リリースは 0.0.31 単独ではなく **0.0.30（phase1 残置分と合流）** に変更。
+
+
+
 ## はじめに
 
 masatomix/task リポジトリの evmtools スキル（`/Users/masatomix/git/task/.claude/skills/evmtools/`）は、本来ライブラリ（evmtools-node）に置くべき EVM 計算ロジックを 3 本独自実装している。これは「計算は evmtools-node に集約し、WebUI・CLI・スキルで数値を一致させる」というプロジェクト方針（roadmap / REQ-EVM-SKILL-003A）に反する。
