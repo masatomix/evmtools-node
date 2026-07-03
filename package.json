@@ -1,6 +1,6 @@
 {
   "name": "evmtools-node",
-  "version": "0.0.29-SNAPSHOT",
+  "version": "0.0.30-SNAPSHOT",
   "description": "このライブラリは、プライムブレインズ社で利用している「進捗管理ツール(Excel)」ファイルを読み込み、 プロジェクトの進捗状況や要員別の作業量を可視化するためのライブラリです。",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -39,11 +39,11 @@
     }
   },
   "bin": {
-    "pbevm-show-project": "./dist/presentation/cli-pbevm-show-project.js",
-    "pbevm-diff": "./dist/presentation/cli-pbevm-diff.js",
-    "pbevm-show-pv": "./dist/presentation/cli-pbevm-show-pv.js",
-    "pbevm-show-resourceplan": "./dist/resource/presentation/cli-pbevm-show-resourceplan.js",
-    "pbevm-tree": "./dist/presentation/cli-pbevm-tree.js"
+    "pbevm-show-project": "dist/presentation/cli-pbevm-show-project.js",
+    "pbevm-diff": "dist/presentation/cli-pbevm-diff.js",
+    "pbevm-show-pv": "dist/presentation/cli-pbevm-show-pv.js",
+    "pbevm-show-resourceplan": "dist/resource/presentation/cli-pbevm-show-resourceplan.js",
+    "pbevm-tree": "dist/presentation/cli-pbevm-tree.js"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -112,5 +112,12 @@
   },
   "engines": {
     "node": "^20.19.0 || >=22.13.0"
+  },
+  "bugs": {
+    "url": "https://github.com/masatomix/evmtools-node/issues"
+  },
+  "homepage": "https://github.com/masatomix/evmtools-node#readme",
+  "directories": {
+    "doc": "docs"
   }
 }
