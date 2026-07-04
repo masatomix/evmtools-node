@@ -311,6 +311,7 @@ BAC = 100人日
 |------|-----------------|
 | **PV（要員数）** | どの期間の平均を使う？ |
 | **SPI（生産性）** | 現在のSPI？終盤想定で下げる？ |
+<!-- 注: 古典SPIの終盤1.0収束問題（#171 知見ⓑ）は 0.0.31 の Earned Schedule（calculateEarnedSchedule の SPI(t)/SV(t)）で解決済み。GLOSSARY「Earned Schedule 系指標」参照 -->
 
 ### 現実的なアプローチ案
 

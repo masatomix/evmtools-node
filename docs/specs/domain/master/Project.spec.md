@@ -1058,6 +1058,39 @@ getDailyPvByAssignee(options?: DailyPvByAssigneeOptions): DailyPvEntry[]
 
 ---
 
+### 5.18 `calculateEarnedSchedule(options?: TaskFilterOptions): (EarnedScheduleResult & { esForecastDate: Date | undefined }) | undefined`
+
+#### 目的
+Earned Schedule 系指標（ES / SPI(t) / SV(t) / IEAC(t)）を算出する。古典 SPI の終盤 1.0 収束（#171 知見ⓑ）を時間ベースの測定で解消する（phase3-earned-schedule 要件1,2）
+
+#### シグネチャ
+```typescript
+// src/domain/EarnedSchedule.ts（純関数コア、Date/Project 非依存）
+export interface EarnedScheduleResult { es: number; at: number; spiT: number | undefined; svT: number; iEacT: number | undefined; pd: number }
+
+// Project のメソッド
+calculateEarnedSchedule(options?: TaskFilterOptions): (EarnedScheduleResult & { esForecastDate: Date | undefined }) | undefined
+```
+
+#### 事後条件
+
+| ID | 条件 |
+|----|------|
+| POST-ES-01 | ES = 累積PV曲線上で C(k) <= EV < C(k+1) の k を探索し線形補間。EV=0→ES=0、EV>=BAC→ES=PD にクランプ |
+| POST-ES-02 | AT = 開始日〜基準日の稼働日数（isHoliday 除外）。SPI(t)=ES/AT（AT=0 は undefined）、SV(t)=ES−AT |
+| POST-ES-03 | PD = プロジェクト全期間の稼働日数（フィルタ部分集合でも PD は全期間）。IEAC(t)=PD/SPI(t)（SPI(t)<=0 は undefined） |
+| POST-ES-04 | esForecastDate = startDate から IEAC(t) 稼働日（端数切り上げ）進めた暦日（isHoliday スキップ）。算出不能は undefined |
+| POST-ES-05 | 対象タスク空・startDate/endDate 欠損・BAC<=0 は undefined。累積PV曲線は全期間で1回構築しフィルタキーでメモ化 |
+| POST-ES-06 | Statistics / StatisticsOptions / 既存メソッドは不変（純追加） |
+
+#### 実装上の注意
+- 部分集合の EV が部分集合 BAC に達すると ES=PD（全期間）にクランプされ SPI(t) > 1 になり得る（早期完了の表現。phase4 で ES 系列を扱う際にドキュメント化すること）
+- EarnedSchedule.ts の delta<=0 ガードは「最後の k」探索では到達不能な防御的コード（レビューで実証済み）
+
+テスト実体: `src/domain/__tests__/EarnedSchedule.test.ts` / `Project.earnedSchedule.test.ts`（計33件。Lipke/PMI 標準定義との手計算照合・ミューテーション3種をレビューで実証）
+
+---
+
 ## 6. テストシナリオ（Given-When-Then形式）
 
 ### 6.1 基本生成テスト
@@ -1444,5 +1477,6 @@ Tests:       262 passed, 262 total (2 skipped)
 | 1.6.1 | 2026-01-26 | `_calculateExtendedStats()` の `dailyPvOverride: 1.0` を削除（REQ-EVM-001 AC-03準拠）。設計方針セクション追加（Statistics と CompletionForecast の役割分担） | Issue #145 |
 | 1.7.0 | 2026-01-28 | `CompletionForecastOptions` に `spiOverride` オプション追加。`calculateCompletionForecast()` で外部指定SPIを使用可能に | REQ-SPI-002 |
 | 1.8.0 | 2026-01-30 | `getTree()` メソッド追加。TaskNode[] を TreeNode[] 形式に変換してツリー構造を取得可能に | REQ-TREE-001 AC-07 |
+| 1.11.0 | 2026-07-04 | phase3-earned-schedule: `calculateEarnedSchedule(options?)` と `EarnedScheduleResult`（src/domain/EarnedSchedule.ts 純関数コア）を追加（要件1,2。終盤SPI収束ⓑの解決）。※同 spec の Statistics 統合は公開 API 追加基準により取り下げ | phase3-earned-schedule-0.0.32 要件1,2 |
 | 1.10.0 | 2026-07-04 | phase2-skill-integration-0.0.31: `getDailyPvByAssignee(options?)` と関連型（DailyPvTaskDetail/DailyPvEntry/DailyPvByAssigneeOptions）を追加（要件1。日次PV計算の単一ソース化）。※同 spec の AlertService/detectActiveSubprojects は公開 API 追加基準により取り下げ | phase2-skill-integration-0.0.31 要件1 |
 | 1.9.0 | 2026-07-04 | phase1-minor-issues-0.0.30: `getFullTaskName` を内部メモ化（#153 要件3。private Map によるキャッシュ、公開 API 追加なし・シグネチャ/戻り値不変）。※当初計画の #166/#165 の公開 API 追加はスコープ外し（公開 API 追加基準の適用: 既存 API の組み合わせで実現可能なため） | phase1-minor-issues-0.0.30 要件3 |
