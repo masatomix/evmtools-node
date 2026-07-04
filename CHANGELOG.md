@@ -5,6 +5,19 @@
 フォーマットは [Keep a Changelog](https://keepachangelog.com/ja/1.0.0/) に基づき、
 [セマンティックバージョニング](https://semver.org/lang/ja/) に準拠しています。
 
+## [0.0.31]
+
+### 追加
+- **Earned Schedule 系指標**: `Project.calculateEarnedSchedule(options?)` を追加（phase3-earned-schedule 要件1,2）
+  - **ES / SPI(t) / SV(t) / IEAC(t)** を算出。古典 SPI がプロジェクト終盤で必ず 1.0 に収束し遅延が見えなくなる欠陥（#171 知見ⓑ）を、時間ベースの測定で解消する
+  - 追加入力データ不要（既存の累積PV曲線と EV から算出）。フィルタ（タスク名部分一致）で部分集合の ES も算出可能。完了予測日 `esForecastDate` を暦日で返す
+  - 純関数コア `EarnedScheduleResult`（`src/domain/EarnedSchedule.ts`）と関連型を `evmtools-node/domain` から export
+  - `docs/GLOSSARY.md`「Earned Schedule 系指標」節を新設
+  - 例: BAC=10・計画終了1週間後・EV=9.9 のとき、古典 SPI = 0.99（順調に見える）に対し SPI(t) = 0.66・SV(t) = −5.1 稼働日（失速を検出）
+
+### 補足
+- Statistics へのオプトイン統合（当初計画）は「公開 API 追加の基準」により見送り。ES は `calculateEarnedSchedule()` を直接呼び出す（既存の Statistics 型・StatisticsOptions は不変）
+
 ## [0.0.30]
 
 ### 追加
