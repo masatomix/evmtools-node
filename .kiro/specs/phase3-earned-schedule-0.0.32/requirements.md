@@ -1,5 +1,16 @@
 # 要件定義書
 
+> **スコープ改訂（2026-07-04、ユーザー判断）**: steering「公開 API 追加の基準」の再評価により、
+> **要件4（Statistics へのオプトイン統合: spiT/svT/esForecastDate + StatisticsOptions.includeEarnedSchedule）は取り下げ**。
+> 利用者は `calculateEarnedSchedule()` を直接呼べばよく、統計戻り値への混ぜ込みは合成可能な便宜のため。
+> これにより Statistics 型・StatisticsOptions は不変（phase5 とのフィールド調整問題も解消）。
+> **採用**: `Project.calculateEarnedSchedule(options?: TaskFilterOptions): EarnedScheduleResult | undefined` + `EarnedScheduleResult` 型のみ。
+> 追加理由（基準4）: ES/SPI(t)/SV(t)/IEAC(t) は EVM 理論の標準指標＝本ライブラリのドメイン計算そのもの。
+> 精度が PV 曲線構築の細部（稼働日・休日・丸め）に依存するため、利用側再実装は数値乖離リスク（計算の単一ソース化）。
+> リリース番号は 0.0.32 → **0.0.31** に繰り上げ（phase1/2 が 0.0.30 に合流したため）。
+
+
+
 ## はじめに
 
 evmtools-node のスケジュール指標は現在、古典 SPI（EV ÷ 累積PV）のみを提供している。この指標には EVM 理論上の既知の欠陥がある。**プロジェクト終盤では EV も PV も BAC に収束するため SPI が必ず 1.0 に近づき、実際には遅延しているプロジェクトでも「順調」に見えてしまう**（PMI Practice Standard for EVM 2nd Ed. Appendix D。本リポジトリでも Issue #171 の知見ⓑ、`docs/brainstorm-evm-indicators.md` として実運用データで確認済み）。

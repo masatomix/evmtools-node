@@ -1,5 +1,16 @@
 # 実装計画（phase3-earned-schedule-0.0.32）
 
+> **スコープ改訂（2026-07-04、ユーザー判断）**: steering「公開 API 追加の基準」の再評価により、
+> **要件4（Statistics へのオプトイン統合: spiT/svT/esForecastDate + StatisticsOptions.includeEarnedSchedule）は取り下げ**。
+> 利用者は `calculateEarnedSchedule()` を直接呼べばよく、統計戻り値への混ぜ込みは合成可能な便宜のため。
+> これにより Statistics 型・StatisticsOptions は不変（phase5 とのフィールド調整問題も解消）。
+> **採用**: `Project.calculateEarnedSchedule(options?: TaskFilterOptions): EarnedScheduleResult | undefined` + `EarnedScheduleResult` 型のみ。
+> 追加理由（基準4）: ES/SPI(t)/SV(t)/IEAC(t) は EVM 理論の標準指標＝本ライブラリのドメイン計算そのもの。
+> 精度が PV 曲線構築の細部（稼働日・休日・丸め）に依存するため、利用側再実装は数値乖離リスク（計算の単一ソース化）。
+> リリース番号は 0.0.32 → **0.0.31** に繰り上げ（phase1/2 が 0.0.30 に合流したため）。
+
+
+
 - [ ] 1. 基盤: Earned Schedule 型と純関数モジュールの骨組み
 - [ ] 1.1 ES の型定義と domain バレル export
   - `EarnedScheduleResult`（es, at, spiT, svT, iEacT, pd）と純関数入力 `EarnedScheduleInput`（pvCurve, ev, at, pd）を新規モジュールに定義する（時間単位はすべて稼働日）
@@ -23,7 +34,7 @@
   - _Boundary: EarnedSchedule コア_
   - _Depends: 2.1_
 
-- [ ] 3. 統合: Project への配線と Statistics 拡張
+- [x] ~~3. 統合: Project への配線と Statistics 拡張~~ **取り下げ（スコープ改訂）**
 - [ ] 3.1 累積PV曲線の1回構築とメモ化・AT/PD/EV の計数
   - リーフタスク部分集合を既存のタスク解決機構で解決し、開始日→終了日の稼働日配列（土日/祝日を除外）を生成、各稼働日の累積PV（稼働日除外済みの累積PV算出を利用）を 1 回だけ走査して曲線配列へメモ化する
   - AT（開始日→基準日の稼働日数）・PD（稼働日配列長 = 計画稼働日数）・EV（部分集合の合計 EV）を取得する
@@ -39,7 +50,7 @@
   - _Boundary: Project.calculateEarnedSchedule_
   - _Depends: 2.2, 3.1_
 
-- [ ] 3.3 Statistics への ES 指標オプトイン統合
+- [x] ~~3.3 Statistics への ES 指標オプトイン統合~~ **取り下げ（スコープ改訂）**
   - `Statistics` 型に `spiT?`・`svT?`・`esForecastDate?` をオプショナル追加し、統計取得オプションに ES 算出フラグ（既定 off）を追加する
   - フラグ有効時のみ統計計算経路で ES を算出して統計へ合成し、既定（フラグ無指定）では ES を算出せず ES 関連フィールドを未設定のまま戻り値の形状を変えない
   - フラグ有効の統計取得で `spiT`/`svT`/`esForecastDate` が設定され、フラグ無指定の既存呼び出しでは戻り値が従来と同一形状であることを観測できる
@@ -56,7 +67,7 @@
   - _Boundary: EarnedSchedule コア（テスト）_
   - _Depends: 2.2_
 
-- [ ] 4.2 Project 統合テスト（曲線・フィルタ・完了予測日・Statistics）
+- [x] ~~4.2 Project 統合テスト（曲線・フィルタ・完了予測日・Statistics）~~ **取り下げ（スコープ改訂）**
   - 土日/祝日を含むデータで曲線が稼働日のみで構成されること、休日跨ぎで ES が一貫すること、完了予測日が土日/祝日をスキップして暦日展開されることを検証する
   - フィルタ部分集合の ES 算出と空集合での undefined、`includeEarnedSchedule` 有効時のみ `Statistics.spiT`/`svT`/`esForecastDate` が設定され既定 off で未設定となることを検証する
   - 実データ相当の fixture で ES 指標と完了予測日がグリーンに算出され、フィルタ/オプトイン挙動が観測できる
