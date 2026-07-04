@@ -140,6 +140,14 @@ main()
 
 ---
 
+## 今日のPV（計画PV と実行PV）を確認する
+
+担当者・タスクが「今日どれだけ進めるべきか」は、計画PV（`TaskRow.workloadPerDay`）と実行PV（`TaskRow.pvTodayActual(baseDate)` = 残工数÷残日数）の比較で読み取れます。**実行PV > 計画PV なら遅延圧（挽回が必要なペース）、実行PV < 計画PV なら前倒し**です。
+
+実行可能なサンプルは [samples/evm-sample-projects.ts](../../samples/evm-sample-projects.ts) の「今日のPV」セクションを参照してください（`npx ts-node samples/evm-sample-projects.ts`）。
+
+---
+
 ## 複数スナップショットから期間 SPI を計算する
 
 複数日のプロジェクトスナップショットから、**期間SPI（直近の実勢SPI）**を計算することができます。通常のSPI（累積SPI）はプロジェクト開始からいままでの生産性をあらわす指標ですが、過去の実績が母数に含まれるため、直近の回復・失速が平滑化されて見えにくくなります。期間SPIは期間中の増分だけで効率を測るため、最近の生産性を直接あらわします。

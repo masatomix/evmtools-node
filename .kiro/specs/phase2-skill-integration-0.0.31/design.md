@@ -1,5 +1,16 @@
 # 設計書: phase2-skill-integration-0.0.31
 
+> **スコープ改訂（2026-07-04、ユーザー判断）**: steering「公開 API 追加の基準」の適用により、
+> **要件2（AlertService）と要件3（detectActiveSubprojects）は取り下げ**。
+> いずれも公開 API（getStatisticsByName / getDelayedTasks / calculateRecentSpi / getTree / calculateTaskDiffs）
+> だけで利用側が合成可能であり、閾値・文言・「アクティブ」定義は利用側固有のポリシーのため。
+> **要件1（getDailyPvByAssignee）のみ実施**。合成できない理由（基準4）: ライブラリ内部の同一 EVM 計算
+> （_internalPvByNameLong 相当）をスキルが再実装しており、丸め・(未割当)・日付ラベルの細部乖離による
+> **数値不一致リスクの解消（計算の単一ソース化）**。getStatistics({filter})（#393→0.0.25）と同一パターン。
+> リリースは 0.0.31 単独ではなく **0.0.30（phase1 残置分と合流）** に変更。
+
+
+
 ## 概要
 
 **目的**: 本 spec は、masatomix/task の evmtools スキルが独自実装している EVM 計算ロジック 3 本（日次PV担当者別集計 / アラート判定 / アクティブサブプロジェクト検出）を evmtools-node の**公開 API**として取り込み、v0.0.31 としてリリースする。これにより「計算はライブラリに集約し、WebUI・CLI・スキルで数値を一致させる」方針を前進させる。
@@ -259,7 +270,7 @@ export interface DailyPvTaskDetail {
 /** 担当者×日ごとの日次PVエントリ */
 export interface DailyPvEntry {
   assignee: string             // 未割当は '(未割当)'
-  date: string                 // dateStr(baseDate) 'YYYY-MM-DD'
+  date: string                 // dateStr(baseDate) 'YYYY/MM/DD'（ja-JP）
   pv: number                   // 明細PVの合算（小数第3位で丸め）
   taskCount: number            // 明細タスク数（pv>0 のもの）
   tasks: DailyPvTaskDetail[]

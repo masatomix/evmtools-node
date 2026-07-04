@@ -260,6 +260,8 @@ getFullTaskName(task?: TaskRow): string
 
 ---
 
+> **1.9.0〜（#153）**: 本メソッドは内部メモ化される。初回算出時に結果を Project 内部の private キャッシュ（task.id → フルパス名の Map）に保存し、以降はキャッシュを返す（`getTask` の再走査なし）。**公開 API の追加はなく**、シグネチャ・戻り値は従来と同一。
+
 ### 5.4 `getTaskRows(fromDate: Date, toDate?: Date, assignee?: string): TaskRow[]`
 
 #### 目的
@@ -1026,6 +1028,36 @@ console.log(JSON.stringify(TreeFormatter.toJson(tree), null, 2))
 
 ---
 
+### 5.17 `getDailyPvByAssignee(options?: DailyPvByAssigneeOptions): DailyPvEntry[]`
+
+#### 目的
+担当者×日の日次PV（明細付き）を集計して返す。task スキル側の再実装を置き換え、日次PV計算の単一ソースとする（phase2-skill-integration-0.0.31 要件1）
+
+#### シグネチャ
+```typescript
+export interface DailyPvTaskDetail { name: string; fullName: string; pv: number }
+export interface DailyPvEntry { assignee: string; date: string; pv: number; taskCount: number; tasks: DailyPvTaskDetail[] }
+export interface DailyPvByAssigneeOptions extends TaskFilterOptions { assignee?: string; from?: Date; to?: Date }
+
+getDailyPvByAssignee(options?: DailyPvByAssigneeOptions): DailyPvEntry[]
+```
+
+#### 事後条件
+
+| ID | 条件 |
+|----|------|
+| POST-DPV-01 | リーフ解決 → filter 部分一致 → assignee 完全一致で対象タスクを絞る |
+| POST-DPV-02 | 期間は `from ?? startDate` / `to ?? endDate`。どちらも決定不能なら Error |
+| POST-DPV-03 | `generateBaseDates` の各日について `isHoliday` の日はスキップ |
+| POST-DPV-04 | 担当者グルーピングは `assignee ?? '(未割当)'`。対象タスクを持つ担当者は PV=0 の日もエントリ出力 |
+| POST-DPV-05 | 明細は `calculatePV(date)` が undefined でなく 0 超のもののみ（明細 pv は個別 round3） |
+| POST-DPV-06 | `entry.pv` は未丸めΣを最後に round3（丸め順序が参照実装との数値一致の要件）。`date` ラベルは `dateStr`（'YYYY/MM/DD'、ja-JP） |
+| POST-DPV-07 | 既存の PV 系ゲッター・`_internalPvByNameLong` は不変 |
+
+テスト実体: `src/domain/__tests__/Project.getDailyPvByAssignee.test.ts`（23件。丸め順序固定・休日スキップのミューテーション耐性をレビューで実証）
+
+---
+
 ## 6. テストシナリオ（Given-When-Then形式）
 
 ### 6.1 基本生成テスト
@@ -1412,3 +1444,5 @@ Tests:       262 passed, 262 total (2 skipped)
 | 1.6.1 | 2026-01-26 | `_calculateExtendedStats()` の `dailyPvOverride: 1.0` を削除（REQ-EVM-001 AC-03準拠）。設計方針セクション追加（Statistics と CompletionForecast の役割分担） | Issue #145 |
 | 1.7.0 | 2026-01-28 | `CompletionForecastOptions` に `spiOverride` オプション追加。`calculateCompletionForecast()` で外部指定SPIを使用可能に | REQ-SPI-002 |
 | 1.8.0 | 2026-01-30 | `getTree()` メソッド追加。TaskNode[] を TreeNode[] 形式に変換してツリー構造を取得可能に | REQ-TREE-001 AC-07 |
+| 1.10.0 | 2026-07-04 | phase2-skill-integration-0.0.31: `getDailyPvByAssignee(options?)` と関連型（DailyPvTaskDetail/DailyPvEntry/DailyPvByAssigneeOptions）を追加（要件1。日次PV計算の単一ソース化）。※同 spec の AlertService/detectActiveSubprojects は公開 API 追加基準により取り下げ | phase2-skill-integration-0.0.31 要件1 |
+| 1.9.0 | 2026-07-04 | phase1-minor-issues-0.0.30: `getFullTaskName` を内部メモ化（#153 要件3。private Map によるキャッシュ、公開 API 追加なし・シグネチャ/戻り値不変）。※当初計画の #166/#165 の公開 API 追加はスコープ外し（公開 API 追加基準の適用: 既存 API の組み合わせで実現可能なため） | phase1-minor-issues-0.0.30 要件3 |
