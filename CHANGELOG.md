@@ -5,6 +5,21 @@
 フォーマットは [Keep a Changelog](https://keepachangelog.com/ja/1.0.0/) に基づき、
 [セマンティックバージョニング](https://semver.org/lang/ja/) に準拠しています。
 
+## [0.0.30]
+
+### 追加
+- **`Project.getDailyPvByAssignee(options?)`**: 担当者×日の日次PV集計（明細付き）を公開 API 化（phase2-skill-integration 要件1）
+  - フィルタ（タスク名部分一致）・担当者絞り込み・期間指定（from/to）に対応。休日スキップ、`(未割当)` グルーピング、PV=0 の日もエントリ出力
+  - 関連型 `DailyPvEntry` / `DailyPvTaskDetail` / `DailyPvByAssigneeOptions` を `evmtools-node/domain` から export
+  - **日次PV計算の単一ソース化**: task スキル側の再実装（check-daily-pv.ts）と丸め順序・出力条件の全項目一致を照合済み。スキル側は本 API への置き換えを推奨
+- **サンプル「今日のPV」**: `samples/evm-sample-projects.ts` に計画PV（workloadPerDay）と実行PV（pvTodayActual）の比較表と読み方（遅延圧/前倒し）を追加（#160）
+
+### 改善
+- **`Project.getFullTaskName` の内部メモ化**（#153）: 2回目以降の呼び出しで親ツリーを再走査しない。公開シグネチャ・戻り値は完全不変（純粋な性能改善）
+
+### プロセス
+- steering に「公開 API 追加の基準」を新設。基準適用により #166（デモメソッド）/#138（isReschedule）/#165（incompleteTasks）および AlertService / detectActiveSubprojects のライブラリ化を取り下げ（利用側の合成で実現可能なため。経緯は各 Issue・`.kiro/specs/` を参照）
+
 ## [0.0.29]
 
 ### ⚠️ 挙動変更（Behavior Change）
