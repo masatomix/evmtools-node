@@ -14,6 +14,10 @@ import { TaskRow } from './TaskRow'
 import { HolidayData } from './HolidayData'
 import { calcRate } from '../common/calcUtils'
 import { getLogger } from '../logger'
+import {
+    calculateEarnedSchedule as calculateEarnedScheduleCore,
+    EarnedScheduleResult,
+} from './EarnedSchedule'
 
 export class Project {
     private logger = getLogger('domain/Project')
@@ -946,6 +950,116 @@ export class Project {
         }
 
         return entries
+    }
+
+    /** 累積PV曲線のメモ化キャッシュ（フィルタ文字列 → 曲線）。外部非公開 */
+    private _pvCurveCache = new Map<string, number[]>()
+
+    /**
+     * Earned Schedule（ES）指標を算出する
+     *
+     * spec: phase3-earned-schedule-0.0.32 要件2.8, 要件5, 要件6
+     *
+     * プロジェクト全体（options 省略時）または filter で絞ったリーフタスク部分集合に
+     * 対して、稼働日単位の ES / SPI(t) / SV(t) / IEAC(t) と完了予測日を返す。
+     *
+     * @param options フィルタ（fullTaskName 部分一致）
+     * @returns ES 指標 + 完了予測日。算出不能（タスク空・開始/終了日欠損・BAC=0 等）は undefined
+     *
+     * @remarks
+     * - 累積PV曲線はプロジェクト全期間（開始日〜終了日）の稼働日（土日/祝日除外）で
+     *   1 回だけ構築し、フィルタ文字列をキーにメモ化する（要件 6.1, 6.2）
+     * - AT = 開始日→基準日の稼働日数、PD = 計画総稼働日数（plannedWorkDays と一致）
+     * - 完了予測日は IEAC(t) が算出できた場合のみ、開始日から IEAC(t) 稼働日ぶんを
+     *   暦日展開（土日/祝日スキップ）して算出する（要件 2.8）
+     */
+    calculateEarnedSchedule(
+        options?: TaskFilterOptions
+    ): (EarnedScheduleResult & { esForecastDate: Date | undefined }) | undefined {
+        const startDate = this._startDate
+        const endDate = this._endDate
+        if (!startDate || !endDate) return undefined
+
+        // リーフ部分集合を既存の統計と同一のタスク解決機構で解決（要件 5.1, 5.3）
+        const tasks = this._resolveTasks(options)
+        if (tasks.length === 0) return undefined // 要件 5.2: 空集合は undefined（例外にしない）
+
+        // 稼働日配列 = プロジェクト全期間から土日/祝日を除外（要件 6.1）
+        const workDays = generateBaseDates(startDate, endDate).filter(
+            (date) => !this.isHoliday(date)
+        )
+        const pd = workDays.length
+        if (pd === 0) return undefined
+
+        // 累積PV曲線を 1 回だけ構築（メモ化。要件 6.2）
+        const pvCurve = this._buildPvCurve(tasks, workDays, options?.filter)
+
+        // 曲線末尾 BAC=0 のプロジェクトは算出不能
+        const bac = pvCurve[pvCurve.length - 1] ?? 0
+        if (bac <= 0) return undefined
+
+        // AT = 開始日から基準日までの稼働日数（基準日が開始日より前なら 0）
+        const at = generateBaseDates(startDate, this._baseDate).filter(
+            (date) => !this.isHoliday(date)
+        ).length
+
+        // EV = 対象リーフタスクの ev 合計
+        const ev = sumEVs(tasks) ?? 0
+
+        const result = calculateEarnedScheduleCore({ pvCurve, ev, at, pd })
+        if (!result) return undefined
+
+        // 完了予測日: IEAC(t) が算出できた場合のみ暦日展開（要件 2.8）
+        const esForecastDate = this._expandEsForecastDate(startDate, result.iEacT)
+
+        return { ...result, esForecastDate }
+    }
+
+    /**
+     * 累積PV曲線を構築する（フィルタ文字列をキーにメモ化）
+     * pvCurve[i] = i 番目の稼働日終了時点の累積PV（要件 6.1, 6.2）
+     */
+    private _buildPvCurve(
+        tasks: TaskRow[],
+        workDays: Date[],
+        filterKey: string | undefined
+    ): number[] {
+        const key = filterKey ?? ''
+        const cached = this._pvCurveCache.get(key)
+        if (cached) return cached
+
+        const pvCurve = workDays.map((workDay) => sumCalculatePVs(tasks, workDay) ?? 0)
+        this._pvCurveCache.set(key, pvCurve)
+        return pvCurve
+    }
+
+    /**
+     * 開始日から IEAC(t) 稼働日ぶんを暦日展開した完了予測日を返す（要件 2.8）
+     * calculateCompletionForecast の暦日展開ループと同一の isHoliday スキップパターン
+     */
+    private _expandEsForecastDate(startDate: Date, iEacT: number | undefined): Date | undefined {
+        if (iEacT === undefined || !Number.isFinite(iEacT) || iEacT <= 0) return undefined
+
+        // 端数の稼働日は翌稼働日に食い込むため切り上げる
+        const neededWorkDays = Math.ceil(iEacT)
+        // 安全上限（暦日）: 全日休日のような異常カレンダーでの無限ループを防止
+        const maxCalendarDays = neededWorkDays * 7 + 366
+
+        const currentDate = new Date(startDate)
+        let workDaysCount = this.isHoliday(currentDate) ? 0 : 1
+        let calendarDays = 0
+
+        while (workDaysCount < neededWorkDays && calendarDays < maxCalendarDays) {
+            currentDate.setDate(currentDate.getDate() + 1)
+            calendarDays++
+
+            if (!this.isHoliday(currentDate)) {
+                workDaysCount++
+            }
+        }
+
+        if (workDaysCount < neededWorkDays) return undefined
+        return currentDate
     }
 }
 

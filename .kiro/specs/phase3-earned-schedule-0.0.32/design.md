@@ -1,5 +1,16 @@
 # 設計書: phase3-earned-schedule-0.0.32
 
+> **スコープ改訂（2026-07-04、ユーザー判断）**: steering「公開 API 追加の基準」の再評価により、
+> **要件4（Statistics へのオプトイン統合: spiT/svT/esForecastDate + StatisticsOptions.includeEarnedSchedule）は取り下げ**。
+> 利用者は `calculateEarnedSchedule()` を直接呼べばよく、統計戻り値への混ぜ込みは合成可能な便宜のため。
+> これにより Statistics 型・StatisticsOptions は不変（phase5 とのフィールド調整問題も解消）。
+> **採用**: `Project.calculateEarnedSchedule(options?: TaskFilterOptions): EarnedScheduleResult | undefined` + `EarnedScheduleResult` 型のみ。
+> 追加理由（基準4）: ES/SPI(t)/SV(t)/IEAC(t) は EVM 理論の標準指標＝本ライブラリのドメイン計算そのもの。
+> 精度が PV 曲線構築の細部（稼働日・休日・丸め）に依存するため、利用側再実装は数値乖離リスク（計算の単一ソース化）。
+> リリース番号は 0.0.32 → **0.0.31** に繰り上げ（phase1/2 が 0.0.30 に合流したため）。
+
+
+
 ## 概要
 
 **目的**: 本 spec は evmtools-node に Earned Schedule（ES）理論を導入し、古典 SPI（EV÷累積PV）が抱えるスケジュール指標の欠陥を解消する。ES はスケジュール差異を時間軸（稼働日）に射影して表現するため、プロジェクト終盤で古典 SPI が 1.0 に収束しても遅延を検出できる。
