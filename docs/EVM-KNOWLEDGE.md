@@ -75,14 +75,15 @@
 |------|------|------|
 | 停滞タスクの経時追跡（[#184](https://github.com/masatomix/evmtools-node/issues/184)） | ⓒ | 同一タスクの遅延日数を複数スナップショットで追跡（`getDelayedTasks` の時系列化） |
 | BAC トレンド常設（[#185](https://github.com/masatomix/evmtools-node/issues/185)） | ⓕ | BAC 増加の可視化。当初BAC（凍結ベースライン）に対する SPI 併記 |
-| EV 算定方式オプション（evMethod） | ⓕ | 0/100・50/50 の客観的 %complete 方式（進捗率の主観バイアス対処）。当初 phase5 で計画も先送り |
-| 完了予測の幅（3点予測） | ⓑ | 楽観/標準/悲観の完了予測。現状は `calculateCompletionForecast({ spiOverride })` に期間SPIを渡して直近ペース予測が可能 |
+| EV 算定方式オプション（evMethod） | ⓕ | 0/100・50/50 の客観的 %complete 方式（進捗率の主観バイアス対処）。**実装予定**（2026-07-06 に格上げ決定。phase5 spec の設計を再開） |
+| 完了予測の幅（3点予測） | ⓑ | **レシピ化済み**（[EVM-MANAGEMENT-GUIDE.md](EVM-MANAGEMENT-GUIDE.md) の公式レシピ参照。専用 API は合成可能なため見送り） |
 | タスク名変化の警告（[#186](https://github.com/masatomix/evmtools-node/issues/186)） | ⓗ′ | ID突合済みの diff に name 変化フラグを追加 |
 
 ---
 
 ## 関連ドキュメント
 
+- [EVM-PRIMER.md](EVM-PRIMER.md) — AI・スキル向けドメイン知識の入口（理論×API対応・判断レシピ・落とし穴）
 - [GLOSSARY.md](GLOSSARY.md) — EVM 用語・Earned Schedule 系指標の定義
 - [EVM-MANAGEMENT-GUIDE.md](EVM-MANAGEMENT-GUIDE.md) — 日常の進捗管理手順
 - [brainstorm-evm-indicators.md](brainstorm-evm-indicators.md) — 本知識ベースの元資料（ブレスト原文）

@@ -11,6 +11,7 @@
 | 初めて触れる人 | Part I → クラス図とデータモデルの全体像を把握 |
 | EVM計算の仕組みを知りたい | **Part II-1** → PV/EV/SPIの計算ロジック |
 | 指標の落とし穴・読み方を知りたい | [EVM-KNOWLEDGE.md](EVM-KNOWLEDGE.md) → 実運用知見ⓐ〜ⓗ |
+| 理論とAPIの対応・判断レシピを知りたい | [EVM-PRIMER.md](EVM-PRIMER.md) → AI/スキル向け前提知識 |
 | 差分レポートを理解したい | **Part II-2** → プロジェクト間差分計算 |
 | API実装・型定義を調べたい | Part III → 型定義リファレンス |
 

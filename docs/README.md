@@ -14,6 +14,7 @@ evmtools-node の開発者向けドキュメント一覧です。
 |-------------|------|
 | [CC-SDD_WORKFLOW.md](workflow/CC-SDD_WORKFLOW.md) | 開発フロー（Git Flow + cc-sdd 仕様駆動開発） |
 | [master/INDEX.md](specs/domain/master/INDEX.md) | 全クラス・公開APIカタログ（アプリ全体設計書の入口） |
+| [EVM-PRIMER.md](EVM-PRIMER.md) | EVM理論×API対応・判断レシピ（AI/スキル向けドメイン知識の入口） |
 | [EVM-KNOWLEDGE.md](EVM-KNOWLEDGE.md) | EVM指標の落とし穴と読み方（実運用知見ⓐ〜ⓗ） |
 
 ## 仕様書

@@ -1,5 +1,14 @@
 # 設計書: phase4-scurve-eac-0.0.33
 
+> **スコープ確定（2026-07-06、ユーザー判断で正式記録）**: 本 spec は**実装せず終結**。
+> 経緯: v0.0.31 リリース後の価値再評価で見送り方向となったが記録が漏れていたため、監査を経てここに確定する。
+> - ① pbevm-scurve CLI → **見送り**（計算データは公開済み。整形/出口はプレゼン層＝利用側の領分。再開条件つき Backlog: [#192](https://github.com/masatomix/evmtools-node/issues/192)）
+> - ② calculateForecastVariants → **見送り**（`calculateCompletionForecast({spiOverride})`×3 で合成可能。公式レシピを docs/EVM-MANAGEMENT-GUIDE.md に記載）
+> - ③ コスト系 EVM 設計メモ → **実施済み**（`docs/specs/requirements/REQ-COST-EVM-DRAFT.md`、Backlog: [#191](https://github.com/masatomix/evmtools-node/issues/191)）
+> 承認済みの設計（ScurveRecord/buildScurveRecords 等）は再開時に本 spec から利用できる。
+
+
+
 ## 概要
 
 **目的**: 本機能は、EVM 可視化（S カーブ・SPI トレンド）用のグラフデータ出力と、楽観/標準/悲観の 3 点完了予測を、プロジェクト管理者・ライブラリ利用者に提供する。
