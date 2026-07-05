@@ -298,6 +298,7 @@ Give a ⭐️ if this project helped you!
 詳細なドキュメントは [docs/README.md](docs/README.md) を参照してください。
 
 - [コア用語集](docs/GLOSSARY.md) - Project, TaskRow, EVM指標などの用語定義
+- [EVM ドメインプライマー](docs/EVM-PRIMER.md) - EVM理論と本ツールの対応・判断レシピ（AI/スキル向け前提知識）
 - [EVM 知識ベース](docs/EVM-KNOWLEDGE.md) - EVM指標の落とし穴と読み方（実運用知見ⓐ〜ⓗ）
 - 開発ワークフロー
 - 仕様書（要件定義・設計書）
