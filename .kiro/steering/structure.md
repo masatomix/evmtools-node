@@ -95,6 +95,13 @@ src/{layer}/
 | `docs/attic/` | 廃止済み旧方式文書（歴史資料。参照しない） |
 | `.kiro/specs/` | kiro 式 SDD による新規仕様書 |
 | `docs/GLOSSARY.md` | EVM ドメイン用語集・クラス仕様リファレンス |
+| `docs/EVM-KNOWLEDGE.md` | EVM 指標の落とし穴と読み方（実運用知見ⓐ〜ⓗ′） |
+
+## 変更履歴の一元管理
+
+- **変更履歴の正本は `CHANGELOG.md`**（[Keep a Changelog](https://keepachangelog.com/ja/1.0.0/) 準拠）。リリース時にここへ追記する。
+- README.md 等の他ドキュメントに版ごとの変更履歴を**重複させない**（過去に README「改訂履歴」と CHANGELOG が二重管理になり README 側が古くなった経緯があるため）。README は CHANGELOG へのリンクのみを持つ。
+- クラス単位の変更履歴（`{Class}.spec.md` の「変更履歴」節）は CHANGELOG とは別レイヤーで、feature 名ポインタによる要件追跡が目的（[master-spec-sync.md](master-spec-sync.md) 参照）。両者は用途が異なるため併存してよい。
 
 ---
 _ファイルツリーではなくパターンを文書化する。パターンに従う新規ファイルの追加で更新が必要にならないようにする_
