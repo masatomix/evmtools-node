@@ -39,9 +39,9 @@ EVM（Earned Value Management）は「**計画価値（PV）・出来高（EV）
 | EV | progressRate × workload（Excel 読込値） | `TaskRow.ev` / `getStatistics().totalEv` | 入力欠損 |
 | SPI（累積） | ΣEV / Σ累積PV | `getStatistics().spi` | PV=0 |
 | SV | EV − PV | `TaskRow.calculateSV(baseDate)` | EV 欠損 |
-| BAC | Σworkload | `getStatistics().totalWorkloadCalculated` | — |
-| ETC'（残作業） | (BAC − EV) / SPI | `getStatistics().etcPrime` | SPI 算出不能 |
-| 実行PV（独自） | 残工数 / 残稼働日数 | `TaskRow.pvTodayActual(baseDate)` | workload 欠損。残日数0は 0 |
+| BAC | Σworkload | `getStatistics().totalWorkloadExcel`（完了予測内部の bac と同値） | — |
+| ETC'（残作業） | (BAC − EV) / SPI | `getStatistics().etcPrime` | SPI 算出不能 / 直近日次PV=0 / 予測上限超過 |
+| 実行PV（独自） | 残工数 / 残稼働日数 | `TaskRow.pvTodayActual(baseDate)` | workload/開始日/終了日/plotMap 欠損。残日数0は 0 |
 | 遅延タスク | endDate < today かつ未完了の leaf | `getDelayedTasks(minDays)` | —（空配列） |
 
 ### 2.2 時系列指標（複数スナップショット）
@@ -79,7 +79,7 @@ AI が文書・コードを検索する際のキー対応。**左の語を見た
 | 計画価値 | PV, BCWS | `pv`, `calculatePV(s)`, `totalPvCalculated` |
 | 出来高 | EV, BCWP | `ev`, `totalEv` |
 | 実コスト（未対応） | AC, ACWP | `actualWorkload`（設計案のみ） |
-| 完成時総予算 / 総工数 | BAC | `totalWorkloadCalculated` |
+| 完成時総予算 / 総工数 | BAC | `totalWorkloadExcel`（=Σworkload）。`totalWorkloadCalculated` は endDate 時点の累積PVによる計算値（endDate 欠損で undefined）で別物 |
 | スケジュール効率（累積） | SPI | `spi`, `calculateSPI` |
 | 期間SPI / 直近SPI | period SPI | `calculateRecentSpi`（ΔEV/ΔPV） |
 | 時間ベース効率 | SPI(t), earned schedule | `spiT`, `calculateEarnedSchedule` |
@@ -110,9 +110,9 @@ AI が文書・コードを検索する際のキー対応。**左の語を見た
 2. **日付は「日単位シリアル値」で比較される**。`date2Sn` はローカル時刻ベースで時刻成分がシリアル値の小数部になる（JST 9:00 → .375）。TaskRow 内は `toDaySerial`（floor 正規化）で統一済み。**時刻付き Date を渡しても正しく動くが、独自比較を書くときは同じ正規化をすること**
 3. **`finished` は許容誤差付き**（progressRate ≥ 1.0−1e-9、1.0 超も完了扱い）。`=== 1.0` で判定してはならない
 4. **`getDelayedTasks()` の today は `this.baseDate` 固定**。引数の基準日で遅延を見たい場合は today 基準のインライン判定が必要（`getIncompleteTasksUpToToday` の設計経緯参照 — 同 API は基準適用で見送り、レシピは #165 参照）
-5. **親タスクの plotMap には土日が混入し得る**（Excel 由来）。`calculatePVs` は親（isLeaf=false）に限り土日/祝日を除外する。リーフのプロットは尊重される（週末稼働の表現）
+5. **親タスクの plotMap には土日が混入し得る**（Excel 由来）。`calculatePVs` は親（isLeaf=false）に限り**土日**を除外する。祝日除外は `isHolidayFn` 注入時のみで**現状は未接続の将来拡張点**（Project 側は渡していない）。リーフのプロットは尊重される（週末稼働の表現）
 6. **期間SPI は undefined を返し得る**（2点未満・ΔPV≤0）。数値前提のコードは `?? getStatistics().spi` 等のフォールバックを書くこと
-7. **TZ 前提は JST**。`generateBaseDates`/`dateStr` はローカルTZ依存（CI は JST/UTC 両方でテスト）。日付文字列ラベルは `dateStr` = 'YYYY/MM/DD'
+7. **TZ 前提は JST**。`generateBaseDates` はローカルTZ依存、`dateStr` は **Asia/Tokyo 固定**（toLocaleString ja-JP）。CI は JST/UTC 両方でテスト。日付文字列ラベルは `dateStr` = 'YYYY/MM/DD'
 8. **タスク同一性は ID 突合が正**（同名多数のため fullName 突合は誤マッチ）。ID 付け替えは検出対象（#186）
 
 ## 6. 制約・非対応の一覧（正直な限界）

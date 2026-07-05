@@ -36,7 +36,7 @@ AC が無いと算出できない指標:
 
 ### 案A: 既存フォーマットへの列追加（推奨）
 
-- **CSV**: 現行カラム（0:タスクID 〜 11:EV）の**12列目に「実績工数」**を追加。`CsvProjectCreator` のカラムマップ拡張（`src/infrastructure/CsvProjectCreator.ts` のカラム定義。既存11列は不変なので後方互換）
+- **CSV**: 現行カラム（インデックス 0:タスクID 〜 11:EV の **12列**）は不変とし、**カラム番号 12（13列目）に「実績工数」**を追加。`CsvProjectCreator` のカラムマップ拡張（`src/infrastructure/CsvProjectCreator.ts`。既存12列は不変なので後方互換）
 - **Excel**: WBS シートに「実績工数」列を追加し `ExcelTaskRowCreator` で読み取り。**列が無いファイルは AC=undefined として従来どおり動く**（非破壊）
 
 ### 案B: 別ファイル・ジョイン方式
