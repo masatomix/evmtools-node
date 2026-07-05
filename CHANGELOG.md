@@ -5,6 +5,13 @@
 フォーマットは [Keep a Changelog](https://keepachangelog.com/ja/1.0.0/) に基づき、
 [セマンティックバージョニング](https://semver.org/lang/ja/) に準拠しています。
 
+## [0.0.32]
+
+### ドキュメント
+- **EVM 知識ベースを新設**（[docs/EVM-KNOWLEDGE.md](docs/EVM-KNOWLEDGE.md)、#171）: 実運用 WBS 分析から得た EVM 指標の落とし穴と読み方を知見ⓐ〜ⓗ′として体系化。各知見に「現象 / 理論的背景 / 本ツールでの確認方法（API） / 対処・解決状況」を記載。ⓐ母数効果→期間SPI(0.0.29)、ⓑ終盤SPI収束→Earned Schedule(0.0.31) で解決済みを明示
+- **変更履歴を CHANGELOG.md に一本化**: README「改訂履歴」との二重管理を解消し、README はリンクのみに。旧8版（0.0.5〜0.0.13）を CHANGELOG に移設。steering に「変更履歴の正本は CHANGELOG.md」を明文化
+- 機能化候補を Backlog Issue 化（#184 停滞タスク経時追跡 / #185 BACトレンド / #186 タスク名変化警告）
+
 ## [0.0.31]
 
 ### 追加
