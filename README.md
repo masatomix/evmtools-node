@@ -323,25 +323,8 @@ npm run format        # Prettierチェック
 詳細な開発フローは [CC-SDD_WORKFLOW.md](docs/workflow/CC-SDD_WORKFLOW.md) を参照してください。
 
 ## 改訂履歴
-- 0.0.28 pbevm-treeコマンド追加（ツリー構造表示）
-- 0.0.27 spiOverrideオプション追加、サンプルドキュメント集、remainingDays計算修正
-- 0.0.26 直近N日SPI計算機能、EVM進捗管理ガイド、完了予測機能リファクタリング
-- 0.0.25 タスクフィルタリングと統計情報機能（filterTasks, getStatistics, getStatisticsByName）、型チェック自動化
-- 0.0.24 pv-today機能、遅延タスク取得機能、EVM指標拡張（ETC'・完了予測日）
-- 0.0.20 タスク管理機能、仕様書テンプレート統一化
-- 0.0.19 CLI出力整形（pbevm-diff, pbevm-show-pvから不要プロパティ除去）、ドキュメント相対リンク化
-- 0.0.18 CsvProjectCreator追加、VersionInfo追加、excludedTasks追加、Jest環境導入、仕様駆動開発導入
-- 0.0.17 正しいデータかを表す「validStatus」プロパティを追加
-- 0.0.15 微調整
-- 0.0.14 もろもろリファクタリング。要員計画を読み込むコードのβ版リリース
-- 0.0.13 Diffのプロパティに工数(workload)を追加。
-- 0.0.12 時系列の統計データを読み込む ProjectStatisticsCreator を追加。
-- 0.0.11 指定した基準日のSPI/SV(EV-PV)を返すメソッドをTaskRowに追加。
-- 0.0.10 内部処理の見直し(ログ関連)。
-- 0.0.8 Projectに休日データを保持するプロパティを追加。Projectに日付を指定して祝日かを返すメソッドを追加。
-- 0.0.7 内部のリファクタリング(キャッシュして処理改善)
-- 0.0.6 README.md(このファイル)を更新。Project#getTaskRows で、条件に合致するTaskRowを返すメソッドを追加
-- 0.0.5 初回リリース(絶賛開発中)
+
+変更履歴は [CHANGELOG.md](CHANGELOG.md) を正本として管理しています（[Keep a Changelog](https://keepachangelog.com/ja/1.0.0/) 準拠）。各バージョンの追加・変更・修正の詳細はそちらを参照してください。
 
 
 ## 🔧 Logger 設定のカスタマイズ
