@@ -28,6 +28,8 @@ main()
 | 04 | [完了予測](./04-completion-forecast.md) | spiOverride、直近SPI、シナリオ分析、信頼度 |
 | 05 | [スナップショット比較](./05-diff-snapshots.md) | calculateTaskDiffs、担当者別差分、進捗分析 |
 | 06 | [CLIコマンド](./06-cli-commands.md) | pbevm-show-project、pbevm-diff、pbevm-show-pv |
+| 07 | [Earned Schedule](./07-earned-schedule.md) | SPI(t)/SV(t)/IEAC(t)、終盤の隠れた失速検出、工程別フィルタ |
+| 08 | [EV 算定方式](./08-ev-method.md) | evMethod（0/100・50/50）、水増し検出、保守的予測 |
 
 ## モジュール構成
 
@@ -78,6 +80,10 @@ const project = await creator.createProject()
 | > 1.0 | 予定より早い |
 | = 1.0 | 予定通り |
 | < 1.0 | 予定より遅い |
+
+### Q: 終盤に SPI が 1.0 に近いのに遅れている気がする
+
+古典 SPI は完了に近づくと機械的に 1.0 へ収束します（既知の欠点）。[07-earned-schedule.md](./07-earned-schedule.md) の SPI(t) を使ってください。終盤でも失速が数値で見えます。
 
 ### Q: 完了予測の信頼度（confidence）とは？
 
