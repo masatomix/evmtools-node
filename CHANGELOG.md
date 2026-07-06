@@ -5,6 +5,12 @@
 フォーマットは [Keep a Changelog](https://keepachangelog.com/ja/1.0.0/) に基づき、
 [セマンティックバージョニング](https://semver.org/lang/ja/) に準拠しています。
 
+## [0.0.34]
+
+### ドキュメント
+- **具体例ドキュメントを追加**（docs/examples/）: [07-earned-schedule.md](docs/examples/07-earned-schedule.md)（終盤の隠れた失速検出・工程別フィルタ）、[08-ev-method.md](docs/examples/08-ev-method.md)（3方式の EV/SPI 比較・50/50 の罠・保守的予測）。出力例はすべて検証スクリプト（scripts/07,08）の実測値
+- 利用側スキルの移管先（PrimeBrains/generative-ai）を steering に記録
+
 ## [0.0.33]
 
 ### 追加
