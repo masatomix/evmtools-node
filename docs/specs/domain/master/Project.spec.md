@@ -1091,6 +1091,32 @@ calculateEarnedSchedule(options?: TaskFilterOptions): (EarnedScheduleResult & { 
 
 ---
 
+### 5.19 EV 算定方式オプション `StatisticsOptions.evMethod`（0.0.33〜）
+
+#### 目的
+主観的な進捗率按分に加え、客観的な %complete 方式（PMI 標準の fixed formula）で EV を算定する（phase5-evmethod-knowledge-0.0.34 要件1〜4）
+
+#### シグネチャ
+```typescript
+export type EvMethod = 'progressRate' | '0/100' | '50/50'   // src/domain/EvMethod.ts（型のみ公開）
+export interface StatisticsOptions extends TaskFilterOptions { evMethod?: EvMethod }  // 型別名から interface 化（型互換）
+```
+
+#### 事後条件
+
+| ID | 条件 |
+|----|------|
+| POST-EVM-01 | 未指定/'progressRate' は既存実装（sumEVs/calculateSPI）へ委譲し全経路で従来と完全同値 |
+| POST-EVM-02 | '0/100' の EV = finished ? (workload ?? 0) : 0（finished は EPSILON 許容誤差付き） |
+| POST-EVM-03 | '50/50' の EV = finished ? workload : (actualStartDate ? workload*0.5 : 0)。**progressRate>0 でも actualStartDate 未設定なら 0**（客観方式のため意図的） |
+| POST-EVM-04 | evMethod は EV/SPI/ETC'/完了予測/ES（spiT/iEacT/esForecastDate）に反映。**PV/BAC/AT/PD は不変** |
+| POST-EVM-05 | 反映経路: getStatistics / getStatisticsByName / calculateCompletionForecast / calculateEarnedSchedule(options?: StatisticsOptions) |
+| POST-EVM-06 | 公開 API は EvMethod 型のみ（resolveTaskEv/sumEvsBy は内部。基準適用） |
+
+テスト実体: `src/domain/__tests__/EvMethod.test.ts` / `Project.evMethod.test.ts`（計47件。PMI 定義との手計算照合・既定同値性のミューテーション実証をレビューで実施）
+
+---
+
 ## 6. テストシナリオ（Given-When-Then形式）
 
 ### 6.1 基本生成テスト
@@ -1477,6 +1503,7 @@ Tests:       262 passed, 262 total (2 skipped)
 | 1.6.1 | 2026-01-26 | `_calculateExtendedStats()` の `dailyPvOverride: 1.0` を削除（REQ-EVM-001 AC-03準拠）。設計方針セクション追加（Statistics と CompletionForecast の役割分担） | Issue #145 |
 | 1.7.0 | 2026-01-28 | `CompletionForecastOptions` に `spiOverride` オプション追加。`calculateCompletionForecast()` で外部指定SPIを使用可能に | REQ-SPI-002 |
 | 1.8.0 | 2026-01-30 | `getTree()` メソッド追加。TaskNode[] を TreeNode[] 形式に変換してツリー構造を取得可能に | REQ-TREE-001 AC-07 |
+| 1.12.0 | 2026-07-06 | phase5-evmethod-knowledge-0.0.34: `StatisticsOptions.evMethod`（progressRate/0/100/50/50）を追加、StatisticsOptions を interface 化。EV/SPI/予測/ES への方式反映（要件1〜4。2026-07-06 の格上げ判断） | phase5-evmethod-knowledge-0.0.34 要件1〜4 |
 | 1.11.0 | 2026-07-04 | phase3-earned-schedule: `calculateEarnedSchedule(options?)` と `EarnedScheduleResult`（src/domain/EarnedSchedule.ts 純関数コア）を追加（要件1,2。終盤SPI収束ⓑの解決）。※同 spec の Statistics 統合は公開 API 追加基準により取り下げ | phase3-earned-schedule-0.0.32 要件1,2 |
 | 1.10.0 | 2026-07-04 | phase2-skill-integration-0.0.31: `getDailyPvByAssignee(options?)` と関連型（DailyPvTaskDetail/DailyPvEntry/DailyPvByAssigneeOptions）を追加（要件1。日次PV計算の単一ソース化）。※同 spec の AlertService/detectActiveSubprojects は公開 API 追加基準により取り下げ | phase2-skill-integration-0.0.31 要件1 |
 | 1.9.0 | 2026-07-04 | phase1-minor-issues-0.0.30: `getFullTaskName` を内部メモ化（#153 要件3。private Map によるキャッシュ、公開 API 追加なし・シグネチャ/戻り値不変）。※当初計画の #166/#165 の公開 API 追加はスコープ外し（公開 API 追加基準の適用: 既存 API の組み合わせで実現可能なため） | phase1-minor-issues-0.0.30 要件3 |

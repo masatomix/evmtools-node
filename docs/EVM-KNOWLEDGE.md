@@ -48,8 +48,8 @@
 
 - **現象**: 案件A BAC +24%、案件B BAC 約20倍に膨張する中、SPI は終始 0.91〜1.0。
 - **理論的背景**: 実プロジェクトの BAC はほぼ減らない。更新ベースラインに対する SPI は、ベースライン自体が遅延を吸収するため実態より良く出る。
-- **本ツールでの確認方法**: `getStatistics().totalWorkloadExcel`（BAC=Σworkload）を時系列で追い、**BAC 増加トレンド**をスコープ膨張の可視化として見る。進捗率の主観バイアスへの対処としては、客観的 %complete 方式（0/100・50/50 の EV 算定）が候補。
-- **対処・解決状況**: ⚠️ BAC 値は取得可能だが、「当初BAC（凍結ベースライン）に対する SPI 併記」「BAC トレンド常設」は Backlog、「客観的 EV 算定方式（evMethod）」は**実装予定（2026-07-06 格上げ）**（[機能化候補](#機能化候補backlog)参照）。
+- **本ツールでの確認方法**: `getStatistics().totalWorkloadExcel`（BAC=Σworkload）を時系列で追い、**BAC 増加トレンド**をスコープ膨張の可視化として見る。進捗率の主観バイアスへの対処は `StatisticsOptions.evMethod`（0/100・50/50、0.0.33〜）で可能。
+- **対処・解決状況**: ⚠️ BAC 値は取得可能だが、「当初BAC（凍結ベースライン）に対する SPI 併記」「BAC トレンド常設」は Backlog、「客観的 EV 算定方式（evMethod）」は **✅ 0.0.33 で実装**（`StatisticsOptions.evMethod`）。
 
 ## ⓖ SV は構造的にマイナス基調 — 「先行」は稀（経験則）
 
@@ -75,7 +75,7 @@
 |------|------|------|
 | 停滞タスクの経時追跡（[#184](https://github.com/masatomix/evmtools-node/issues/184)） | ⓒ | 同一タスクの遅延日数を複数スナップショットで追跡（`getDelayedTasks` の時系列化） |
 | BAC トレンド常設（[#185](https://github.com/masatomix/evmtools-node/issues/185)） | ⓕ | BAC 増加の可視化。当初BAC（凍結ベースライン）に対する SPI 併記 |
-| EV 算定方式オプション（evMethod） | ⓕ | 0/100・50/50 の客観的 %complete 方式（進捗率の主観バイアス対処）。**実装予定**（2026-07-06 に格上げ決定。phase5 spec の設計を再開） |
+| EV 算定方式オプション（evMethod） | ⓕ | **✅ 0.0.33 で実装**（`StatisticsOptions.evMethod`。0/100・50/50。50/50 は actualStartDate 入力が前提） |
 | 完了予測の幅（3点予測） | ⓑ | **レシピ化済み**（[EVM-MANAGEMENT-GUIDE.md](EVM-MANAGEMENT-GUIDE.md) の公式レシピ参照。専用 API は合成可能なため見送り） |
 | タスク名変化の警告（[#186](https://github.com/masatomix/evmtools-node/issues/186)） | ⓗ′ | ID突合済みの diff に name 変化フラグを追加 |
 

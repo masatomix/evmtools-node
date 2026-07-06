@@ -24,7 +24,7 @@ EVM（Earned Value Management）は「**計画価値（PV）・出来高（EV）
 
 1. **通貨ではなく工数（人日）ベース**。BAC = 総予定工数（人日）。金額換算はしない
 2. **AC（実コスト）は存在しない**。よってコスト系指標（CPI/CV/EAC/TCPI/VAC/CR）は算出不可。本ツールが測るのは**スケジュール系のみ**（→ [REQ-COST-EVM-DRAFT.md](specs/requirements/REQ-COST-EVM-DRAFT.md)、[#191](https://github.com/masatomix/evmtools-node/issues/191)）
-3. **EV = 進捗率 × 予定工数**（progressRate は Excel/CSV に PM が手動入力する主観値）。0/100・50/50 等の客観的 EV 測定技法はオプション化を計画中（evMethod）
+3. **EV = 進捗率 × 予定工数**（progressRate は Excel/CSV に PM が手動入力する主観値）。客観的 EV 測定技法は `StatisticsOptions.evMethod`（'0/100'・'50/50'、0.0.33〜）で選択可。50/50 の着手判定は actualStartDate の有無（進捗率不使用）
 4. **基準日（baseDate）は「その日の業務終了時点」を表す**。期限判定 `isOverdueAt` は `endDate <= baseDate` で当日を含む
 5. **1プロジェクトファイル = 1スナップショット**。時系列分析（差分・期間SPI・トレンド）は複数スナップショットを読み込んで行う
 6. **稼働日ベース**。土日 + プロジェクト固有祝日（holidayDatas）を除いた日で PV を配分。タスクごとの稼働日は plotMap（Excel シリアル値 → boolean）が正
@@ -120,7 +120,7 @@ AI が文書・コードを検索する際のキー対応。**左の語を見た
 | 項目 | 状態 |
 |------|------|
 | コスト系 EVM（AC/CPI/EAC/TCPI/VAC/CR） | ❌ 入力経路なし（設計メモ: REQ-COST-EVM-DRAFT.md / #191） |
-| EV 測定技法（0/100・50/50） | 🔜 実装予定（evMethod。進捗率按分のみ→客観方式を追加） |
+| EV 測定技法（0/100・50/50） | ✅ 0.0.33（`StatisticsOptions.evMethod`。PV/BAC は不変、EV/SPI/予測/ES に反映） |
 | Sカーブ CLI / グラフ出力 | ❌ 見送り（計算データは公開済み。整形は利用側 / #192） |
 | 3点見積の専用 API | ❌ レシピで代替（EVM-MANAGEMENT-GUIDE） |
 | 停滞タスク経時追跡 / BACトレンド / name変化警告 | 🔜 Backlog（#184 / #185 / #186） |

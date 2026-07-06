@@ -18,6 +18,7 @@ import {
     calculateEarnedSchedule as calculateEarnedScheduleCore,
     EarnedScheduleResult,
 } from './EarnedSchedule'
+import { EvMethod, sumEvsBy } from './EvMethod'
 
 export class Project {
     private logger = getLogger('domain/Project')
@@ -246,7 +247,7 @@ export class Project {
     getStatistics(tasks: TaskRow[]): ProjectStatistics
     getStatistics(optionsOrTasks?: StatisticsOptions | TaskRow[]): ProjectStatistics {
         const tasks = this._resolveTasks(optionsOrTasks)
-        return this._calculateStatistics(tasks)
+        return this._calculateStatistics(tasks, this._resolveEvMethod(optionsOrTasks))
     }
 
     /**
@@ -262,7 +263,19 @@ export class Project {
     getStatisticsByName(tasks: TaskRow[]): AssigneeStatistics[]
     getStatisticsByName(optionsOrTasks?: StatisticsOptions | TaskRow[]): AssigneeStatistics[] {
         const tasks = this._resolveTasks(optionsOrTasks)
-        return this._calculateAssigneeStats(tasks)
+        return this._calculateAssigneeStats(tasks, this._resolveEvMethod(optionsOrTasks))
+    }
+
+    /**
+     * 引数から EV 算定方式を解決する（統計計算用）
+     * options 形式の場合のみ evMethod を持ちうる。TaskRow[] / 未指定は undefined（= 既定 'progressRate'）
+     * spec: phase5-evmethod-knowledge-0.0.34 要件1
+     */
+    private _resolveEvMethod(optionsOrTasks?: StatisticsOptions | TaskRow[]): EvMethod | undefined {
+        if (optionsOrTasks === undefined || Array.isArray(optionsOrTasks)) {
+            return undefined
+        }
+        return optionsOrTasks.evMethod
     }
 
     /**
@@ -286,21 +299,22 @@ export class Project {
 
     /**
      * プロジェクト統計を計算
+     * @param evMethod EV 算定方式（未指定は 'progressRate' = 現行挙動）
      */
-    private _calculateStatistics(tasks: TaskRow[]): ProjectStatistics {
+    private _calculateStatistics(tasks: TaskRow[], evMethod?: EvMethod): ProjectStatistics {
         const name = this._name
         const baseDate = this._baseDate
         const startDate = this._startDate
         const endDate = this._endDate
 
-        // 基本統計
+        // 基本統計（EV/SPI のみ方式依存。PV/BAC は方式非依存: 要件4.4）
         const totalPvCalculated = sumCalculatePVs(tasks, baseDate)
-        const totalEv = sumEVs(tasks)
-        const spi = calculateSPI(tasks, baseDate)
+        const totalEv = sumEVsByMethod(tasks, evMethod)
+        const spi = calculateSpiByMethod(tasks, baseDate, evMethod)
         const bac = sumWorkload(tasks)
 
         // 拡張統計
-        const extendedStats = this._calculateExtendedStats(tasks, spi, bac, totalEv)
+        const extendedStats = this._calculateExtendedStats(tasks, spi, bac, totalEv, evMethod)
 
         return {
             projectName: name,
@@ -321,8 +335,9 @@ export class Project {
 
     /**
      * 担当者別統計を計算
+     * @param evMethod EV 算定方式（担当者別 EV/SPI にも一貫適用: 要件4.5）
      */
-    private _calculateAssigneeStats(tasks: TaskRow[]): AssigneeStatistics[] {
+    private _calculateAssigneeStats(tasks: TaskRow[], evMethod?: EvMethod): AssigneeStatistics[] {
         const baseDate = this._baseDate
         const endDate = this._endDate
 
@@ -338,12 +353,18 @@ export class Project {
 
         return Array.from(grouped.entries()).map(([assignee, assigneeTasks]) => {
             const totalPvCalculated = sumCalculatePVs(assigneeTasks, baseDate)
-            const totalEv = sumEVs(assigneeTasks)
-            const spi = calculateSPI(assigneeTasks, baseDate)
+            const totalEv = sumEVsByMethod(assigneeTasks, evMethod)
+            const spi = calculateSpiByMethod(assigneeTasks, baseDate, evMethod)
             const bac = sumWorkload(assigneeTasks)
 
             // 拡張統計（担当者ごとに計算）
-            const extendedStats = this._calculateExtendedStats(assigneeTasks, spi, bac, totalEv)
+            const extendedStats = this._calculateExtendedStats(
+                assigneeTasks,
+                spi,
+                bac,
+                totalEv,
+                evMethod
+            )
 
             return {
                 assignee: assignee || undefined,
@@ -373,7 +394,8 @@ export class Project {
         tasks: TaskRow[],
         spi: number | undefined,
         bac: number | undefined,
-        totalEv: number | undefined
+        totalEv: number | undefined,
+        evMethod?: EvMethod
     ): {
         etcPrime?: number
         completionForecast?: Date
@@ -382,7 +404,11 @@ export class Project {
         maxDelayDays: number
     } {
         // 高性能版を呼び出し（dailyPvOverride なし → calculateRecentDailyPv() を使用）
-        const forecast = this.calculateCompletionForecast(tasks)
+        // evMethod 指定時は完了予測（残作業・etcPrime・完了予測日）へも方式反映（要件4.2）
+        const forecast = this.calculateCompletionForecast(
+            tasks,
+            evMethod === undefined ? undefined : { evMethod }
+        )
 
         // 遅延情報
         const { delayedTaskCount, averageDelayDays, maxDelayDays } =
@@ -432,12 +458,13 @@ export class Project {
      * REQ-REFACTOR-002
      *
      * @param tasks リーフタスクの配列
+     * @param evMethod EV 算定方式（未指定は 'progressRate' = 現行挙動）
      * @returns BasicStats
      */
-    private _calculateBasicStats(tasks: TaskRow[]): BasicStats {
+    private _calculateBasicStats(tasks: TaskRow[], evMethod?: EvMethod): BasicStats {
         return {
-            totalEv: sumEVs(tasks),
-            spi: calculateSPI(tasks, this._baseDate),
+            totalEv: sumEVsByMethod(tasks, evMethod),
+            spi: calculateSpiByMethod(tasks, this._baseDate, evMethod),
             bac: sumWorkload(tasks),
         }
     }
@@ -680,15 +707,15 @@ export class Project {
     ): CompletionForecast | undefined
     calculateCompletionForecast(
         tasks: TaskRow[],
-        options?: CompletionForecastOptions
+        options?: CompletionForecastOptions & Pick<StatisticsOptions, 'evMethod'>
     ): CompletionForecast | undefined
     calculateCompletionForecast(
         optionsOrTasks?: (CompletionForecastOptions & StatisticsOptions) | TaskRow[],
-        maybeOptions?: CompletionForecastOptions
+        maybeOptions?: CompletionForecastOptions & Pick<StatisticsOptions, 'evMethod'>
     ): CompletionForecast | undefined {
         // 引数の型を判定してタスクとオプションを解決
         let tasks: TaskRow[]
-        let options: CompletionForecastOptions | undefined
+        let options: (CompletionForecastOptions & Pick<StatisticsOptions, 'evMethod'>) | undefined
 
         if (optionsOrTasks === undefined) {
             // 引数なし: プロジェクト全体
@@ -708,7 +735,8 @@ export class Project {
         const maxForecastDays = options?.maxForecastDays ?? 730
 
         // 基本統計を計算（循環参照を避けるため _calculateBasicStats を使用）
-        const basicStats = this._calculateBasicStats(tasks)
+        // evMethod 指定時は残作業（BAC − EV）へも方式反映（要件4.2）
+        const basicStats = this._calculateBasicStats(tasks, options?.evMethod)
         // SPI決定: spiOverride > 累積SPI (REQ-SPI-002)
         const usedSpi = options?.spiOverride ?? basicStats.spi
         if (usedSpi === undefined || usedSpi === null || usedSpi <= 0) {
@@ -963,7 +991,7 @@ export class Project {
      * プロジェクト全体（options 省略時）または filter で絞ったリーフタスク部分集合に
      * 対して、稼働日単位の ES / SPI(t) / SV(t) / IEAC(t) と完了予測日を返す。
      *
-     * @param options フィルタ（fullTaskName 部分一致）
+     * @param options フィルタ（fullTaskName 部分一致）・EV 算定方式（evMethod）
      * @returns ES 指標 + 完了予測日。算出不能（タスク空・開始/終了日欠損・BAC=0 等）は undefined
      *
      * @remarks
@@ -972,9 +1000,12 @@ export class Project {
      * - AT = 開始日→基準日の稼働日数、PD = 計画総稼働日数（plannedWorkDays と一致）
      * - 完了予測日は IEAC(t) が算出できた場合のみ、開始日から IEAC(t) 稼働日ぶんを
      *   暦日展開（土日/祝日スキップ）して算出する（要件 2.8）
+     * - evMethod 指定時は EV 入力に方式別 EV を用い、ES / SPI(t) / SV(t) / IEAC(t) /
+     *   完了予測日へ一貫反映する。PV 曲線・AT・PD は方式非依存
+     *   （spec: phase5-evmethod-knowledge-0.0.34 要件4.3, 4.4）
      */
     calculateEarnedSchedule(
-        options?: TaskFilterOptions
+        options?: StatisticsOptions
     ): (EarnedScheduleResult & { esForecastDate: Date | undefined }) | undefined {
         const startDate = this._startDate
         const endDate = this._endDate
@@ -1003,8 +1034,8 @@ export class Project {
             (date) => !this.isHoliday(date)
         ).length
 
-        // EV = 対象リーフタスクの ev 合計
-        const ev = sumEVs(tasks) ?? 0
+        // EV = 対象リーフタスクの方式別 EV 合計（既定は従来どおり ev 合計。要件4.3）
+        const ev = sumEVsByMethod(tasks, options?.evMethod) ?? 0
 
         const result = calculateEarnedScheduleCore({ pvCurve, ev, at, pd })
         if (!result) return undefined
@@ -1093,6 +1124,24 @@ const calculateSPI = (group: TaskRow[], baseDate: Date) => {
     return calcRate(ev, pv)
 }
 
+/**
+ * 方式別の EV 合計。既定（未指定 or 'progressRate'）は既存 sumEVs へ委譲し、
+ * 現行挙動を厳密に不変に保つ（spec: phase5-evmethod-knowledge-0.0.34 要件1.1）
+ */
+const sumEVsByMethod = (group: TaskRow[], evMethod?: EvMethod) =>
+    evMethod === undefined || evMethod === 'progressRate'
+        ? sumEVs(group)
+        : sumEvsBy(group, evMethod)
+
+/**
+ * 方式別の SPI（ΣEV ÷ ΣPV）。既定は既存 calculateSPI へ委譲。
+ * PV は方式非依存で、分子（EV）のみが方式に依存する（要件4.1, 4.4）
+ */
+const calculateSpiByMethod = (group: TaskRow[], baseDate: Date, evMethod?: EvMethod) =>
+    evMethod === undefined || evMethod === 'progressRate'
+        ? calculateSPI(group, baseDate)
+        : calcRate(sumEvsBy(group, evMethod), sumCalculatePVs(group, baseDate))
+
 // export type Statistics = {
 //     全体タスク数?: number
 //     ['全体工数の和(Excel)']?: number
@@ -1162,8 +1211,14 @@ export interface TaskFilterOptions {
  * 統計情報取得オプション
  * TaskFilterOptions を継承（フィルタ条件を含む）
  */
-// 将来の拡張用（例: includeDelayed, groupBy など）。現状はフィルタ条件のみ。
-export type StatisticsOptions = TaskFilterOptions
+export interface StatisticsOptions extends TaskFilterOptions {
+    /**
+     * EV 算定方式（既定 'progressRate' = 現行の出来高按分）。
+     * 指定した方式は SPI・完了予測・Earned Schedule など EV を用いる下流指標へ一貫反映される。
+     * spec: phase5-evmethod-knowledge-0.0.34 要件1
+     */
+    evMethod?: EvMethod
+}
 
 /**
  * 日次PV明細のタスク項目
