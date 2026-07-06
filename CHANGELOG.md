@@ -5,6 +5,21 @@
 フォーマットは [Keep a Changelog](https://keepachangelog.com/ja/1.0.0/) に基づき、
 [セマンティックバージョニング](https://semver.org/lang/ja/) に準拠しています。
 
+## [0.0.33]
+
+### 追加
+- **EV 算定方式オプション `evMethod`**: `StatisticsOptions.evMethod`（`'progressRate'` | `'0/100'` | `'50/50'`）を追加（phase5-evmethod-knowledge 要件1〜4、#171 知見ⓕ）
+  - 進捗率の主観バイアス（水増し・90%症候群）への対処として、PMI 標準の fixed formula（0/100 = 完了時のみ計上、50/50 = 着手半分+完了残り）を選択可能に。新規入力カラム不要
+  - `getStatistics` / `getStatisticsByName` / `calculateCompletionForecast` / `calculateEarnedSchedule` に一貫反映。**PV/BAC は不変、既定（未指定）は従来と完全同値**
+  - 50/50 の着手判定は `actualStartDate` の有無（客観方式のため進捗率は不使用。GLOSSARY に注記）
+  - `StatisticsOptions` を型別名から `interface extends TaskFilterOptions` へ変換（型互換・非破壊）。`EvMethod` 型を公開
+
+### ドキュメント
+- **EVM ドメインプライマー新設**（[docs/EVM-PRIMER.md](docs/EVM-PRIMER.md)）: AI・スキル向けドメイン知識の入口。本ツールの EVM 解釈6原則、指標カタログ（式×API×undefined 条件）、用語正規化表、フェーズ別判断レシピ、実装の落とし穴8項目。steering から必読参照として接続
+- **コスト系 EVM（AC）設計メモ新設**（[docs/specs/requirements/REQ-COST-EVM-DRAFT.md](docs/specs/requirements/REQ-COST-EVM-DRAFT.md)、#191）: 導入ゲート・入力ソース案・型拡張案・段階導入プラン（実装はゲート成立後）
+- EVM-MANAGEMENT-GUIDE に**標準 EVM 式対応表**（PMBOK/PMI/Lipke ↔ 本ツール API）と**完了予測3点見積の公式レシピ**（悲観SPI = min(期間SPI, SPI(t))）を追加
+- phase4（scurve/forecastVariants）の見送りを正式記録（Sカーブは再開条件つき #192）
+
 ## [0.0.32]
 
 ### ドキュメント
