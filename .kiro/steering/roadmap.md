@@ -2,7 +2,11 @@
 
 ## Overview
 
-evmtools-node（工数ベース EVM 分析ライブラリ、v0.0.28）の総合改修プロジェクト。オープン Issue 14件の棚卸し、利用側（masatomix/task の evmtools スキル、evmtools-webui）からの要請、EVM 理論（PMBOK / Earned Schedule）とのギャップ分析、既存バグの洗い出しの結果を、リリース単位の 6 spec に分解した。
+evmtools-node（工数ベース EVM 分析ライブラリ、v0.0.28）の総合改修プロジェクト。
+
+> **利用側の現在地（2026-07-06 更新）**: evmtools スキルは **PrimeBrains/generative-ai** の `.claude/skills/evmtools` に移管済み（masatomix/task 側はディスコン）。ライブラリ→スキルへの統合要請は PrimeBrains/generative-ai#344 参照（check-daily-pv 置換・SPI(t)・evMethod）。
+
+オープン Issue 14件の棚卸し、利用側（evmtools スキル、evmtools-webui）からの要請、EVM 理論（PMBOK / Earned Schedule）とのギャップ分析、既存バグの洗い出しの結果を、リリース単位の 6 spec に分解した。
 
 方針は「バグ修正 → コア強化」の順の段階リリース（v0.0.29〜v0.0.34）。計算ロジックは evmtools-node に集約し、WebUI・CLI・スキルで数値を一致させる（task スキル側の独自実装 3 本をライブラリに取り込む）。コアスキル強化の本丸は Earned Schedule（既存データのみで古典 SPI の終盤 1.0 収束欠点を解消）。
 
