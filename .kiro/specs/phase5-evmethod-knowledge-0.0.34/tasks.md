@@ -1,5 +1,12 @@
 # 実装計画（phase5-evmethod-knowledge-0.0.34）
 
+> **スコープ再改訂（2026-07-06、ユーザー判断）**: 先送りとしていた **evMethod（要件1〜4）を実装へ格上げ**。
+> 根拠: EV 測定技法（0/100・50/50）は PMI 標準のドメイン計算であり、EV 導出は統計計算内部にあるため利用側では合成不可
+> （公開 API 追加の基準4を満たす）。本 spec の design（resolveTaskEv/sumEvsBy/calculateSpiBy）に従い実装する。
+> 知識ベース化（要件5）は実施済み。
+
+
+
 > **スコープ改訂（本セッション、ユーザー判断）**: 本 spec のうち **#171 知識ベース化（要件5・docsのみ）のみ実施**。
 > EV 算定方式オプション evMethod（要件1〜4, 0/100・50/50）は、実運用ニーズが未確認かつ StatisticsOptions 拡張を伴うため **Backlog に先送り**（知識ベースからは「主観バイアス対処の将来候補」として参照）。
 > リリースは docs のみのため番号を消費せず、次リリースに同乗。
@@ -17,7 +24,7 @@
   - 完了条件: 追加テストが未実装コアに対して RED
   - _Requirements: 1.2, 1.4, 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4_
   - _Boundary: EV導出コア_
-- [x] ~~1.2 resolveTaskEv / sumEvsBy / calculateSpiBy を実装（GREEN）~~ **取り下げ（Backlog 先送り）**
+- [x] 1.2 resolveTaskEv / sumEvsBy / calculateSpiBy を実装（GREEN） **（2026-07-06 格上げで実装済み）**
   - `src/domain/Project.ts` モジュールスコープに `EvMethod` 型と 3 関数を追加（design の判定表どおり。既定は既存 `sumEVs`/`calculateSPI` へ委譲しバイト一致）
   - `src/domain/index.ts` に `EvMethod` の export を追加
   - 完了条件: 1.1 のテストが GREEN、`TaskRow.ev` への書き込みが一切ないこと
@@ -25,7 +32,7 @@
   - _Boundary: EV導出コア_
   - _Depends: 1.1_
 
-- [x] ~~2. 統計経路への evMethod スレッディング~~ **取り下げ（Backlog 先送り）**
+- [x] 2. 統計経路への evMethod スレッディング **（2026-07-06 格上げで実装済み）**
 - [ ] 2.1 下流反映の統合テストを追加（RED）
   - `src/domain/__tests__/Project.evMethod.integration.test.ts` を新設
   - `getStatistics({evMethod})` の totalEv/spi/etcPrime が方式別に変わり PV・累積PV・BAC が不変（4.1, 4.4）、`getStatisticsByName({evMethod})` の担当者別反映（4.5）、`calculateCompletionForecast({evMethod})` の残作業・予測日変化（4.2）、`{evMethod, includeEarnedSchedule: true}` での ES（spiT/svT/esForecastDate）反映（4.3）、既定（未指定/`'progressRate'`）の戻り値が既存実装と完全一致（1.1, 1.3）をケース化
@@ -86,3 +93,5 @@
 
 ## Implementation Notes
 - 本セッション: 知識ベース化（要件5）のみ実施。evMethod（要件1〜4）は Backlog 先送り。機能化候補は #184（停滞追跡）/#185（BACトレンド）/#186（name変化警告）として起票。docs のみのためリリース番号消費なし
+
+- 2026-07-06 実装追記: evMethod 実装完了（feature/evmethod）。公開 API は EvMethod 型のみ（純関数は基準適用で非公開）。未知値は型で排除（JS 利用時は silent undefined になる点を GLOSSARY に注記済み）。50/50 の actualStartDate 前提を GLOSSARY/PRIMER に注記

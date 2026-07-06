@@ -13,7 +13,7 @@
 
 - **現象**: 同じ 1 人日の出来高が SPI を動かす量が、序盤（累積PV≈6）で約 +0.17、終盤（累積PV≈162）で約 +0.006 と**約28倍**も違う。序盤の低 SPI や異常値は実力ではなく母数の小ささ。
 - **理論的背景**: SPI = EV / 累積PV は累積比。1日の成果に対する感度は `dSPI/dEV = 1/PV`。累積PVが大きいほど SPI は動かなくなる。
-- **本ツールでの確認方法**: `Project.getStatistics()` の `totalPvCalculated`（累積PV）・`totalWorkloadCalculated`（BAC）で**完了率・経過PV割合**を併記し、SPI の信頼度に文脈を与える。直近の実勢は `ProjectService.calculateRecentSpi(projects)`（期間SPI = ΔEV/ΔPV、0.0.29〜）で母数効果を排して測る。
+- **本ツールでの確認方法**: `Project.getStatistics()` の `totalPvCalculated`（累積PV）・`totalWorkloadExcel`（BAC=Σworkload）で**完了率・経過PV割合**を併記し、SPI の信頼度に文脈を与える。直近の実勢は `ProjectService.calculateRecentSpi(projects)`（期間SPI = ΔEV/ΔPV、0.0.29〜）で母数効果を排して測る。
 - **対処・解決状況**: ✅ **0.0.29 で対応**。期間SPI（`calculateRecentSpi`）が母数に平滑化されない直近効率を返す（#170 の直接の動機がこの知見）。
 
 ## ⓑ 完了率90%超で SPI は機械的に 1.0 へ収束
@@ -48,8 +48,8 @@
 
 - **現象**: 案件A BAC +24%、案件B BAC 約20倍に膨張する中、SPI は終始 0.91〜1.0。
 - **理論的背景**: 実プロジェクトの BAC はほぼ減らない。更新ベースラインに対する SPI は、ベースライン自体が遅延を吸収するため実態より良く出る。
-- **本ツールでの確認方法**: `getStatistics().totalWorkloadCalculated`（BAC）を時系列で追い、**BAC 増加トレンド**をスコープ膨張の可視化として見る。進捗率の主観バイアスへの対処としては、客観的 %complete 方式（0/100・50/50 の EV 算定）が候補。
-- **対処・解決状況**: ⚠️ BAC 値は取得可能だが、「当初BAC（凍結ベースライン）に対する SPI 併記」「BAC トレンド常設」「客観的 EV 算定方式（evMethod）」はいずれも Backlog（[機能化候補](#機能化候補backlog)参照）。
+- **本ツールでの確認方法**: `getStatistics().totalWorkloadExcel`（BAC=Σworkload）を時系列で追い、**BAC 増加トレンド**をスコープ膨張の可視化として見る。進捗率の主観バイアスへの対処は `StatisticsOptions.evMethod`（0/100・50/50、0.0.33〜）で可能。
+- **対処・解決状況**: ⚠️ BAC 値は取得可能だが、「当初BAC（凍結ベースライン）に対する SPI 併記」「BAC トレンド常設」は Backlog、「客観的 EV 算定方式（evMethod）」は **✅ 0.0.33 で実装**（`StatisticsOptions.evMethod`）。
 
 ## ⓖ SV は構造的にマイナス基調 — 「先行」は稀（経験則）
 
@@ -75,14 +75,15 @@
 |------|------|------|
 | 停滞タスクの経時追跡（[#184](https://github.com/masatomix/evmtools-node/issues/184)） | ⓒ | 同一タスクの遅延日数を複数スナップショットで追跡（`getDelayedTasks` の時系列化） |
 | BAC トレンド常設（[#185](https://github.com/masatomix/evmtools-node/issues/185)） | ⓕ | BAC 増加の可視化。当初BAC（凍結ベースライン）に対する SPI 併記 |
-| EV 算定方式オプション（evMethod） | ⓕ | 0/100・50/50 の客観的 %complete 方式（進捗率の主観バイアス対処）。当初 phase5 で計画も先送り |
-| 完了予測の幅（3点予測） | ⓑ | 楽観/標準/悲観の完了予測。現状は `calculateCompletionForecast({ spiOverride })` に期間SPIを渡して直近ペース予測が可能 |
+| EV 算定方式オプション（evMethod） | ⓕ | **✅ 0.0.33 で実装**（`StatisticsOptions.evMethod`。0/100・50/50。50/50 は actualStartDate 入力が前提） |
+| 完了予測の幅（3点予測） | ⓑ | **レシピ化済み**（[EVM-MANAGEMENT-GUIDE.md](EVM-MANAGEMENT-GUIDE.md) の公式レシピ参照。専用 API は合成可能なため見送り） |
 | タスク名変化の警告（[#186](https://github.com/masatomix/evmtools-node/issues/186)） | ⓗ′ | ID突合済みの diff に name 変化フラグを追加 |
 
 ---
 
 ## 関連ドキュメント
 
+- [EVM-PRIMER.md](EVM-PRIMER.md) — AI・スキル向けドメイン知識の入口（理論×API対応・判断レシピ・落とし穴）
 - [GLOSSARY.md](GLOSSARY.md) — EVM 用語・Earned Schedule 系指標の定義
 - [EVM-MANAGEMENT-GUIDE.md](EVM-MANAGEMENT-GUIDE.md) — 日常の進捗管理手順
 - [brainstorm-evm-indicators.md](brainstorm-evm-indicators.md) — 本知識ベースの元資料（ブレスト原文）

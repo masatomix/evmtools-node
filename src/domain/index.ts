@@ -1,4 +1,5 @@
 export * from './EarnedSchedule'
+export type { EvMethod } from './EvMethod'
 export * from './HolidayData'
 export * from './Project'
 export * from './ProjectCreator'
