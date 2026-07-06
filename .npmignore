@@ -31,3 +31,12 @@ docs/
 
 # その他
 class.pu
+# 仕様駆動開発（cc-sdd）の spec・steering（開発内部文書）
+.kiro/
+
+# 開発設定ファイル
+.vscode/
+.prettierrc
+eslint.config.mjs
+jest.config.js
+samples/
