@@ -1,0 +1,23 @@
+{
+  "feature_name": "schedule-adherence",
+  "created_at": "2026-07-06T17:46:55Z",
+  "updated_at": "2026-07-06T18:10:00Z",
+  "language": "ja",
+  "phase": "tasks-generated",
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": true
+    },
+    "design": {
+      "generated": true,
+      "approved": true
+    },
+    "tasks": {
+      "generated": true,
+      "approved": true
+    }
+  },
+  "ready_for_implementation": true,
+  "implementation_gate": "利用側スキル（PrimeBrains/generative-ai evmtools）で plan-adherence 系レポートが定着し数値乖離リスクが顕在化したとき（requirements.md 冒頭参照）"
+}
