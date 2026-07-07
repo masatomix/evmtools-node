@@ -5,6 +5,17 @@
 フォーマットは [Keep a Changelog](https://keepachangelog.com/ja/1.0.0/) に基づき、
 [セマンティックバージョニング](https://semver.org/lang/ja/) に準拠しています。
 
+## [0.0.35]
+
+### 変更
+- **依存更新: excel-csv-read-write ^0.2.7**。存在しないファイルパスを `ExcelProjectCreator` / `CsvProjectCreator` に渡した場合、従来は Promise が settle せず **uncaughtException でプロセスごと異常終了**していたが、**ENOENT で reject される**ようになった（上流 masatomix/excel-csv-read-write#50 の修正。利用側は通常の try/catch でハンドリング可能に）
+
+### テスト
+- **Excel 読み込み経路の統合テストを追加**（従来カバレッジ 0% だった本番主入力経路の回帰防御）: 実型準拠フィクスチャ + 統合テスト25件で ExcelProjectCreator / ExcelBufferProjectCreator / ExcelTaskRowCreator / MappingProjectCreator / TaskRowCreatorImpl が Stmts/Lines/Funcs 100% に。読み込み→統計/Earned Schedule/evMethod の end-to-end 検証込み
+
+### 開発プロセス
+- schedule-adherence（Lipke P-Factor）の spec を追加（実装はトリガー待ち）
+
 ## [0.0.34]
 
 ### ドキュメント
