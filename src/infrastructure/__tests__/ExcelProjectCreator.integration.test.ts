@@ -35,7 +35,6 @@
 
 import * as path from 'path'
 import * as fs from 'fs'
-import { spawnSync } from 'child_process'
 import { date2Sn } from 'excel-csv-read-write'
 import { ExcelProjectCreator } from '../ExcelProjectCreator'
 import { ExcelBufferProjectCreator } from '../ExcelBufferProjectCreator'
@@ -351,35 +350,12 @@ describe('異常系（現状の実挙動を固定する）', () => {
         await expect(creator.createProject()).rejects.toThrow(/central directory/)
     })
 
-    it(
-        '存在しないファイルは Promise が settle せずプロセスが uncaughtException で落ちる' +
-            '（excelStream2json がストリームの error を処理しないため）',
-        () => {
-            // 現状の実挙動: fs.createReadStream の 'error' イベントにリスナーが無いため、
-            // createProject() の Promise は resolve も reject もされず、
-            // プロセス自体が ENOENT の uncaughtException で異常終了する。
-            // Jest ワーカーを巻き込まないよう子プロセスで観測して挙動を固定する。
-            const missingPath = path.join(FIXTURES_DIR, 'NotExist.xlsx')
-            const creatorPath = path.join(__dirname, '..', 'ExcelProjectCreator.ts')
-            const script = [
-                `require('ts-node').register({ transpileOnly: true })`,
-                `const { ExcelProjectCreator } = require(${JSON.stringify(creatorPath)})`,
-                `new ExcelProjectCreator(${JSON.stringify(missingPath)}).createProject().then(`,
-                `    () => console.log('SETTLED_RESOLVE'),`,
-                `    () => console.log('SETTLED_REJECT')`,
-                `)`,
-            ].join('\n')
-
-            const result = spawnSync(process.execPath, ['-e', script], {
-                cwd: path.join(__dirname, '..', '..', '..'),
-                encoding: 'utf-8',
-                timeout: 60000,
-            })
-
-            expect(result.status).not.toBe(0) // プロセスが異常終了する
-            expect(result.stderr).toContain('ENOENT') // 原因は ENOENT の uncaughtException
-            expect(result.stdout).not.toContain('SETTLED') // Promise は settle しない
-        },
-        90000
-    )
+    it('存在しないファイルは ENOENT で reject される（excel-csv-read-write 0.2.7 のストリームエラー修正）', async () => {
+        // 0.2.6 以前は excelStream2json がストリームの 'error' を処理せず、
+        // Promise が settle しないままプロセスごと uncaughtException で落ちていた
+        // （masatomix/excel-csv-read-write#50。0.2.7 で reject されるよう修正済み）。
+        const missingPath = path.join(FIXTURES_DIR, 'NotExist.xlsx')
+        const creator = new ExcelProjectCreator(missingPath)
+        await expect(creator.createProject()).rejects.toThrow(/ENOENT/)
+    })
 })
