@@ -62,6 +62,7 @@ tasks.md 生成時（`/kiro-spec-tasks`）は**マスター同期タスクを必
 | インターフェース変更 | 型定義・シグネチャを更新（Behavior Change は明記） |
 | テストケース | テストシナリオセクションに追加（または実テストへの参照） |
 | すべての変更 | 変更履歴にバージョン・日付・概要・出典 feature 名を追記 |
+| 公開機能の追加・廃止 | [steering/system-overview.md](system-overview.md) の機能カタログ該当行を1行更新（既存機能マップの鮮度維持） |
 
 同期漏れは `/kiro-validate-impl` / レビューで指摘対象とする。
 
